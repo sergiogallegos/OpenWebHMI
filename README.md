@@ -20,7 +20,8 @@ Real Time Graphic Interface, menus, buttons, messages, graphics, reports, OEE, V
 - Networking: TCP/IP
 - Databases: SQLite.
 - Framework: Gin
-- Library: htmx, GORM.
+- Javascript Library: htmx 
+- ORM Library: GORM.
 
 ## Machine Builders and System Integrators
 
