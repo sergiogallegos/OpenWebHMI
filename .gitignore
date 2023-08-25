@@ -1,0 +1,49 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+
+# Node.js and JavaScript
+node_modules/
+npm-debug.log
+yarn-error.log
+/dist/
+/build/
+/out/
+/.next/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-*
+*.swp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Compiled CSS
+*.css.map
+
+# Log files
+*.log
+
+# SQLite database file
+*.db
+
+# GORM-generated files
+/migrations/
+/gorm.db
+
+# htmx-related files (if any)
+/htmx_cache/
