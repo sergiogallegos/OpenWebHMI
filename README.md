@@ -1,6 +1,7 @@
 # OpenWebHMI - OpenSource HMI Project @2023
 
-## Description
+Description
+------
 
 The objetive is create an opensource HMI - Human Machine Interface
   - Web Development for User Interface.
@@ -9,11 +10,13 @@ The objetive is create an opensource HMI - Human Machine Interface
   - Connect with PLC's , include librarys like TCP/IP
   - Use as HMI or SCADA to run in any Operation System
 
-## Features
+Features
+------
 
 Real Time Graphic Interface, menus, buttons, messages, graphics, reports, OEE, Visual KPIs, part traceability , alarms, recipes, predictive maintenance.
 
-## Software Tools
+Software Tools
+------
 
 - Front End : Javascript, HTML, CSS.
 - Back End: Golang.
@@ -23,9 +26,9 @@ Real Time Graphic Interface, menus, buttons, messages, graphics, reports, OEE, V
 - Javascript Library: htmx 
 - ORM Library: GORM.
 
-## Sofware Project Structure
-
-openwebhmi/
+Sofware Project Structure
+------
+.
 │
 ├── backend/
 │   ├── main.go            # Entry point for the backend server
@@ -60,8 +63,8 @@ openwebhmi/
 
 
 
-
-## Machine Builders and System Integrators
+Machine Builders and System Integrators
+------
 
 Thanks and I hope the community support this project to be used by the industry for free.
 
@@ -70,12 +73,15 @@ on any PC + Monitor or PC with embeeded Touch Monitor.
 
 Lets create the Next Generation of HMI for Industry 4.0 OpenSource Project.
 
-## Maintainers
+Maintainers
+------
 Sergio Gallegos - Repo Owner  - sergiogallegos.net
 
-## Sponsors
+Sponsors
+------
 -Not Sponsor at this time
 
-### License
+License
+------
 
 OpenWebHMI is [MIT licensed](./LICENSE).
