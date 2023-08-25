@@ -5,9 +5,11 @@
 The objetive is create an opensource HMI - Human Machine Interface
   - Use Web Techonlogy
   - Use Free Tools
-  - Connect with Dabases
+  - Connect with Databases
   - Connect with PLC's , include librarys like TCP
   - Use as HMI or SCADA to run in any Operation System
+
+## Features
 
 Real Time Graphic Interface, menus, buttons, messages, graphics, reports, OEE, Visual KPIs, part traceability , alarms, recipes, predictive maintenance.
 
