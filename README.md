@@ -28,7 +28,7 @@ Software Tools
 
 Sofware Project Structure
 ------
-.
+openwebhmi/
 │
 ├── backend/
 │   ├── main.go            # Entry point for the backend server
@@ -36,9 +36,9 @@ Sofware Project Structure
 │   ├── models/            # Data models and database schemas / GORM
 │   ├── services/          # Business logic and services
 │   ├── config/            # Configuration files
-|   ├── tcp/               # TCP/IP for communication 
-|   ├── tests/             # Create a direcotry for unit tests
-|   └── docs/              # Directory for backend documentation             
+│   ├── tcp/               # TCP/IP for communication 
+│   ├── tests/             # Create a direcotry for unit tests
+│   └── docs/              # Directory for backend documentation             
 │   
 ├── frontend/
 │   ├── public/            # Static assets (HTML, CSS, images)
@@ -49,7 +49,7 @@ Sofware Project Structure
 │   │   ├── utils/         # Utility functions
 │   │   ├── App.js         # Main App component
 │   │   └── index.js       # Entry point for the frontend
-|   │── docs/              # Directory for frontend documentation  
+│   │── docs/              # Directory for frontend documentation  
 │   ├── package.json       # Frontend dependencies and scripts
 │   └── ...
 │
