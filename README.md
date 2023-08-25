@@ -3,9 +3,9 @@
 ## Description
 
 The objetive is create an opensource HMI - Human Machine Interface
-  - Use Web Techonlogy
-  - Use Free Tools
-  - Connect with Databases
+  - Web Development for User Interface.
+  - Use Free Tools,Librarys and Frameworks.
+  - Connect with Databases.
   - Connect with PLC's , include librarys like TCP/IP
   - Use as HMI or SCADA to run in any Operation System
 
@@ -15,10 +15,12 @@ Real Time Graphic Interface, menus, buttons, messages, graphics, reports, OEE, V
 
 ## Software Tools
 
-- Front End : Javascript, HTML, CSS, React, Redux, Htmx.
+- Front End : Javascript, HTML, CSS.
 - Back End: Golang.
 - Networking: TCP/IP
-- Databases: SQLite, GORM.
+- Databases: SQLite.
+- Framework: Gin
+- Library: htmx, GORM.
 
 ## Machine Builders and System Integrators
 
