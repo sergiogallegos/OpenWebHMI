@@ -15,11 +15,11 @@ Table of Contents
 Description
 ------
 
-The objetive is create an opensource HMI - Human Machine Interface
+The objective is create an opensource HMI (Human Machine Interface)
   - Web Development for User Interface.
-  - Use OpenSource Tools, Libraries and Frameworks.
+  - OpenSource Tools, Libraries and Frameworks.
   - Connect with Databases.
-  - Connect with PLC's , include libraries like TCP/IP
+  - Connect with PLC's (include libraries like TCP/IP)
     - AllenBradley, Siemens, Beckhoff, etc
   - Run in any OS (Windows, Linux, MacOS)
 
@@ -81,14 +81,14 @@ Project Structure
 Machine Builders and System Integrators
 ------
 
-For all the machine builders and system integrators that are looking for a modular, flexible and OpenSource HMI with Web Technology and Update Software Tools that can run on any OS(Linux, Windows or MacOS), This is the correct place.
+For all the machine builders and system integrators that are looking for a modular, flexible and OpenSource HMI with Web Technology and Updated Software Tools that can run at any OS(Linux, Windows or MacOS), This is the correct place.
 
 Let's create the Next Generation of HMI for Industry 4.0 OpenSource Project.
 
 Contribute code
 ------
 
-If you would like to become an active contributor to this project please send your commits and ideas for this project.
+If you would like to become an active contributor to this project please send your commits and ideas.
 
 Maintainers
 ------
