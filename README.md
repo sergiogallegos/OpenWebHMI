@@ -28,39 +28,41 @@ Software Tools
 
 Sofware Project Structure
 ------
-openwebhmi/
-│
-├── backend/
-│   ├── main.go            # Entry point for the backend server
-│   ├── api/               # API routes and handlers
-│   ├── models/            # Data models and database schemas / GORM
-│   ├── services/          # Business logic and services
-│   ├── config/            # Configuration files
-│   ├── tcp/               # TCP/IP for communication 
-│   ├── tests/             # Create a direcotry for unit tests
-│   └── docs/              # Directory for backend documentation             
-│   
-├── frontend/
-│   ├── public/            # Static assets (HTML, CSS, images)
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Page components and routing
-│   │   ├── api/           # Frontend API calls / htmx
-│   │   ├── utils/         # Utility functions
-│   │   ├── App.js         # Main App component
-│   │   └── index.js       # Entry point for the frontend
-│   │── docs/              # Directory for frontend documentation  
-│   ├── package.json       # Frontend dependencies and scripts
-│   └── ...
-│
-├── database/              # Database-related files (migrations, seeds, etc.)
-│
-├── scripts/               # Deployment and automation scripts
-│
-├── README.md              # Project documentation
-├── .gitignore             # Git ignore rules
-└── ...
 
+- `backend/`: Contains the Go backend code.
+  - `main.go`: Entry point for the backend server.
+  - `api/`: API routes and handlers.
+  - `models/`: Data models and GORM schemas.
+  - `services/`: Business logic and services.
+  - `config/`: Configuration files.
+  - `tcp/`: TPC/IP for communication.
+  - `tests/`: Directory for unit tests.
+  - `docs/`: Directory for backend documentation.
+  - ...
+
+- `frontend/`: Contains the JavaScript frontend code.
+  - `public/`: Static assets (HTML, CSS, images).
+  - `src/`: Main source code directory.
+    - `components/`: Reusable UI components.
+    - `pages/`: Page components and routing.
+    - `api/`: Frontend API calls (htmx).
+    - `utils/`: Utility functions.
+    - `App.js`: Main App component.
+    - `index.js`: Entry point for the frontend.
+  - `docs/`: Directory for frontend documentation.
+  - `package.json`: Frontend dependencies and scripts.
+  - ...
+
+- `database/`: Database-related files (migrations, seeds, etc.).
+  - `migrations/`: Database migration scripts.
+  - ...
+
+- `scripts/`: Deployment and automation scripts.
+  - `deploy.sh`: Deployment script.
+  - ...
+
+- `README.md`: Project documentation.
+- `.gitignore`: Git ignore rules.
 
 
 Machine Builders and System Integrators
