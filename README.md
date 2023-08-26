@@ -8,8 +8,8 @@ The objetive is create an opensource HMI - Human Machine Interface
   - Use OpenSource Tools, Libraries and Frameworks.
   - Connect with Databases.
   - Connect with PLC's , include librarys like TCP/IP
-    - I'm going to start testing on AllenBradley
-  - Use as HMI or SCADA to run in any Operation System (Windows, Linux, MacOS)
+    - AllenBradley, Siemens, Beckhoff, etc
+  - Run in any OS (Windows, Linux, MacOS)
 
 Features
 ------
@@ -69,8 +69,7 @@ Project Structure
 Machine Builders and System Integrators
 ------
 
-For all the machine builders and system integrators that are looking for a modular, flexible and opensuorce HMI/SCADA that can run on any PC + Monitor or PC with embeeded Touch Monitor with 
-Linux, Windows or MacOS.
+For all the machine builders and system integrators that are looking for a modular, flexible and OpenSource HMI that can run on any OS(Linux, Windows or MacOS).
 
 Let's create the Next Generation of HMI for Industry 4.0 OpenSource Project.
 
@@ -80,7 +79,7 @@ Sergio Gallegos - Repo Owner  - sergiogallegos.net
 
 Sponsors
 ------
-- Not Sponsor at this time
+- Not Sponsors at this time
 
 License
 ------
