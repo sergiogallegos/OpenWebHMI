@@ -35,7 +35,7 @@ Software Tools
 - Back End: Golang.
 - Networking: TCP/IP
 - Databases: SQLite.
-- Framework: Gin
+- Web Framework: Gin.
 - Javascript Library: htmx.
 - ORM Library: GORM.
 

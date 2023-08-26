@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenWebHMI</title>
+    <!-- Include htmx library -->
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.5/dist/htmx.js"></script>
+</head>
+<body>
+    <h1>Hello from Frontend!</h1>
+    <button id="fetchButton" hx-get="http://localhost:8080/api/hello" hx-trigger="click">Fetch Data</button>
+    <div id="response"></div> 
+    <!-- Include your JavaScript -->
+    <script type="module" src="/frontend/src/index.js"></script>
+</body>
+</html>
