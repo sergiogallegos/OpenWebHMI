@@ -5,15 +5,16 @@ Description
 
 The objetive is create an opensource HMI - Human Machine Interface
   - Web Development for User Interface.
-  - Use Free Tools,Librarys and Frameworks.
+  - Use OpenSource Tools, Libraries and Frameworks.
   - Connect with Databases.
   - Connect with PLC's , include librarys like TCP/IP
-  - Use as HMI or SCADA to run in any Operation System
+    - I'm going to start testing on AllenBradley
+  - Use as HMI or SCADA to run in any Operation System (Windows, Linux, MacOS)
 
 Features
 ------
 
-Real Time Graphic Interface, menus, buttons, messages, graphics, reports, OEE, Visual KPIs, part traceability , alarms, recipes, predictive maintenance.
+Real Time Graphic Interface, Menus, Buttons, Messages, Alarms, Graphics, Reports, OEE, Visual KPIs, Part Traceability, Recipes, Predictive Maintenance and More.
 
 Software Tools
 ------
@@ -26,7 +27,7 @@ Software Tools
 - Javascript Library: htmx 
 - ORM Library: GORM.
 
-Sofware Project Structure
+Project Structure
 ------
 
 - `backend/`: Contains the Go backend code.
@@ -68,12 +69,10 @@ Sofware Project Structure
 Machine Builders and System Integrators
 ------
 
-Thanks and I hope the community support this project to be used by the industry for free.
+For all the machine builders and system integrators that are looking for a modular, flexible and opensuorce HMI/SCADA that can run on any PC + Monitor or PC with embeeded Touch Monitor with 
+Linux, Windows or MacOS.
 
-For all the machine builders and system integrators that are looking for a modular, flexible and opensoruce HMI/SCADA that can run
-on any PC + Monitor or PC with embeeded Touch Monitor.
-
-Lets create the Next Generation of HMI for Industry 4.0 OpenSource Project.
+Let's create the Next Generation of HMI for Industry 4.0 OpenSource Project.
 
 Maintainers
 ------
@@ -81,7 +80,7 @@ Sergio Gallegos - Repo Owner  - sergiogallegos.net
 
 Sponsors
 ------
--Not Sponsor at this time
+- Not Sponsor at this time
 
 License
 ------
