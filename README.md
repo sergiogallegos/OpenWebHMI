@@ -8,6 +8,7 @@ Table of Contents
 * [Software Tools](#software-tools)
 * [Project Structure](#project-structure)
 * [Machine Builders & System Integrators](#machine-builders-and-system-integrators)
+* [Contribute code](#contribute-code)
 * [Maintainers](#maintainers)
 * [Licensing](#licensing)
 
