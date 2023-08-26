@@ -80,17 +80,25 @@ Project Structure
 Machine Builders and System Integrators
 ------
 
-For all the machine builders and system integrators that are looking for a modular, flexible and OpenSource HMI that can run on any OS(Linux, Windows or MacOS).
+For all the machine builders and system integrators that are looking for a modular, flexible and OpenSource HMI with Web Technology and Update Software Tools that can run on any OS(Linux, Windows or MacOS), This is the correct place.
 
 Let's create the Next Generation of HMI for Industry 4.0 OpenSource Project.
 
+Contribute code
+------
+
+If you would like to become an active contributor to this project please send your commits and ideas for this project.
+
 Maintainers
 ------
+
 Sergio Gallegos - Repo Owner  - sergiogallegos.net
 
 Sponsors
 ------
-- Not Sponsors at this time
+
+We don't have sponsors at this time. If you are a company that want
+to sponsor this project, you are more than welcome.
 
 Licensing
 ------
