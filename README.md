@@ -19,7 +19,7 @@ The objetive is create an opensource HMI - Human Machine Interface
   - Web Development for User Interface.
   - Use OpenSource Tools, Libraries and Frameworks.
   - Connect with Databases.
-  - Connect with PLC's , include librarys like TCP/IP
+  - Connect with PLC's , include libraries like TCP/IP
     - AllenBradley, Siemens, Beckhoff, etc
   - Run in any OS (Windows, Linux, MacOS)
 
@@ -36,7 +36,7 @@ Software Tools
 - Networking: TCP/IP
 - Databases: SQLite.
 - Framework: Gin
-- Javascript Library: htmx 
+- Javascript Library: htmx.
 - ORM Library: GORM.
 
 Project Structure
