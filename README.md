@@ -1,5 +1,16 @@
 # OpenWebHMI - OpenSource HMI Project @2023
 
+Table of Contents
+=======================
+
+* [Description](#description)
+* [Features](#features)
+* [Software Tools](#software-tools)
+* [Project Structure](#project-structure)
+* [Machine Builders & System Integrators](#machine-builders-and-system-integrators)
+* [Maintainers](#maintainers)
+* [Licensing](#licensing)
+
 Description
 ------
 
@@ -81,7 +92,7 @@ Sponsors
 ------
 - Not Sponsors at this time
 
-License
+Licensing
 ------
 
-OpenWebHMI is [MIT licensed](./LICENSE).
+OpenWebHMI is released under the [MIT licensed](./LICENSE).
