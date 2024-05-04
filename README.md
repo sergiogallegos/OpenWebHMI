@@ -1,4 +1,4 @@
-# OpenWebHMI - OpenSource HMI Project @2023
+# OpenWebHMI - OpenSource HMI Project @2024
 
 Table of Contents
 =======================
