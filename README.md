@@ -31,12 +31,11 @@ Real Time Graphic Interface, Menus, Buttons, Messages, Alarms, Graphics, Reports
 Software Tools
 ------
 
-- Front End : Javascript, HTML, CSS.
-- Back End: Golang.
+- Front End : TypeScript.
+- Back End: Go.
 - Networking: TCP/IP
-- Databases: SQLite.
-- Web Framework: Gin.
-- Javascript Library: htmx.
+- Database: SQLite.
+- Framework: Gin, React, htmx.
 - ORM Library: GORM.
 
 Project Structure
