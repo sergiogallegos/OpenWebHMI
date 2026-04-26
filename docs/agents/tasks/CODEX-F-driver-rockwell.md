@@ -161,4 +161,4 @@ Acceptance criteria — all seven checkboxes verified. No simulator extension ne
 
 ## Verdict
 
-**Merged** at the next commit. Two yellow notes (UDT array element workaround, STRING-write-to-missing-tag test) tracked here for the next time the same author is in this code; not opening separate tasks. Strong, careful submission — the error-mapping and per-tag quality propagation are notably thorough.
+**Merged** at `bc2d568`. Two yellow notes (UDT array element workaround, STRING-write-to-missing-tag test) tracked here for the next time the same author is in this code; not opening separate tasks. Strong, careful submission — the error-mapping and per-tag quality propagation are notably thorough.
