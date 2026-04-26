@@ -47,20 +47,31 @@ Deliverables:
 
 ## Phase 2 — Designer MVP (target: ~3 months)
 
-**Goal:** stop hand-editing project JSON. A user can build a real screen visually.
+**Goal:** stop hand-editing project JSON. A user can build a real screen — first via a structured form-based UI, ideally with a visual canvas if scope allows.
 
-Deliverables:
-- Visual canvas in designer (react-konva): drag/drop, select, move, resize, delete, undo/redo, snap-to-grid.
-- Property panel: edit any component prop; tag-binding picker for bindable props.
-- Project explorer: views, tags, alarms, scripts, drivers as a tree.
-- Project save/load to gateway. Versioning: each save bumps version, clients receive `project.changed`, runtime hot-reloads.
-- Component library v1 (10 components):
-  - `Label, Button, ValueDisplay, NumericInput, Indicator, Image, Container, Rectangle, Line, ToggleSwitch`.
-- Theme support: a project-level theme JSON drives colors/fonts.
-- Designer can launch a preview runtime in an embedded webview against the current saved project.
-- Drag/drop tag binding from the tag browser onto a component.
+> **Phase 2 is the highest-risk phase.** A drag/drop visual designer is genuinely a small IDE. To de-risk this, deliverables are split into **Required** (must ship to exit Phase 2) and **Stretch** (desirable, but explicitly allowed to slip into Phase 4 without blocking Phase 3 from starting). If everything stretches, Phase 4's "1.0 polish" absorbs the canvas work, and Phase 2 still delivers a usable authoring experience via the form-based UI.
 
-**Exit criterion:** a user with no JSON editing builds a 5-screen HMI against the **simulated CompactLogix from Phase 1**, including navigation, value displays, manual write buttons, and one indicator showing simulator connection state. The whole project round-trips: save → reopen designer → render in runtime.
+### Required deliverables (must ship to exit Phase 2)
+
+- **Project explorer**: tree of views, tags, alarms, scripts, drivers; create/rename/delete artifacts.
+- **Tag browser** wired to live PLC tag introspection (Phase 1's `Driver::browse` if available, otherwise a manual import form).
+- **Form-based view editor**: views are authored as structured artifacts (component tree edited via property panels), not by drag/drop. Adding a component is a "+ Add" button that spawns the component with default props at a default position; positioning is via numeric x/y/width/height fields in the property panel.
+- **Property panel**: every component prop editable; tag-binding picker for bindable props.
+- **Project save/load** to gateway. Versioning: each save bumps version; clients receive `project.changed`; runtime hot-reloads.
+- **Component library v1, essentials only (6 components):** `Label, ValueDisplay, NumericInput, Indicator, Image, Container`.
+- **Designer preview**: launches an embedded webview against the current saved project.
+
+### Stretch deliverables (allowed to slip into Phase 4 if time-pressured)
+
+- **Visual canvas (react-konva or equivalent)**: drag/drop, select, move, resize, delete.
+- **Snap-to-grid**, **undo/redo**, **multi-select** + **align/distribute**.
+- **Drag-from-tag-browser-onto-component** binding gesture.
+- **4 additional components**: `Button, Rectangle, Line, ToggleSwitch`.
+- **Theme editor UI** (the runtime supports themes; the designer authoring UI for them is the stretch).
+
+### Exit criterion (Phase 2)
+
+A user with no JSON editing builds a 5-screen HMI against the **simulated CompactLogix from Phase 1**, including navigation, value displays, manual write buttons, and one indicator showing simulator connection state. The whole project round-trips: save → reopen designer → render in runtime. Whether the user authored the screens via form-based UI or visual canvas does not change the criterion — both produce the same project artifacts.
 
 ---
 
@@ -97,7 +108,7 @@ Deliverables:
 
 ## Phase 4 — 1.0 release (target: ~3 months)
 
-**Goal:** a small real plant could deploy this. Plugin SDK is real. Docs cover everything a contributor needs.
+**Goal:** a small real plant could deploy this. Plugin SDK is real. Docs cover everything a contributor needs. **Picks up any Phase 2 stretch deliverables that slipped** (visual canvas, snap/undo/redo, the remaining 4 components, theme editor) before tagging 1.0.
 
 Deliverables:
 - **Second driver: `driver-opcua`** (committed v1 scope). Opens up Siemens, Schneider, Beckhoff, and most modern controllers via OPC UA, and lets us validate the driver-API contract against a fundamentally different protocol from Rockwell's EtherNet/IP. Modbus TCP is **deferred to post-1.0**; the v1 second driver is OPC UA, not "one of".

@@ -4,9 +4,26 @@
 
 ## 1. Mission
 
-Open-source SCADA / HMI / MES platform of comparable capability to Inductive Automation **Ignition**, with **FactoryTalk Optix** as a secondary reference. Web-first runtime, cross-platform desktop designer, plant-floor connectivity. Designed so the community can extend drivers, components, and scripting libraries without forking.
+Open-source, web-first **SCADA / HMI** platform for small and mid-size industrial systems, of comparable capability to Inductive Automation **Ignition**, with **FactoryTalk Optix** as a secondary reference. Cross-platform desktop designer, gateway-centric runtime, plant-floor connectivity starting with Rockwell EtherNet/IP and OPC UA. Designed so the community can extend drivers, components, and scripting libraries without forking.
 
-**Primary v1 target:** parity with a meaningful subset of Ignition Edge / Standard. **Reference:** Optix (component model, project structure).
+**Primary v1 target:** parity with a meaningful subset of Ignition Edge / Standard, bounded by the v1.0 scope envelope below.
+
+**MES** capabilities — recipes, OEE, batch (ISA-88), traceability — are *not* part of v1.0. They are tracked in [`docs/roadmap.md`](roadmap.md) Phase 5+ as year-2+ work and are not a 1.0 promise. We do not say "SCADA/HMI/MES" until at least one MES module ships.
+
+### v1.0 scope envelope
+
+| Bound | v1.0 target |
+|---|---|
+| Topology | **Single gateway per deployment** (no clustering, federation, or gateway network) |
+| Live tag count | **≤ 10,000** simultaneously subscribed/polled tags per gateway |
+| Concurrent runtime clients | **≤ 50** browser sessions per gateway |
+| Drivers shipped | Rockwell EtherNet/IP, OPC UA (committed); others post-1.0 |
+| Runtime surfaces | Web (browser) only; Tauri desktop runtime is post-1.0 |
+| Designer surfaces | Tauri desktop on Windows and macOS; Linux is post-1.0 |
+| Gateway platforms | Linux, macOS, Windows |
+| Authentication | Local users + roles + per-view ACLs; SSO/AD/LDAP post-1.0 |
+
+These numbers are the design constraint. Tag-engine, WebSocket fan-out, project store, and historian implementations are sized to comfortably hit these bounds with headroom; they are *not* sized for enterprise-scale.
 
 ## 2. High-level topology
 
@@ -323,14 +340,18 @@ Designer save ─▶ project.save WS ─▶ ProjectStore.commit(artifact)
 
 ## 8. Out of scope for v1.0
 
-- Mobile apps / native iOS/Android runtime
-- Redundant / failover gateways
-- Cluster / horizontal scale (single gateway only)
-- Loads above ~5,000 live tags (target; will validate)
-- MES-grade workflow engine (recipes, batch, OEE — Phase 5)
-- Vision-style desktop runtime client (web-only in v1)
-- Real-time control loops (we do supervisory control, not deterministic real-time)
-- Safety-rated functions (we are *not* IEC 61508 / SIL-rated)
+(See §1's v1.0 scope envelope for positive bounds.)
+
+- Mobile apps / native iOS/Android runtime.
+- Redundant / failover gateways.
+- Cluster / horizontal scale (single gateway only).
+- Loads above the v1.0 envelope: > 10,000 live tags or > 50 concurrent runtime clients per gateway.
+- MES-grade workflow engine (recipes, batch, OEE, traceability — Phase 5+, year-2 conversation).
+- Vision-style desktop runtime client (web-only in v1; Tauri-based desktop runtime is post-1.0).
+- Real-time control loops (we do supervisory control, not deterministic real-time).
+- Safety-rated functions (we are *not* IEC 61508 / SIL-rated).
+- SSO / AD / LDAP / OIDC (post-1.0; v1 is local users + JWT).
+- Multi-tenant gateway (one gateway hosts one project's data; multi-project isolation is post-1.0).
 
 ## 9. Open architectural questions
 

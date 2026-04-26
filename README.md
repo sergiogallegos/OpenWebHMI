@@ -1,6 +1,6 @@
 # OpenWebHMI
 
-> **Open-source SCADA / HMI / MES platform.** Ignition-class capability, MIT-licensed, community-extensible.
+> **Open-source, web-first SCADA / HMI platform** for small and mid-size industrial systems. Starts with Rockwell EtherNet/IP and OPC UA. MIT-licensed, community-extensible.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Status: pre-alpha](https://img.shields.io/badge/Status-pre--alpha-red.svg)](./docs/roadmap.md)
@@ -9,17 +9,28 @@
 
 ## What this is
 
-OpenWebHMI is an **open-source alternative to Inductive Automation Ignition** (with Rockwell FactoryTalk Optix as a secondary reference). Self-hosted, gateway-centric, web-first runtime, cross-platform desktop designer. Built for plant-floor SCADA and HMI today, with MES capabilities planned for year two.
+OpenWebHMI is an **open-source alternative to Inductive Automation Ignition** (with Rockwell FactoryTalk Optix as a secondary reference). Self-hosted, gateway-centric, web-first runtime, cross-platform desktop designer. Built for plant-floor SCADA and HMI on **small and mid-size industrial systems**.
 
-A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Win + Mac) connect to it. Plant-floor connectivity ships with a Rockwell EtherNet/IP driver (CompactLogix, ControlLogix) backed by the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate.
+A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Win + Mac) connect to it. Plant-floor connectivity ships with a Rockwell EtherNet/IP driver (CompactLogix, ControlLogix) backed by the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate; OPC UA is the committed second driver for v1.
+
+### v1.0 target scope
+
+- **Single gateway** per deployment (no clustering / federation).
+- **≤ 10,000 live tags** under one gateway.
+- **≤ 50 concurrent runtime clients** per gateway.
+- **Two drivers shipped**: Rockwell EtherNet/IP and OPC UA.
+- **Web-only runtime** (browser); Tauri desktop runtime is post-1.0.
+- **Linux + macOS + Windows** for the gateway and designer.
+
+These bounds are *the* design constraint. If anything in this repo implies bigger numbers, it's wrong and should be fixed. Larger deployments are a year-2+ conversation, not a v1.0 promise.
 
 > **Status: pre-alpha.** The architecture, roadmap, and feature scope are committed. Code is being written. Don't deploy this anywhere that matters yet.
 
 ## Why another one
 
-Industrial automation has been locked behind closed source and per-server licenses for decades. Tools like Ignition and Optix are excellent — and tens of thousands of dollars per gateway. There is no equivalent open-source platform with comparable reach: most open-source HMIs are either toy-scale, abandoned, or single-language stacks that don't address the SCADA + HMI + MES surface.
+Industrial automation has been locked behind closed source and per-server licenses for decades. Tools like Ignition and Optix are excellent — and tens of thousands of dollars per gateway. There is no equivalent open-source platform with comparable reach: most open-source HMIs are either toy-scale, abandoned, or single-language stacks that don't address the SCADA + HMI surface.
 
-OpenWebHMI's goal is a credible open-source platform a small or mid-sized plant could actually run. AI-assisted development makes the timeline plausible in a way it wasn't five years ago.
+OpenWebHMI's goal is a credible open-source platform a small or mid-size plant could actually run. AI-assisted development makes the timeline plausible in a way it wasn't five years ago.
 
 ## Stack
 
@@ -84,7 +95,13 @@ What OpenWebHMI 1.0 aims to ship that Ignition users would recognize:
 - Project export / import as a portable archive
 - Plugin SDK for community drivers and components
 
-What we explicitly *don't* try to be: a hard-real-time control platform, a safety-rated (SIL) system, or a replacement for vendor-specific engineering tooling.
+What we explicitly *don't* try to be:
+
+- A hard-real-time control platform.
+- A safety-rated (IEC 61508 / SIL) system.
+- A replacement for vendor-specific PLC engineering tooling.
+- An MES platform — recipes, OEE, batch, and traceability are post-1.0 (year-2+) and explicitly out of scope for the headline. Planning notes only in [`docs/roadmap.md`](docs/roadmap.md) Phase 5+.
+- An enterprise-scale (>10K tag, >50 client, multi-gateway) system in v1.
 
 ## Building
 
