@@ -33,6 +33,18 @@ OpenWebHMI's goal is a credible open-source platform a small or mid-sized plant 
 
 Three languages total — Rust, TypeScript, Python. Deliberately *not* five.
 
+### Stack at a glance vs the incumbents
+
+| Layer | Ignition | Optix | **OpenWebHMI** |
+|---|---|---|---|
+| Gateway | Java (JVM) | C# / .NET | **Rust** (single static binary) |
+| Designer | Java + Swing | Visual Studio (Win-only) | **Tauri + React/TS** (Win + Mac) |
+| Web HMI | Perspective (React/TS over Java) | Optix WebPresentation | **React + TypeScript** |
+| Scripting | Jython 2.7 (frozen 2010) | C# / JS | **CPython 3.11+** in worker subprocesses |
+| Open source? | ❌ | ❌ | ✅ MIT |
+
+The CPython 3 scripting layer is the headline differentiator: `numpy`, `pandas`, `scikit-learn`, `torch`, and LLM SDKs all run *natively in scripts* — Ignition's Jython 2.7 cannot. That makes in-platform predictive maintenance, anomaly detection, and AI-assisted authoring a normal feature, not an integration project. Full reasoning: [`docs/stack-rationale.md`](docs/stack-rationale.md).
+
 ## Quick reference
 
 | Document | What it covers |
@@ -40,8 +52,11 @@ Three languages total — Rust, TypeScript, Python. Deliberately *not* five.
 | [`docs/architecture.md`](docs/architecture.md) | System topology, every component, data flows, failure modes, security boundaries |
 | [`docs/roadmap.md`](docs/roadmap.md) | Phase 0 → 1.0 plan with concrete exit criteria per phase |
 | [`docs/feature-matrix.md`](docs/feature-matrix.md) | Side-by-side feature catalog vs Ignition and Optix; v1 / post-1.0 / not-planned markers |
+| [`docs/stack-rationale.md`](docs/stack-rationale.md) | Why **Rust + Python + TypeScript** vs Ignition's Java/Jython or Optix's C# — and why the Python side unlocks AI/ML and predictive maintenance natively |
+| [`docs/scale-estimates.md`](docs/scale-estimates.md) | Expected LOC per component for v1.0 (target floor: **2M+**), with the actual count tracked over time |
 | [`docs/contributing.md`](docs/contributing.md) | How to add drivers, components, scripts; PR workflow; local dev setup |
 | [`AGENTS.md`](AGENTS.md) | Rules for AI agents (and humans) maintaining the wiki and decision record |
+| [`docs/agents/`](docs/agents/) | Cross-LLM collaboration protocol — Claude designs/reviews, Codex develops/debugs, all hand-offs durable in markdown |
 | [`wiki/`](wiki/) | Synthesized engineering knowledge — vendor quirks, validation results, decision rationale |
 
 ## Roadmap headline
