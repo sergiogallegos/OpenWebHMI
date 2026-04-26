@@ -1,9 +1,21 @@
-# OpenWebHMI
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/openwebhmi-mark-white.svg">
+    <img src="brand/openwebhmi-mark-blue.svg" alt="OpenWebHMI" width="96" />
+  </picture>
+</p>
 
-> **Open-source, web-first SCADA / HMI platform** for small and mid-size industrial systems. Starts with Rockwell EtherNet/IP and OPC UA. MIT-licensed, community-extensible.
+<h1 align="center">OpenWebHMI</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Status: pre-alpha](https://img.shields.io/badge/Status-pre--alpha-red.svg)](./docs/roadmap.md)
+<p align="center">
+  <strong>Open-source, web-first SCADA / HMI platform</strong> for small and mid-size industrial systems.<br />
+  Starts with Rockwell EtherNet/IP and OPC UA. MIT-licensed, community-extensible.
+</p>
+
+<p align="center">
+  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+  <a href="./docs/roadmap.md"><img alt="Status: pre-alpha" src="https://img.shields.io/badge/Status-pre--alpha-red.svg"></a>
+</p>
 
 ---
 
