@@ -1,0 +1,16 @@
+[package]
+name = "openwebhmi-protocol"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Wire protocol types shared between the OpenWebHMI gateway and TS clients."
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }

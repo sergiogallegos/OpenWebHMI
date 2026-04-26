@@ -163,6 +163,7 @@ When acting in this repo as an AI agent, you should:
 - **Not a code style guide.** That's in code review and language-specific tooling.
 - **Not a roadmap.** That's `docs/roadmap.md`.
 - **Not a how-to-contribute guide for code.** That's `docs/contributing.md`.
+- **Not the cross-agent collaboration protocol.** Multiple LLM agents (Claude for design + review, Codex for development) coordinate through `docs/agents/` — see [`docs/agents/README.md`](docs/agents/README.md). That protocol governs *task hand-offs and review workflow*; this file governs *the wiki's trustworthiness*. Both apply.
 
 This file governs how the wiki stays trustworthy. Everything else has its own home.
 

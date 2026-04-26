@@ -1,0 +1,16 @@
+[package]
+name = "openwebhmi-tag-engine"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "In-memory tag store with publish/subscribe for the OpenWebHMI gateway."
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+openwebhmi-protocol = { path = "../protocol" }
+tokio = { workspace = true }

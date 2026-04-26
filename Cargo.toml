@@ -1,18 +1,19 @@
 [workspace]
 resolver = "2"
-members = []
+members = [
+    "crates/gateway",
+    "crates/protocol",
+    "crates/tag-engine",
+]
 
-# Planned members (added as each crate is implemented per docs/roadmap.md):
-#   "crates/gateway"          # binary: the central server process
-#   "crates/protocol"         # wire types shared with TS clients
-#   "crates/tag-engine"       # in-memory tag store + pub/sub
-#   "crates/driver-api"       # Driver trait + types
-#   "crates/driver-rockwell"  # wraps rust-ethernet-ip crate
-#   "crates/alarm-engine"
-#   "crates/historian"
-#   "crates/scripting"        # PyO3 host
-#   "crates/project-store"
-#   "crates/auth"
+# Future members (added as each crate is implemented per docs/roadmap.md):
+#   "crates/driver-api"       # Phase 1 — Driver trait + types
+#   "crates/driver-rockwell"  # Phase 1 — wraps rust-ethernet-ip crate
+#   "crates/project-store"    # Phase 2
+#   "crates/alarm-engine"     # Phase 3
+#   "crates/historian"        # Phase 3
+#   "crates/scripting"        # Phase 3 — PyO3 host
+#   "crates/auth"             # Phase 3
 
 [workspace.package]
 edition = "2021"
@@ -31,5 +32,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-trait = "0.1"
 uuid = { version = "1", features = ["v4", "serde"] }
+futures-util = "0.3"
+tokio-tungstenite = "0.24"
+clap = { version = "4", features = ["derive"] }
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"
