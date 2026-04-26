@@ -17,8 +17,8 @@
 | CODEX-B | `crates/gateway` — WS gateway binary with sim provider | codex | `75ccb9c` | 0 |
 | CODEX-C | `apps/runtime-web` — React+Vite client | codex | `75ccb9c` | 0 |
 | CODEX-D | `.github/workflows/ci.yml` — Phase 0 CI | codex | `75ccb9c` | 0 |
-| CODEX-E | `crates/driver-api` — Driver trait + types + supervisor | codex | *(this commit)* | 1 |
-| CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | *(this commit)* | 1 |
+| CODEX-E | `crates/driver-api` — Driver trait + types + supervisor | codex | `e19a3c2` | 1 |
+| CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | `e19a3c2` | 1 |
 
 ## Conventions
 

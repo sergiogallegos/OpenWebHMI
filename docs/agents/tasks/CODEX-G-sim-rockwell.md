@@ -142,4 +142,4 @@ Acceptance criteria — all six checkboxes verified, except "the integration tes
 
 ## Verdict
 
-**Merged** at the next commit. Decision-then-implement pattern is now the template for any future "investigate then build" tasks. Strong submission.
+**Merged** at `e19a3c2`. Decision-then-implement pattern is now the template for any future "investigate then build" tasks. Strong submission.

@@ -206,4 +206,4 @@ Acceptance criteria — all four checkboxes verified.
 
 ## Verdict
 
-**Merged** at the next commit. The supervisor `recover()` over-eagerness is the only substantive note and it's tracked here for follow-up; not opening a separate task because it's a small targeted fix that the same author can pick up next time they're in this code.
+**Merged** at `e19a3c2`. The supervisor `recover()` over-eagerness is the only substantive note and it's tracked here for follow-up; not opening a separate task because it's a small targeted fix that the same author can pick up next time they're in this code.
