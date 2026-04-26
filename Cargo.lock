@@ -540,6 +540,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "openwebhmi-driver-rockwell"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures-util",
+ "openwebhmi-driver-api",
+ "openwebhmi-protocol",
+ "rust-ethernet-ip",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "openwebhmi-gateway"
 version = "0.0.1"
 dependencies = [

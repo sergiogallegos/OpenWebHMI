@@ -24,7 +24,7 @@ Planned high-value pages:
 
 ## Drivers
 
-- [drivers/rust-ethernet-ip-integration.md](drivers/rust-ethernet-ip-integration.md) — How `driver-rockwell` wraps the `rust-ethernet-ip` crate, upgrade workflow, supported devices, known limitations. `seed`
+- [drivers/rust-ethernet-ip-integration.md](drivers/rust-ethernet-ip-integration.md) — How `driver-rockwell` wraps the `rust-ethernet-ip` crate, upgrade workflow, supported devices, verified simulator behavior, known limitations. `active`
 
 Planned:
 - `drivers/opcua-integration.md` — Once Phase 4 OPC UA work begins. `seed`

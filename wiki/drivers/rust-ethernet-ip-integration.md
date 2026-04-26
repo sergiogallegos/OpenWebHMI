@@ -85,10 +85,10 @@ Each upstream claim above will be **independently verified** by OpenWebHMI maint
 
 | Claim | OpenWebHMI verification | When |
 |---|---|---|
-| API surface compiles against our `Driver` trait wrapper | ⏳ pending | Phase 1 |
+| API surface compiles against our `Driver` trait wrapper | ✅ verified by `crates/driver-rockwell` in CODEX-F; pending merge commit ref | Phase 1, 2026-04-26 |
 | Validated PLC targets reproduce against our wrapper | ⏳ pending — no hardware yet | Pre-1.0 hardware gate |
-| Subscription event semantics (`PartialError`, `ReadFailure`) match our quality mapping in §"Quality mapping" | ⏳ pending | Phase 1 (simulator) |
-| String / UDT write workaround is needed and works | ⏳ pending | Phase 1 (simulator can reproduce against an emulated firmware behavior; full validation post-1.0) |
+| Subscription event semantics (`PartialError`, `ReadFailure`) match our quality mapping in §"Quality mapping" | ✅ verified by mocked `EipClientLike` unit tests and simulator shutdown/restart integration in CODEX-F; pending merge commit ref | Phase 1, 2026-04-26 |
+| String / UDT write workaround is needed and works | ◐ partially verified: CODEX-F verifies the wrapper's STRING read-before-write path with a mocked `EipClientLike`; firmware need/effectiveness remains hardware-gated | Phase 1 wrapper test, 2026-04-26; full validation pre-1.0 |
 
 Until each row flips from ⏳ to a dated commit/PR reference, downstream pages and `docs/architecture.md` should treat the corresponding behavior as *upstream-claimed, not yet verified by us*.
 
@@ -126,7 +126,7 @@ A new upstream major version (e.g. `0.x → 1.0`) gets its own PR with a checkli
 
 - Does `rust-ethernet-ip` 0.7.x expose enough metadata for `Driver::browse`? If not, do we (a) gate browse on a future version, (b) implement our own EIP browse path, or (c) require the user to upload a tag list file?
 - How does the crate behave under sustained subscription load (e.g. 5,000 tags at 250ms)? Need a Phase 1 perf experiment.
-- Reconnect coordination: when the crate's internal reconnect succeeds, do we need to re-subscribe, or does it transparently restore tag groups? Validate against the simulator.
+- Reconnect coordination: CODEX-F validates explicit driver reconnect and re-subscribe after simulator restart. The upstream `rust-ethernet-ip` 0.7.0 subscription object itself does not transparently recover a dead TCP stream in the OpenWebHMI wrapper path; the supervisor/gateway must recreate the driver subscription after reconnect.
 
 ## Related pages
 

@@ -36,6 +36,8 @@ Use `--` for task-id when the event is project-wide (protocol bootstrap, etc).
 2026-04-26 14:55  codex   CODEX-E   Status -> submitted. Added openwebhmi-driver-api crate with trait/types/errors/metadata/supervisor/mock and tests.
 2026-04-26 14:55  codex   CODEX-G   Status -> submitted. Added simulator decision wiki page and examples/sim-rockwell harness validated by rust-ethernet-ip client test.
 2026-04-26 15:01  codex   CODEX-E   Submitted amendment. Fixed default polling subscription fallback and added MockDriver coverage before review.
+2026-04-26 15:17  codex   CODEX-F   Status -> in-progress. Implementing driver-rockwell against merged driver-api and sim-rockwell.
 2026-04-26 16:00  claude  CODEX-E   Reviewed; spec-compliant. Status -> merged. Yellow note: supervisor recovers/reconnects on any error including caller-side InvalidAddress; gate recover() on transport-class errors before Phase 3.
 2026-04-26 16:00  claude  CODEX-G   Reviewed; spec-compliant; decision-then-implement discipline exemplary. Status -> merged. Sim is bound to what rust-ethernet-ip 0.7.0 EipClient exercises; CODEX-F gaps extend the sim, not the driver workaround.
 2026-04-26 16:00  claude  CODEX-F   Now unblocked (CODEX-E + CODEX-G both merged). Codex can pick up CODEX-F next.
+2026-04-26 16:47  codex   CODEX-F   Status -> submitted. Added driver-rockwell wrapper, mocked EipClientLike unit tests, sim-tests integration coverage, and wiki verification updates.

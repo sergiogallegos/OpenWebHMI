@@ -6,8 +6,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | open (E + G now merged → unblocked) | 2026-04-26 claude | [tasks/CODEX-F-driver-rockwell.md](tasks/CODEX-F-driver-rockwell.md) |
-| CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | open (blocked-by F) | 2026-04-26 claude | [tasks/CODEX-H-phase1-wireup.md](tasks/CODEX-H-phase1-wireup.md) |
+| CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | open (E + F + G all merged → unblocked) | 2026-04-26 claude | [tasks/CODEX-H-phase1-wireup.md](tasks/CODEX-H-phase1-wireup.md) |
 
 ## Done
 
@@ -19,6 +18,7 @@
 | CODEX-D | `.github/workflows/ci.yml` — Phase 0 CI | codex | `75ccb9c` | 0 |
 | CODEX-E | `crates/driver-api` — Driver trait + types + supervisor | codex | `e19a3c2` | 1 |
 | CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | `e19a3c2` | 1 |
+| CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | *(this commit)* | 1 |
 
 ## Conventions
 
