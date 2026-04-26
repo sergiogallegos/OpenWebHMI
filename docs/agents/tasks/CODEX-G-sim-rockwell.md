@@ -3,9 +3,9 @@ id: CODEX-G
 title: examples/sim-rockwell — EtherNet/IP simulator harness
 owner: codex
 phase: 1
-status: open
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 claude
+last-update: 2026-04-26 16:00 claude
 ---
 
 # CODEX-G — `examples/sim-rockwell`
@@ -106,10 +106,40 @@ When `driver-opcua` lands in Phase 4, we'll add `examples/sim-opcua/` next to th
 
 *(codex — append working notes here. The first entry should be your investigation results and chosen approach, BEFORE any implementation work.)*
 
+### 2026-04-26 14:33  codex
+Started investigation. Read `docs/agents/README.md`, board, this brief, `AGENTS.md`, `wiki/drivers/rust-ethernet-ip-integration.md`, and upstream `rust-ethernet-ip` 0.7.0 sources from the local Cargo registry plus docs.rs. Initial finding: upstream 0.7.0 includes `src/bin/plc_sim.rs`, so the likely decision is option 1, reusing/adapting upstream's simulator rather than OpenENER or custom-from-scratch CIP.
+
+### 2026-04-26 14:55  codex
+Submitted. Decision recorded first in `wiki/investigations/sim-rockwell-strategy-2026-04-26.md`: adapt upstream `rust-ethernet-ip` 0.7.0 `plc_sim` rather than OpenENER or a clean-room responder. Added `examples/sim-rockwell` workspace crate with CLI, `Sim.toml`, tag config/behavior model, built-in `Counter`, `Setpoint`, `Pressure`, and `Heartbeat` tags, scalar read/write support, and Multiple Service Packet handling for tag-group batch reads. Updated `wiki/index.md` and `wiki/log.md` per AGENTS.md.
+
+Verification: `cargo build -p sim-rockwell`, `cargo clippy -p sim-rockwell --all-targets -- -D warnings`, and `cargo test -p sim-rockwell` pass. The simulator integration test starts the binary on a local ephemeral port and verifies a real `rust-ethernet-ip` v0.7.0 `EipClient` can connect, read `Counter`, write/read `Setpoint`, and receive `Data` from `subscribe_tag_group(["Pressure", "Heartbeat"])`.
+
 ## Claude review
 
-*(claude — after submission. Will check: investigation rigor, simulator fidelity vs CODEX-F's needs, contributor friction.)*
+### 2026-04-26 16:00  claude — review pass 1
+
+The decision-then-implement discipline is *exactly* what the brief asked for. The investigation page at `wiki/investigations/sim-rockwell-strategy-2026-04-26.md` is thorough, sourced, and skimmable; it follows the AGENTS.md page format (Summary / Current understanding / Evidence / Decision / Limitations / Open questions / Related pages).
+
+Decision rationale checks out:
+- Option 1 (upstream `plc_sim` reuse) is cheaper and higher fidelity than OpenENER (C build toolchain friction) or clean-room (CIP wire-format implementation effort).
+- Cited sources are versioned: docs.rs links pinned to `0.7.0`, plus the upstream commit hash carried over from the wiki driver-integration page.
+- Limitations section is honest about what the simulator is not (not a conforming CompactLogix emulator; tag introspection / UDT metadata / connected messaging not modeled).
+- Open questions section flags exactly the kind of uncertainty CODEX-F may surface (connected messaging, batch writes), with a clear escalation path.
+
+Implementation:
+- ✅ `examples/sim-rockwell` workspace crate present with CLI, `Sim.toml`, tag config, behavior model, scalar read/write, Multiple Service Packet handling for tag-group batch reads.
+- ✅ Built-in mandatory tags (`Counter`, `Setpoint`, `Pressure`, `Heartbeat`) match the brief's contract.
+- ✅ Integration test in `examples/sim-rockwell/tests/eip_client.rs` uses an actual `rust-ethernet-ip` v0.7.0 `EipClient` to connect, read `Counter`, write/read `Setpoint`, and receive `Data` from `subscribe_tag_group(["Pressure", "Heartbeat"])`. **This is the load-bearing proof** that the simulator satisfies the wrapper.
+- ✅ `wiki/index.md` and `wiki/log.md` updated per AGENTS.md.
+
+Findings:
+
+- 🟡 **Bound contract for CODEX-F**: the simulator's behavior surface is "what `rust-ethernet-ip` 0.7.0's `EipClient` actually exercises". If CODEX-F discovers the upstream wrapper uses a code path the simulator doesn't model (e.g. connected messaging, list services, identity object), the simulator must be extended in *that* PR rather than CODEX-F working around it. This is already noted in the wiki page's "Open questions" — but it's worth being loud about: the simulator is a fixture for our driver, not the other way around. CODEX-F's brief amendment should be added once any such gap surfaces.
+- 🟡 The simulator's tag list is loaded from `Sim.toml` at startup; reload is not implemented. For Phase 1 that's fine (tests stop and restart the simulator). If integration tests later need to mutate the tag list mid-run, add a `--reload-on-sighup` flag rather than a config-file watcher.
+- 🟢 The `examples/sim-*/` convention for vendor simulators is established cleanly here. When `driver-opcua` lands in Phase 4, `examples/sim-opcua/` mirrors this layout; nothing in the directory shape is Rockwell-specific.
+
+Acceptance criteria — all six checkboxes verified, except "the integration tests in CODEX-F pass against this simulator" which is *partially* verified because CODEX-F doesn't exist yet. The sim-rockwell own integration test using `EipClient` directly is sufficient evidence to merge G; the CODEX-F binding will be confirmed when F lands.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at the next commit. Decision-then-implement pattern is now the template for any future "investigate then build" tasks. Strong submission.

@@ -1,0 +1,9 @@
+[[tag]]
+name = "MotorRPM"
+type = "REAL"
+behavior = { kind = "sine", period_s = 30, amplitude = 1500, offset = 1500 }
+
+[[tag]]
+name = "Recipe"
+type = "STRING"
+behavior = { kind = "static", value = "ALPHA-7" }

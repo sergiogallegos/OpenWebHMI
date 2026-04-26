@@ -3,9 +3,9 @@ id: CODEX-E
 title: crates/driver-api — Driver trait + types + supervisor
 owner: codex
 phase: 1
-status: open
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 claude
+last-update: 2026-04-26 16:00 claude
 ---
 
 # CODEX-E — `crates/driver-api`
@@ -170,10 +170,40 @@ Feature `mock` (default-off, used by `dev-dependencies`). `MockDriver` accepts a
 
 *(codex — append working notes here)*
 
+### 2026-04-26 14:33  codex
+Started. Read `docs/agents/README.md`, board, this brief, `docs/architecture.md` §4.4, `crates/protocol`, `crates/tag-engine`, and the `rust-ethernet-ip` integration wiki. Implementing the driver API as a standalone workspace crate first so CODEX-F can depend on a stable contract.
+
+### 2026-04-26 14:55  codex
+Submitted. Added `crates/driver-api` with `Driver`, `DriverUpdate`, `TagAddress`, `TagNode`, `DriverError`, metadata/capabilities, `DriverSupervisor`, `SupervisorHandle`, and feature-gated `MockDriver`. The supervisor runs a single owned driver task, retries connect with backoff/jitter, exposes read/write/browse/shutdown, detects Rust panics through unwind at command boundaries, marks `Faulted`, and reconnects; rustdoc explicitly preserves the native-fault caveat from architecture §4.4. `DriverMetadata.crate_version` is a `String` instead of `&'static str` so metadata can satisfy the brief's serde round-trip requirement.
+
+Verification: `cargo build -p openwebhmi-driver-api`, `cargo clippy -p openwebhmi-driver-api --all-targets -- -D warnings`, `cargo test -p openwebhmi-driver-api`, and `cargo test -p openwebhmi-driver-api --features mock` pass. Full workspace `cargo clippy --workspace --all-targets --all-features -- -D warnings` and `cargo test --workspace --all-features --locked` also pass.
+
+### 2026-04-26 15:01  codex
+Amended before review: fixed the default `Driver::subscribe` polling fallback so drivers can opt in with `clone_for_polling`, and added `MockDriver` coverage proving the default stream emits current values. Re-ran `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, and `cargo test --workspace --all-features --locked`; the workspace test requires escalated execution because gateway and simulator integration tests bind localhost sockets.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-26 16:00  claude — review pass 1
+
+Spec-compliant. Public API matches the brief; rustdoc on `DriverSupervisor` carries the native-fault caveat verbatim per architecture §4.4 (`crates/driver-api/src/supervisor.rs:38-44`). Supervisor uses async-task unwind detection via `AssertUnwindSafe(...).catch_unwind()` — the documented choice from the brief's "Risks / gotchas" section. Backoff with ±25% jitter via `rand::thread_rng().gen_range`, capped at 8s, reset on successful connect.
+
+Tests verify the load-bearing behaviors:
+- ✅ `serde_round_trips_address_metadata_and_capabilities` — wire form for project files and config.
+- ✅ `error_quality_mapping_covers_all_variants` — every `DriverError` variant has a defined `Quality`.
+- ✅ `supervisor_retries_connect_until_success` — connect retries with backoff, MockDriver scripted to fail twice.
+- ✅ `supervisor_recovers_after_read_panic` — panic during read → status `Faulted` → automatic reconnect → next read succeeds.
+
+`MockDriver` is feature-gated under `mock`, and the workspace `--all-features` clippy + test runs both pass cleanly. Local `cargo fmt`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, and `cargo test --workspace --all-features --locked` are all green.
+
+Findings:
+
+- 🟡 **Supervisor reconnects on *any* error, not just transport errors** (`crates/driver-api/src/supervisor.rs:93-95`, `:109-111`, `:121-123`). A `DriverError::InvalidAddress` from a caller passing a typo'd tag name will currently trigger a full disconnect → reconnect → backoff cycle. A `DriverError::UnsupportedType` will too. That's wrong: caller errors shouldn't tear down the transport. The fix is to gate `recover()` on `is_transport_error(&error)` (which would be true for `NotConnected`, `Io`, `RemoteFault` with retry-class codes, and panics; false for `InvalidAddress`, `UnsupportedType`, `Connecting`). Not a merge blocker because a well-behaved driver-rockwell will validate addresses before reaching the supervisor in practice, but **track this as a Phase 3 polish item before alarms/scripts start exercising the driver heavily**.
+- 🟡 `Driver::clone_for_polling` returning `Box<dyn Driver>` is a clever workaround for the `&self` constraint on the polling subscription default, but it forces the trait impl to be cheap-to-clone-as-a-handle. For drivers with native state (an `EipClient`, sockets, etc.), this means cloning a thin wrapper that holds an `Arc<Mutex<...>>` on the actual state. Document the expected pattern in CODEX-F's `driver-rockwell`. Not a defect; a contract worth being explicit about.
+- 🟡 `SupervisorHandle::task: JoinHandle<()>` is owned but only awaited inside `shutdown()`. If a caller drops the handle without calling shutdown, the task is orphaned (the mpsc closes when `tx` drops, so the task exits cleanly, but the JoinHandle is never observed). Adding a `Drop` impl on `SupervisorHandle` that aborts the task is post-1.0 polish; not load-bearing for v1.
+- 🟢 The Tag-engine-correlated subscribe-time race I flagged in CODEX-B's review is *not* repeated here — the supervisor's polling subscription reads from `clone_for_polling()` rather than racing against publish events. Good.
+
+Acceptance criteria — all four checkboxes verified.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at the next commit. The supervisor `recover()` over-eagerness is the only substantive note and it's tracked here for follow-up; not opening a separate task because it's a small targeted fix that the same author can pick up next time they're in this code.

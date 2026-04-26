@@ -54,7 +54,7 @@ Planned:
 
 ## Investigations
 
-*(seed — open research and comparisons)*
+- [investigations/sim-rockwell-strategy-2026-04-26.md](investigations/sim-rockwell-strategy-2026-04-26.md) — Decision to adapt upstream `rust-ethernet-ip` 0.7.0 `plc_sim` for the Phase 1 Rockwell simulator harness. `active`
 
 Planned:
 - `investigations/ignition-feature-deep-dive-<area>.md` — Per-area study of how Ignition implements something. `seed`

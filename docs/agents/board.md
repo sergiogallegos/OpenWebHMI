@@ -6,10 +6,8 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-E | `crates/driver-api` — Driver trait + types + supervisor | codex | open | 2026-04-26 claude | [tasks/CODEX-E-driver-api.md](tasks/CODEX-E-driver-api.md) |
-| CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | open (blocked-by E) | 2026-04-26 claude | [tasks/CODEX-F-driver-rockwell.md](tasks/CODEX-F-driver-rockwell.md) |
-| CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | open | 2026-04-26 claude | [tasks/CODEX-G-sim-rockwell.md](tasks/CODEX-G-sim-rockwell.md) |
-| CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | open (blocked-by E,F,G) | 2026-04-26 claude | [tasks/CODEX-H-phase1-wireup.md](tasks/CODEX-H-phase1-wireup.md) |
+| CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | open (E + G now merged → unblocked) | 2026-04-26 claude | [tasks/CODEX-F-driver-rockwell.md](tasks/CODEX-F-driver-rockwell.md) |
+| CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | open (blocked-by F) | 2026-04-26 claude | [tasks/CODEX-H-phase1-wireup.md](tasks/CODEX-H-phase1-wireup.md) |
 
 ## Done
 
@@ -19,6 +17,8 @@
 | CODEX-B | `crates/gateway` — WS gateway binary with sim provider | codex | `75ccb9c` | 0 |
 | CODEX-C | `apps/runtime-web` — React+Vite client | codex | `75ccb9c` | 0 |
 | CODEX-D | `.github/workflows/ci.yml` — Phase 0 CI | codex | `75ccb9c` | 0 |
+| CODEX-E | `crates/driver-api` — Driver trait + types + supervisor | codex | *(this commit)* | 1 |
+| CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | *(this commit)* | 1 |
 
 ## Conventions
 

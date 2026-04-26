@@ -1,13 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/driver-api",
     "crates/gateway",
     "crates/protocol",
     "crates/tag-engine",
+    "examples/sim-rockwell",
 ]
 
 # Future members (added as each crate is implemented per docs/roadmap.md):
-#   "crates/driver-api"       # Phase 1 — Driver trait + types
 #   "crates/driver-rockwell"  # Phase 1 — wraps rust-ethernet-ip crate
 #   "crates/project-store"    # Phase 2
 #   "crates/alarm-engine"     # Phase 3
@@ -35,5 +36,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 futures-util = "0.3"
 tokio-tungstenite = "0.24"
 clap = { version = "4", features = ["derive"] }
+rand = "0.8"
+toml = "0.8"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"

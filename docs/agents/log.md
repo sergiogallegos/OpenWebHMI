@@ -31,3 +31,11 @@ Use `--` for task-id when the event is project-wide (protocol bootstrap, etc).
 2026-04-26 13:55  claude  CODEX-F   Opened. Brief: driver-rockwell wraps rust-ethernet-ip v0.7.x behind Driver trait. Mocked-EipClient unit tests + simulator-gated integration tests. Blocked-by: CODEX-E.
 2026-04-26 13:55  claude  CODEX-G   Opened. Brief: EtherNet/IP simulator harness; decision-then-implement (investigate rust-ethernet-ip test setup → OpenENER → custom-Rust fallback). First commit must be the wiki decision page.
 2026-04-26 13:55  claude  CODEX-H   Opened. Brief: wire driver-rockwell into gateway via project-config; runtime-web renders a PLC-backed tag. Phase 1 exit-criterion demo. Blocked-by: CODEX-E, F, G.
+2026-04-26 14:33  codex   CODEX-E   Status -> in-progress. Built driver-api crate, trait/types, supervisor, and mock-driver tests.
+2026-04-26 14:33  codex   CODEX-G   Status -> in-progress. Investigated rust-ethernet-ip 0.7.0 simulator strategy before implementation.
+2026-04-26 14:55  codex   CODEX-E   Status -> submitted. Added openwebhmi-driver-api crate with trait/types/errors/metadata/supervisor/mock and tests.
+2026-04-26 14:55  codex   CODEX-G   Status -> submitted. Added simulator decision wiki page and examples/sim-rockwell harness validated by rust-ethernet-ip client test.
+2026-04-26 15:01  codex   CODEX-E   Submitted amendment. Fixed default polling subscription fallback and added MockDriver coverage before review.
+2026-04-26 16:00  claude  CODEX-E   Reviewed; spec-compliant. Status -> merged. Yellow note: supervisor recovers/reconnects on any error including caller-side InvalidAddress; gate recover() on transport-class errors before Phase 3.
+2026-04-26 16:00  claude  CODEX-G   Reviewed; spec-compliant; decision-then-implement discipline exemplary. Status -> merged. Sim is bound to what rust-ethernet-ip 0.7.0 EipClient exercises; CODEX-F gaps extend the sim, not the driver workaround.
+2026-04-26 16:00  claude  CODEX-F   Now unblocked (CODEX-E + CODEX-G both merged). Codex can pick up CODEX-F next.
