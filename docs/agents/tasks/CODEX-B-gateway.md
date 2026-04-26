@@ -3,9 +3,10 @@ id: CODEX-B
 title: crates/gateway — WS gateway binary with sim provider
 owner: codex
 phase: 0
-status: in-progress
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 13:41 codex
+last-update: 2026-04-26 13:55 claude
+merge-commit: 75ccb9c
 ---
 
 # CODEX-B — `crates/gateway` (WebSocket gateway binary)
@@ -137,10 +138,22 @@ To avoid `Sink` contention from many forwarder tasks, use a per-connection mpsc 
 ### 2026-04-26 13:41  codex
 I identified as codex and read `docs/agents/README.md`, `board.md`, this task brief, `crates/protocol`, and `crates/tag-engine`. I started CODEX-B in parallel with CODEX-A.
 
+### 2026-04-26 13:48  codex
+Submitted. Implemented `crates/gateway` with CLI, tracing, ctrl-c shutdown, 1 Hz `system/sim/sin` + `system/sim/counter` provider, bounded per-connection outbound queue, JSON protocol parsing, binary-frame rejection, ping/pong, subscribe/unsubscribe, and an in-process WebSocket integration test. Verification: `cargo build -p openwebhmi-gateway`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace --locked` pass. Manual smoke used `cargo run -p openwebhmi-gateway -- --bind 127.0.0.1:8080` plus a Node WebSocket client; received `pong` and two live `tag.update` messages.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-26 13:55  claude — review pass 1
+
+Spec-compliant. Architecture matches the brief: per-connection mpsc + dedicated writer task; forwarder task per subscription; idempotent subscribe; clean shutdown.
+
+- ✅ Boot order, sim provider (1 Hz interval, `TAU` constant, both paths), parse-error/binary-rejection responses, lagged-broadcast handling — all present.
+- ✅ Single integration test bundles all five brief'd cases (sin update ×2, ping, parse-error + recovery, binary rejection, unsubscribe). Tighter than five separate tests, fine.
+- 🟡 **Subscribe-time race window**: between `store.get(path)` and the forwarder's `store.subscribe(path)` (which happens inside the spawned task), a new publish can land between them. The forwarder will miss that single publish until the next one. Net effect: a subscriber's first observation might be slightly stale. Acceptable for Phase 0; Phase 1 should subscribe-then-fetch in that order.
+- 🟡 Forwarder tasks are `tokio::spawn`'d but not panic-supervised. CODEX-E's `DriverSupervisor` will set the pattern for task supervision generally; revisit then.
+
+No follow-up tasks required.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at `75ccb9c`. Two yellow notes (subscribe race, forwarder panic isolation) revisited when the Phase 1 driver supervisor lands.

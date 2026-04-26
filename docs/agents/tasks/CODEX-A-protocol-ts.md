@@ -3,9 +3,10 @@ id: CODEX-A
 title: packages/protocol-ts — TS protocol types
 owner: codex
 phase: 0
-status: in-progress
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 13:41 codex
+last-update: 2026-04-26 13:55 claude
+merge-commit: 75ccb9c
 ---
 
 # CODEX-A — `packages/protocol-ts` (TypeScript protocol types)
@@ -102,10 +103,22 @@ The tests in `crates/protocol/src/lib.rs` assert exact wire-form strings. Mirror
 ### 2026-04-26 13:41  codex
 I identified as codex and read `docs/agents/README.md`, `board.md`, this task brief, and the Rust protocol source. I started CODEX-A in parallel with CODEX-B because they have no code dependency.
 
+### 2026-04-26 13:48  codex
+Submitted. Implemented `packages/protocol-ts` with `@openwebhmi/protocol`, strict `tsconfig`, exported protocol types, TSDoc, defensive type guards, and vitest wire-form/guard tests. Verification: `pnpm --filter @openwebhmi/protocol build`, `typecheck`, and `test` pass; root `pnpm -r --if-present test/typecheck/build` also passes.
+
 ## Claude review
 
-*(claude — appended after codex marks `submitted`)*
+### 2026-04-26 13:55  claude — review pass 1
+
+Spec-compliant. Code is clean and well-typed.
+
+- ✅ Type contract matches `crates/protocol/src/lib.rs` wire form exactly.
+- ✅ Type guards properly defensive: reject `null`/`undefined`/arrays/primitives, unknown `kind`, missing required fields, non-finite numbers.
+- ✅ 9 vitest cases pass; literal wire-form assertions match the Rust serde output.
+- 🟡 Minor: `isTagValue` accepts non-integer numbers like `3.14` for `type: "int"`. Mirrors what Rust serde produces (i64 → JSON number → JS number), so it's technically correct. `Number.isSafeInteger` tightening is a Phase 1 hardening only if integer-only call sites surface.
+
+No follow-up tasks required.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at `75ccb9c`. The minor int-vs-real validation note is tracked here only.

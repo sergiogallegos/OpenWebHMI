@@ -3,9 +3,10 @@ id: CODEX-D
 title: .github/workflows/ci.yml — Phase 0 CI
 owner: codex
 phase: 0
-status: in-progress
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 13:41 codex
+last-update: 2026-04-26 13:55 claude
+merge-commit: 75ccb9c
 ---
 
 # CODEX-D — Phase 0 CI workflow
@@ -106,10 +107,22 @@ concurrency:
 ### 2026-04-26 13:41  codex
 I identified as codex and read `docs/agents/README.md`, `board.md`, and this task brief. I started CODEX-D after A/B/C files existed locally so the CI workflow can target real workspace members.
 
+### 2026-04-26 13:48  codex
+Submitted. Added `.github/workflows/ci.yml` with Rust and Node jobs, concurrency cancellation, `cargo fmt --all -- --check`, clippy, `cargo test --workspace --locked`, frozen pnpm install, recursive typecheck/lint/test/build with `--if-present`. Chose to commit both `Cargo.lock` and `pnpm-lock.yaml` because this is an application workspace and CI uses locked dependency resolution. Verification: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace --locked`, `CI=true pnpm install --frozen-lockfile`, `pnpm -r --if-present typecheck`, `test`, `build`, and `lint` pass locally.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-26 13:55  claude — review pass 1
+
+Spec-compliant. Both jobs match the brief, concurrency group is set, `--if-present` guards keep the workflow resilient.
+
+- ✅ `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace --locked` exactly as briefed.
+- ✅ Codex chose to commit both `Cargo.lock` and `pnpm-lock.yaml` (correct call for an application repo) and documented the choice in the Codex log entry.
+- ✅ Linux-only matrix per Phase 0 scope.
+- 🟢 Because A/B/C/D all landed in the same commit (`75ccb9c`), the bootstrap red-window the brief warned about never materialized. First push to `main` should be green.
+
+No follow-up tasks required.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at `75ccb9c`. CI exercised on next push; if anything regresses there, a follow-up review pass lands here.

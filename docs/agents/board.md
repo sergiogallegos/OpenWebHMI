@@ -2,22 +2,27 @@
 
 > Snapshot of every cross-agent task. Update the row whenever a task's status changes. Authoring rules: see [`README.md`](README.md).
 
-## Phase 0 — Foundations
+## Phase 1 — Vertical slice (PLC tag in browser, simulator-backed)
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-A | `packages/protocol-ts` — TS protocol types | codex | in-progress | 2026-04-26 13:41 codex | [tasks/CODEX-A-protocol-ts.md](tasks/CODEX-A-protocol-ts.md) |
-| CODEX-B | `crates/gateway` — WS gateway binary with sim provider | codex | in-progress | 2026-04-26 13:41 codex | [tasks/CODEX-B-gateway.md](tasks/CODEX-B-gateway.md) |
-| CODEX-C | `apps/runtime-web` — React+Vite client | codex | in-progress | 2026-04-26 13:41 codex | [tasks/CODEX-C-runtime-web.md](tasks/CODEX-C-runtime-web.md) |
-| CODEX-D | `.github/workflows/ci.yml` — Phase 0 CI | codex | in-progress | 2026-04-26 13:41 codex | [tasks/CODEX-D-ci.md](tasks/CODEX-D-ci.md) |
+| CODEX-E | `crates/driver-api` — Driver trait + types + supervisor | codex | open | 2026-04-26 claude | [tasks/CODEX-E-driver-api.md](tasks/CODEX-E-driver-api.md) |
+| CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | open (blocked-by E) | 2026-04-26 claude | [tasks/CODEX-F-driver-rockwell.md](tasks/CODEX-F-driver-rockwell.md) |
+| CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | open | 2026-04-26 claude | [tasks/CODEX-G-sim-rockwell.md](tasks/CODEX-G-sim-rockwell.md) |
+| CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | open (blocked-by E,F,G) | 2026-04-26 claude | [tasks/CODEX-H-phase1-wireup.md](tasks/CODEX-H-phase1-wireup.md) |
 
 ## Done
 
-*(empty — first tasks just opened)*
+| Id | Title | Owner | Merge commit | Phase |
+|---|---|---|---|---|
+| CODEX-A | `packages/protocol-ts` — TS protocol types | codex | `75ccb9c` | 0 |
+| CODEX-B | `crates/gateway` — WS gateway binary with sim provider | codex | `75ccb9c` | 0 |
+| CODEX-C | `apps/runtime-web` — React+Vite client | codex | `75ccb9c` | 0 |
+| CODEX-D | `.github/workflows/ci.yml` — Phase 0 CI | codex | `75ccb9c` | 0 |
 
 ## Conventions
 
 - **Status values:** `open`, `in-progress`, `submitted`, `under-review`, `merged`, `rejected`.
-- **`merged` rows** stay in their phase section but get crossed out (`~~CODEX-A~~`) until the phase ships, then get archived to `## Done` with the merge commit ref.
+- **`merged` rows** move to the `## Done` section with their merge commit reference.
 - **Owner ≠ author of brief.** Owner is who is currently *doing* the work. Briefs are always authored by claude.
 - **One row per task file.** If a task spawns subtasks, give them their own ids.

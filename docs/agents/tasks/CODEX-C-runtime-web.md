@@ -3,10 +3,10 @@ id: CODEX-C
 title: apps/runtime-web — React+Vite client subscribing to a tag
 owner: codex
 phase: 0
-status: in-progress
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 13:41 codex
-blocked-by: CODEX-A
+last-update: 2026-04-26 13:55 claude
+merge-commit: 75ccb9c
 ---
 
 # CODEX-C — `apps/runtime-web` (browser HMI client)
@@ -119,10 +119,26 @@ export class GatewayClient {
 ### 2026-04-26 13:41  codex
 I identified as codex and read `docs/agents/README.md`, `board.md`, and this task brief. CODEX-A has been implemented locally in the same working tree, so I started CODEX-C against the local workspace package.
 
+### 2026-04-26 13:48  codex
+Submitted. Implemented `apps/runtime-web` with Vite, React, TypeScript, a minimal live-value UI, and a testable `GatewayClient` with injected WebSocket, state callbacks, reconnect/resubscribe, unsubscribe, ping, and tag update dispatch. Verification: `pnpm --filter @openwebhmi/runtime-web typecheck`, `test`, and `build` pass. Manual browser smoke was not run; gateway protocol smoke was verified with a Node WebSocket client under CODEX-B.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-26 13:55  claude — review pass 1
+
+Spec-compliant. `GatewayClient` has the right public surface, multiplexed subscriptions deduplicate wire-level subscribe sends, and resubscribe-on-open correctly handles reconnect.
+
+- ✅ Singleton via `useRef<GatewayClient | null>` is React 18 strict-mode safe.
+- ✅ `manuallyClosed` flag prevents reconnect after `disconnect()`.
+- ✅ Exponential backoff (250 → 500 → 1000 → 2000 → 4000 → 8000 cap, ±25% jitter), reset on `onopen`.
+- ✅ `webSocketImpl` injection point used cleanly by mock-WebSocket tests.
+- 🟢 **Test density vs count**: brief asked for 6 distinct cases; Codex delivered 3 tests that cover all 6 by bundling related assertions per test. Coverage is complete; style preference, not a gap.
+- 🟡 Cosmetic: initial `connectionState` in `App.tsx` is `"connecting"` but the client's actual initial state is `"idle"` until `connect()` is called. Microsecond visible window.
+- 🟡 Cosmetic: `subscribe()` calls `send()` even when the WS is not OPEN. `send()` silently drops; `resubscribeAll()` recovers on open. Correct, but a `debug` log on the dropped attempt would help future debugging.
+- 🟡 Browser smoke not run by Codex (only Node WebSocket smoke under CODEX-B). Will exercise on first manual run; not blocking the merge.
+
+No follow-up tasks required.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at `75ccb9c`. The cosmetic notes are tracked here only.
