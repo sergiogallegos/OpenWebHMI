@@ -1,106 +1,97 @@
-# OpenWebHMI - OpenSource HMI Project @2024
+# OpenWebHMI
 
-Table of Contents
-=======================
+> **Open-source SCADA / HMI / MES platform.** Ignition-class capability, MIT-licensed, community-extensible.
 
-* [Description](#description)
-* [Features](#features)
-* [Software Tools](#software-tools)
-* [Project Structure](#project-structure)
-* [Machine Builders & System Integrators](#machine-builders-and-system-integrators)
-* [Contribute code](#contribute-code)
-* [Maintainers](#maintainers)
-* [Licensing](#licensing)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Status: pre-alpha](https://img.shields.io/badge/Status-pre--alpha-red.svg)](./docs/roadmap.md)
 
-Description
-------
+---
 
-The objective is create an opensource HMI (Human Machine Interface)
-  - Web Development for User Interface.
-  - OpenSource Tools, Libraries and Frameworks.
-  - Connect with Databases.
-  - Connect with PLC's (include libraries like TCP/IP)
-    - AllenBradley, Siemens, Beckhoff, etc
-  - Run in any OS (Windows, Linux, MacOS)
+## What this is
 
-Features
-------
+OpenWebHMI is an **open-source alternative to Inductive Automation Ignition** (with Rockwell FactoryTalk Optix as a secondary reference). Self-hosted, gateway-centric, web-first runtime, cross-platform desktop designer. Built for plant-floor SCADA and HMI today, with MES capabilities planned for year two.
 
-Real Time Graphic Interface, Menus, Buttons, Messages, Alarms, Graphics, Reports, OEE, Visual KPIs, Part Traceability, Recipes, Predictive Maintenance and More.
+A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Win + Mac) connect to it. Plant-floor connectivity ships with a Rockwell EtherNet/IP driver (CompactLogix, ControlLogix) backed by the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate.
 
-Software Tools
-------
+> **Status: pre-alpha.** The architecture, roadmap, and feature scope are committed. Code is being written. Don't deploy this anywhere that matters yet.
 
-- Front End : TypeScript.
-- Back End: Go.
-- Networking: TCP/IP
-- Database: SQLite.
-- Framework: Gin, React, htmx.
-- ORM Library: GORM.
+## Why another one
 
-Project Structure
-------
+Industrial automation has been locked behind closed source and per-server licenses for decades. Tools like Ignition and Optix are excellent — and tens of thousands of dollars per gateway. There is no equivalent open-source platform with comparable reach: most open-source HMIs are either toy-scale, abandoned, or single-language stacks that don't address the SCADA + HMI + MES surface.
 
-- `backend/`: Contains the Go backend code.
-  - `main.go`: Entry point for the backend server.
-  - `api/`: API routes and handlers.
-  - `models/`: Data models and GORM schemas.
-  - `services/`: Business logic and services.
-  - `config/`: Configuration files.
-  - `tcp/`: TPC/IP for communication.
-  - `tests/`: Directory for unit tests.
-  - `docs/`: Directory for backend documentation.
-  - ...
+OpenWebHMI's goal is a credible open-source platform a small or mid-sized plant could actually run. AI-assisted development makes the timeline plausible in a way it wasn't five years ago.
 
-- `frontend/`: Contains the JavaScript frontend code.
-  - `public/`: Static assets (HTML, CSS, images).
-  - `src/`: Main source code directory.
-    - `components/`: Reusable UI components.
-    - `pages/`: Page components and routing.
-    - `api/`: Frontend API calls (htmx).
-    - `utils/`: Utility functions.
-    - `App.js`: Main App component.
-    - `index.js`: Entry point for the frontend.
-  - `docs/`: Directory for frontend documentation.
-  - `package.json`: Frontend dependencies and scripts.
-  - ...
+## Stack
 
-- `database/`: Database-related files (migrations, seeds, etc.).
-  - `migrations/`: Database migration scripts.
-  - ...
+- **Gateway**: Rust + Tokio (single binary, embedded SQLite)
+- **Drivers**: Rust, in-process plugin model (first driver wraps `rust-ethernet-ip`)
+- **Designer / IDE**: Tauri (Rust shell) + React + TypeScript (Win + Mac)
+- **HMI runtime**: React + TypeScript in the browser
+- **Scripting**: Python 3.11+ via PyO3, run in worker subprocesses for crash isolation
+- **Wire protocol**: JSON over WebSocket (single duplex stream per client)
+- **Persistence**: SQLite for v1 (project store, historian, auth); pluggable backends post-1.0
 
-- `scripts/`: Deployment and automation scripts.
-  - `deploy.sh`: Deployment script.
-  - ...
+Three languages total — Rust, TypeScript, Python. Deliberately *not* five.
 
-- `README.md`: Project documentation.
-- `.gitignore`: Git ignore rules.
+## Quick reference
 
+| Document | What it covers |
+|---|---|
+| [`docs/architecture.md`](docs/architecture.md) | System topology, every component, data flows, failure modes, security boundaries |
+| [`docs/roadmap.md`](docs/roadmap.md) | Phase 0 → 1.0 plan with concrete exit criteria per phase |
+| [`docs/feature-matrix.md`](docs/feature-matrix.md) | Side-by-side feature catalog vs Ignition and Optix; v1 / post-1.0 / not-planned markers |
+| [`docs/contributing.md`](docs/contributing.md) | How to add drivers, components, scripts; PR workflow; local dev setup |
+| [`AGENTS.md`](AGENTS.md) | Rules for AI agents (and humans) maintaining the wiki and decision record |
+| [`wiki/`](wiki/) | Synthesized engineering knowledge — vendor quirks, validation results, decision rationale |
 
-Machine Builders and System Integrators
-------
+## Roadmap headline
 
-For all the machine builders and system integrators that are looking for a modular, flexible and OpenSource HMI with Web Technology and Updated Software Tools that can run at any OS(Linux, Windows or MacOS), This is the correct place.
+- **Phase 0** — Foundations: gateway boots, simulated tags flow to a browser. *(~1 month)*
+- **Phase 1** — Vertical slice: Rockwell driver wired end-to-end, validated against an EtherNet/IP simulator (no physical PLC available yet). *(~2 months)*
+- **Phase 2** — Designer MVP: visual drag/drop authoring, 10 standard components, hot reload. *(~3 months)*
+- **Phase 3** — Core SCADA: alarms, historian + trends, auth + roles, Python scripting. *(~3 months)*
+- **Phase 4** — 1.0: second driver, plugin SDK, 25+ components, real-hardware validation gate, public release. *(~3 months)*
+- **Phase 5+** — MES (recipes, OEE, traceability), redundancy, mobile, more drivers.
 
-Let's create the Next Generation of HMI for Industry 4.0 OpenSource Project.
+Full detail: [`docs/roadmap.md`](docs/roadmap.md).
 
-Contribute code
-------
+## Targeted parity (highlights)
 
-If you would like to become an active contributor to this project please send your commits and ideas.
+What OpenWebHMI 1.0 aims to ship that Ignition users would recognize:
 
-Maintainers
-------
+- Tag providers, OPC tags, memory tags, expression tags, UDTs
+- Drag/drop visual designer (Tauri, Win + Mac)
+- Web HMI runtime with live tag binding, themes, navigation
+- Alarm engine with state machine, journal, ack workflow
+- Tag historian with trend rendering and aggregations
+- Python scripting with `system.tag`, `system.alarm`, `system.db`, `system.http` libraries
+- Role-based auth, per-view ACLs, TLS
+- Project export / import as a portable archive
+- Plugin SDK for community drivers and components
 
-Sergio Gallegos - Repo Owner  - sergiogallegos.net
+What we explicitly *don't* try to be: a hard-real-time control platform, a safety-rated (SIL) system, or a replacement for vendor-specific engineering tooling.
 
-Sponsors
-------
+## Building
 
-We don't have sponsors at this time. If you are a company that want
-to sponsor this project, you are more than welcome.
+> **Pre-Phase-0:** the Cargo workspace is currently empty (`members = []` in `Cargo.toml`), so `cargo build --workspace` and `cargo test --workspace` exit with "virtual workspace has no members" — that's expected. The full setup below becomes runnable once the first Phase 0 crate lands. `cargo metadata` and `pnpm install` work today.
 
-Licensing
-------
+```bash
+git clone https://github.com/sergiogallegos/OpenWebHMI.git
+cd OpenWebHMI
+pnpm install
+cargo build --workspace   # runnable from Phase 0 onwards
+```
 
-OpenWebHMI is released under the [MIT licensed](./LICENSE).
+See [`docs/contributing.md`](docs/contributing.md) for the full local-dev runbook.
+
+## Contributing
+
+Contributions are welcome and expected — the project is structured around community-built drivers, components, and script libraries. Read [`docs/contributing.md`](docs/contributing.md) before opening a PR. For non-trivial changes, file an issue first so the design conversation happens before the code.
+
+## Maintainers
+
+Sergio Gallegos — repo owner — [sergiogallegos.net](https://sergiogallegos.net)
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).

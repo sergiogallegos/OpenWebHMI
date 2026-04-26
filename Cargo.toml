@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+members = []
+
+# Planned members (added as each crate is implemented per docs/roadmap.md):
+#   "crates/gateway"          # binary: the central server process
+#   "crates/protocol"         # wire types shared with TS clients
+#   "crates/tag-engine"       # in-memory tag store + pub/sub
+#   "crates/driver-api"       # Driver trait + types
+#   "crates/driver-rockwell"  # wraps rust-ethernet-ip crate
+#   "crates/alarm-engine"
+#   "crates/historian"
+#   "crates/scripting"        # PyO3 host
+#   "crates/project-store"
+#   "crates/auth"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.80"
+license = "MIT"
+repository = "https://github.com/sergiogallegos/OpenWebHMI"
+authors = ["Sergio Gallegos <sergiogallegos.net>"]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+uuid = { version = "1", features = ["v4", "serde"] }
+# Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
+rust-ethernet-ip = "0.7"

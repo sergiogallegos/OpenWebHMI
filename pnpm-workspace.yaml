@@ -1,0 +1,8 @@
+# Members are added as each package is implemented per docs/roadmap.md.
+# Planned packages:
+#   - apps/designer            # Tauri desktop IDE (React UI)
+#   - apps/runtime-web         # Browser HMI runtime
+#   - packages/component-library  # React component set used by designer + runtime
+#   - packages/protocol-ts     # TS types generated from crates/protocol
+#   - packages/sdk             # Plugin author SDK
+packages: []

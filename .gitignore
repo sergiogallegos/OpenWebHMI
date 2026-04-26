@@ -1,49 +1,50 @@
-# Go
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-/bin/
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock.bak
 
-# Node.js and JavaScript
+# Node / pnpm
 node_modules/
-npm-debug.log
-yarn-error.log
-/dist/
-/build/
-/out/
-/.next/
+.pnpm-store/
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
 
-# IDE and editor files
+# Tauri
+apps/designer/src-tauri/target/
+apps/designer/src-tauri/gen/
+
+# Python (scripting host work)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# IDE / editors
 .vscode/
 .idea/
 *.sublime-*
 *.swp
+.zed/
+.obsidian/
 
-# System files
+# OS
 .DS_Store
 Thumbs.db
 
-# Environment files
+# Env / secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
-# Compiled CSS
-*.css.map
-
-# Log files
-*.log
-
-# SQLite database file
+# Local data
 *.db
-
-# GORM-generated files
-/migrations/
-/gorm.db
-
-# htmx-related files (if any)
-/htmx_cache/
+*.db-journal
+*.sqlite
+*.sqlite-journal
+data/
+logs/
+*.log
