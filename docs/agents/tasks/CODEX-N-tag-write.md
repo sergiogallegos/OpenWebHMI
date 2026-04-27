@@ -137,4 +137,4 @@ Acceptance criteria all met.
 
 ## Verdict
 
-**Merged** at the next commit. The brief-error from CODEX-L is now closed end-to-end. Designer's NumericInput preview will work as soon as CODEX-M lands.
+**Merged** at `f40b780`. The brief-error from CODEX-L is now closed end-to-end. Designer's NumericInput preview will work as soon as CODEX-M lands.

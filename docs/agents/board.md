@@ -34,7 +34,7 @@ CODEX-M is the only open Phase 2 task. With `tag.write` now wired end-to-end (CO
 | CODEX-J | View schema + protocol additions for view-tree authoring | codex | `24c1ac7` | 2 |
 | CODEX-K | `packages/component-library` — 6 essential components | codex | `24c1ac7` | 2 |
 | CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | `921e3d9` | 2 |
-| CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | *(this commit)* | 2 |
+| CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | `f40b780` | 2 |
 
 ## Conventions
 
