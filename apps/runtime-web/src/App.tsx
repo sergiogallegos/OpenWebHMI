@@ -10,8 +10,11 @@ import {
 import { useTagBindings } from "./useTagBindings";
 import { useViewSubscription } from "./useViewSubscription";
 
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID ?? "phase1-demo";
-const INITIAL_VIEW = import.meta.env.VITE_INITIAL_VIEW ?? "home";
+const params = new URLSearchParams(window.location.search);
+const PROJECT_ID =
+  params.get("project") ?? import.meta.env.VITE_PROJECT_ID ?? "phase1-demo";
+const INITIAL_VIEW =
+  params.get("view") ?? import.meta.env.VITE_INITIAL_VIEW ?? "home";
 
 export function App() {
   const clientRef = useRef<GatewayClient | null>(null);

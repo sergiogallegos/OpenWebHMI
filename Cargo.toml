@@ -7,6 +7,7 @@ members = [
     "crates/project-store",
     "crates/protocol",
     "crates/tag-engine",
+    "apps/designer/src-tauri",
     "examples/sim-rockwell",
 ]
 

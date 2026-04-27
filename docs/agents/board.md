@@ -4,13 +4,9 @@
 
 ## Phase 2 — Designer MVP
 
-> Phase 2 is the highest-risk phase per the external-review pass: a drag/drop visual editor is genuinely a small IDE. Phase 2 is split into **Required** (form-based view editor, 6 essentials, no canvas) and **Stretch** (visual canvas + drag/drop). The five tasks below cover the Required slice.
+**🎉 Phase 2 code-complete.** All Required-slice tasks (I/J/K/L/M + the CODEX-N follow-up) merged. Awaiting **manual-smoke validation** of the 10-step checklist in [`apps/designer/README.md`](../../apps/designer/README.md) before tagging `v0.2.0`. The Stretch slice (visual canvas, drag/drop, snap-to-grid, undo/redo, theme editor UI, four more components) is deferred to Phase 4 per the de-risked plan.
 
-| Id | Title | Owner | Status | Last update | File |
-|---|---|---|---|---|---|
-| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | open (no remaining blockers — Phase 2 exit demo) | 2026-04-27 claude | [tasks/CODEX-M-designer-shell.md](tasks/CODEX-M-designer-shell.md) |
-
-CODEX-M is the only open Phase 2 task. With `tag.write` now wired end-to-end (CODEX-N), the designer's NumericInput preview will exercise the full operator-write loop on first run.
+*(no open Phase 2 tasks)*
 
 ## Phase 1 — Vertical slice (PLC tag in browser, simulator-backed)
 
@@ -35,6 +31,7 @@ CODEX-M is the only open Phase 2 task. With `tag.write` now wired end-to-end (CO
 | CODEX-K | `packages/component-library` — 6 essential components | codex | `24c1ac7` | 2 |
 | CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | `921e3d9` | 2 |
 | CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | `f40b780` | 2 |
+| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | *(this commit)* | 2 |
 
 ## Conventions
 

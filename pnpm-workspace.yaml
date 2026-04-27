@@ -4,7 +4,7 @@ packages:
   - "packages/component-library"
   - "apps/runtime-web"
   - "apps/website"
+  - "apps/designer"
 
 # Planned packages:
-#   - apps/designer            # Tauri desktop IDE (React UI)
 #   - packages/sdk             # Plugin author SDK
