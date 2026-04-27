@@ -36,9 +36,9 @@ CODEX-M  (designer)             blocked-by L (Phase 2 exit demo)
 | CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | `e19a3c2` | 1 |
 | CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | `bc2d568` | 1 |
 | CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | `ca481d4` | 1 |
-| CODEX-I | `crates/project-store` — gateway-side project storage with versioning | codex | *(this commit)* | 2 |
-| CODEX-J | View schema + protocol additions for view-tree authoring | codex | *(this commit)* | 2 |
-| CODEX-K | `packages/component-library` — 6 essential components | codex | *(this commit)* | 2 |
+| CODEX-I | `crates/project-store` — gateway-side project storage with versioning | codex | `24c1ac7` | 2 |
+| CODEX-J | View schema + protocol additions for view-tree authoring | codex | `24c1ac7` | 2 |
+| CODEX-K | `packages/component-library` — 6 essential components | codex | `24c1ac7` | 2 |
 
 ## Conventions
 

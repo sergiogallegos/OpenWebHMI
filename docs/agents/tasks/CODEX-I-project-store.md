@@ -219,4 +219,4 @@ Acceptance criteria all met. Phase 1 demo project still loads through the new st
 
 ## Verdict
 
-**Merged** at the next commit. The `subscribe_changes` per-project filtering is the only real design note — track for follow-up alongside the broader gateway-side wiring in CODEX-L/M.
+**Merged** at `24c1ac7`. The `subscribe_changes` per-project filtering is the only real design note — track for follow-up alongside the broader gateway-side wiring in CODEX-L/M.

@@ -173,4 +173,4 @@ Acceptance criteria all met. No canvas, no drag/drop — held the Phase 2 Requir
 
 ## Verdict
 
-**Merged** at the next commit. Cosmetic notes tracked here. Strong submission — the components + tests are designer-ready and runtime-ready, which is exactly the gate before CODEX-L can start.
+**Merged** at `24c1ac7`. Cosmetic notes tracked here. Strong submission — the components + tests are designer-ready and runtime-ready, which is exactly the gate before CODEX-L can start.

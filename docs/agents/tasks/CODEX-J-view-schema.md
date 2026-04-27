@@ -158,4 +158,4 @@ Acceptance criteria met. No view-rendering code introduced (correctly stayed in 
 
 ## Verdict
 
-**Merged** at the next commit. The protocol → project-store dep direction is the only architectural note; not blocking, tracked here for cleanup when CODEX-L/M land.
+**Merged** at `24c1ac7`. The protocol → project-store dep direction is the only architectural note; not blocking, tracked here for cleanup when CODEX-L/M land.
