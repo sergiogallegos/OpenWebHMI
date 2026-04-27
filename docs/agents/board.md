@@ -41,7 +41,7 @@ CODEX-N is a small focused task that closes a brief-error from CODEX-L (Phase 0 
 | CODEX-I | `crates/project-store` — gateway-side project storage with versioning | codex | `24c1ac7` | 2 |
 | CODEX-J | View schema + protocol additions for view-tree authoring | codex | `24c1ac7` | 2 |
 | CODEX-K | `packages/component-library` — 6 essential components | codex | `24c1ac7` | 2 |
-| CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | *(this commit)* | 2 |
+| CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | `921e3d9` | 2 |
 
 ## Conventions
 
