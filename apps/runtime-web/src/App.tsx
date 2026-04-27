@@ -26,6 +26,8 @@ export function App() {
     useState<ConnectionState>("connecting");
   const [sin, setSin] = useState<LiveTag>(EMPTY_TAG);
   const [counter, setCounter] = useState<LiveTag>(EMPTY_TAG);
+  const [pressure, setPressure] = useState<LiveTag>(EMPTY_TAG);
+  const [driverStatus, setDriverStatus] = useState<LiveTag>(EMPTY_TAG);
 
   useEffect(() => {
     const offState = client.onStateChange(setConnectionState);
@@ -38,10 +40,19 @@ export function App() {
       "system/sim/counter",
       (update) => setCounter(toLiveTag(update)),
     );
+    const unsubscribePressure = client.subscribe("rockwell-1/Pressure", (update) =>
+      setPressure(toLiveTag(update)),
+    );
+    const unsubscribeDriverStatus = client.subscribe(
+      "system/drivers/rockwell-1/status",
+      (update) => setDriverStatus(toLiveTag(update)),
+    );
 
     return () => {
       unsubscribeSin();
       unsubscribeCounter();
+      unsubscribePressure();
+      unsubscribeDriverStatus();
       offState();
       client.disconnect();
     };
@@ -54,6 +65,8 @@ export function App() {
         <div style={styles.status}>Gateway: {connectionState}</div>
         <TagRow label="system/sim/sin" tag={sin} />
         <TagRow label="system/sim/counter" tag={counter} />
+        <TagRow label="rockwell-1/Pressure" tag={pressure} />
+        <TagRow label="system/drivers/rockwell-1/status" tag={driverStatus} />
       </section>
     </main>
   );

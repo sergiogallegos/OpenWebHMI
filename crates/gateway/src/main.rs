@@ -1,8 +1,9 @@
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 use anyhow::Context;
 use clap::Parser;
-use openwebhmi_gateway::{server, sim_provider};
+use openwebhmi_gateway::{project, server, sim_provider};
 use openwebhmi_tag_engine::TagStore;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -16,6 +17,9 @@ struct Args {
     /// Log level used when RUST_LOG is not set.
     #[arg(long, default_value = "info")]
     log_level: String,
+    /// Optional Phase 1 project file.
+    #[arg(long)]
+    project: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -25,6 +29,10 @@ async fn main() -> anyhow::Result<()> {
 
     let store = TagStore::new();
     tokio::spawn(sim_provider::run(store.clone()));
+    if let Some(path) = args.project {
+        let project = project::load(&path)?;
+        project::spawn_project(project, store.clone())?;
+    }
 
     // TODO Phase 3 auth/TLS: this Phase 0 endpoint is intentionally unauthenticated WS.
     tokio::select! {

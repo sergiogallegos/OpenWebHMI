@@ -1,0 +1,22 @@
+schema_version = 1
+name = "phase1-demo"
+
+[[drivers]]
+id = "rockwell-1"
+type = "rockwell"
+
+[drivers.config]
+host = "127.0.0.1"
+slot = 0
+poll_rate_ms = 250
+connection_timeout_ms = 5000
+
+[[tags]]
+path = "rockwell-1/Pressure"
+driver = "rockwell-1"
+address = "Pressure"
+
+[[tags]]
+path = "rockwell-1/Counter"
+driver = "rockwell-1"
+address = "Counter"

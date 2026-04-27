@@ -85,9 +85,9 @@ Each upstream claim above will be **independently verified** by OpenWebHMI maint
 
 | Claim | OpenWebHMI verification | When |
 |---|---|---|
-| API surface compiles against our `Driver` trait wrapper | ✅ verified by `crates/driver-rockwell` in CODEX-F; pending merge commit ref | Phase 1, 2026-04-26 |
+| API surface compiles against our `Driver` trait wrapper | ✅ verified by `crates/driver-rockwell` in CODEX-F, merged at `bc2d568` | Phase 1, 2026-04-26 |
 | Validated PLC targets reproduce against our wrapper | ⏳ pending — no hardware yet | Pre-1.0 hardware gate |
-| Subscription event semantics (`PartialError`, `ReadFailure`) match our quality mapping in §"Quality mapping" | ✅ verified by mocked `EipClientLike` unit tests and simulator shutdown/restart integration in CODEX-F; pending merge commit ref | Phase 1, 2026-04-26 |
+| Subscription event semantics (`PartialError`, `ReadFailure`) match our quality mapping in §"Quality mapping" | ✅ verified by mocked `EipClientLike` unit tests and simulator shutdown/restart integration in CODEX-F, merged at `bc2d568`; gateway resubscribe/recovery path verified by CODEX-H e2e, pending merge commit ref | Phase 1, 2026-04-26 |
 | String / UDT write workaround is needed and works | ◐ partially verified: CODEX-F verifies the wrapper's STRING read-before-write path with a mocked `EipClientLike`; firmware need/effectiveness remains hardware-gated | Phase 1 wrapper test, 2026-04-26; full validation pre-1.0 |
 
 Until each row flips from ⏳ to a dated commit/PR reference, downstream pages and `docs/architecture.md` should treat the corresponding behavior as *upstream-claimed, not yet verified by us*.

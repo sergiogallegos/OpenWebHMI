@@ -4,9 +4,13 @@
 
 ## Phase 1 — Vertical slice (PLC tag in browser, simulator-backed)
 
-| Id | Title | Owner | Status | Last update | File |
-|---|---|---|---|---|---|
-| CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | open (E + F + G all merged → unblocked) | 2026-04-26 claude | [tasks/CODEX-H-phase1-wireup.md](tasks/CODEX-H-phase1-wireup.md) |
+**🎉 Phase 1 complete.** Exit criterion met: a PLC tag from the Rockwell driver, sourced from `examples/sim-rockwell`, updates live in the browser through the gateway, with quality propagation on simulator restart. Hardware validation remains gated to pre-1.0 (per `docs/roadmap.md`).
+
+*(no open Phase 1 tasks)*
+
+## Phase 2 — Designer MVP
+
+*(open this section's tasks once Phase 1 demo capture is recorded for the README)*
 
 ## Done
 
@@ -19,6 +23,7 @@
 | CODEX-E | `crates/driver-api` — Driver trait + types + supervisor | codex | `e19a3c2` | 1 |
 | CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | `e19a3c2` | 1 |
 | CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | `bc2d568` | 1 |
+| CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | *(this commit)* | 1 |
 
 ## Conventions
 
