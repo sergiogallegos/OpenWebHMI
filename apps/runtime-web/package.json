@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@openwebhmi/component-library": "workspace:*",
     "@openwebhmi/protocol": "workspace:*",
     "@vitejs/plugin-react": "^4.2.0",
     "react": "^18.2.0",
@@ -17,6 +18,7 @@
     "vite": "^5.2.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^15.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "jsdom": "^24.1.0",

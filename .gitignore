@@ -48,6 +48,7 @@ Thumbs.db
 *.db-journal
 *.sqlite
 *.sqlite-journal
+examples/projects/_index.sqlite
 data/
 logs/
 *.log

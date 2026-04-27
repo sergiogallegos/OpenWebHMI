@@ -1,18 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import type { Quality, TagValue } from "@openwebhmi/protocol";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  collectTagPaths,
+  ViewRenderer,
+} from "./ViewRenderer";
 import {
   GatewayClient,
   type ConnectionState,
-  type TagUpdate,
 } from "./gatewayClient";
+import { useTagBindings } from "./useTagBindings";
+import { useViewSubscription } from "./useViewSubscription";
 
-type LiveTag = {
-  value: TagValue | null;
-  quality: Quality | null;
-  ts: number | null;
-};
-
-const EMPTY_TAG: LiveTag = { value: null, quality: null, ts: null };
+const PROJECT_ID = import.meta.env.VITE_PROJECT_ID ?? "phase1-demo";
+const INITIAL_VIEW = import.meta.env.VITE_INITIAL_VIEW ?? "home";
 
 export function App() {
   const clientRef = useRef<GatewayClient | null>(null);
@@ -24,140 +23,152 @@ export function App() {
   const client = clientRef.current;
   const [connectionState, setConnectionState] =
     useState<ConnectionState>("connecting");
-  const [sin, setSin] = useState<LiveTag>(EMPTY_TAG);
-  const [counter, setCounter] = useState<LiveTag>(EMPTY_TAG);
-  const [pressure, setPressure] = useState<LiveTag>(EMPTY_TAG);
-  const [driverStatus, setDriverStatus] = useState<LiveTag>(EMPTY_TAG);
 
   useEffect(() => {
     const offState = client.onStateChange(setConnectionState);
     client.connect();
-
-    const unsubscribeSin = client.subscribe("system/sim/sin", (update) =>
-      setSin(toLiveTag(update)),
-    );
-    const unsubscribeCounter = client.subscribe(
-      "system/sim/counter",
-      (update) => setCounter(toLiveTag(update)),
-    );
-    const unsubscribePressure = client.subscribe("rockwell-1/Pressure", (update) =>
-      setPressure(toLiveTag(update)),
-    );
-    const unsubscribeDriverStatus = client.subscribe(
-      "system/drivers/rockwell-1/status",
-      (update) => setDriverStatus(toLiveTag(update)),
-    );
-
     return () => {
-      unsubscribeSin();
-      unsubscribeCounter();
-      unsubscribePressure();
-      unsubscribeDriverStatus();
       offState();
       client.disconnect();
     };
   }, [client]);
 
+  const { view, version, error } = useViewSubscription(
+    client,
+    PROJECT_ID,
+    INITIAL_VIEW,
+  );
+  const tagPaths = useMemo(() => (view ? collectTagPaths(view) : []), [view]);
+  const { boundValues, writeTag } = useTagBindings(client, tagPaths);
+
   return (
     <main style={styles.page}>
-      <section style={styles.panel}>
-        <h1 style={styles.heading}>OpenWebHMI Runtime</h1>
-        <div style={styles.status}>Gateway: {connectionState}</div>
-        <TagRow label="system/sim/sin" tag={sin} />
-        <TagRow label="system/sim/counter" tag={counter} />
-        <TagRow label="rockwell-1/Pressure" tag={pressure} />
-        <TagRow label="system/drivers/rockwell-1/status" tag={driverStatus} />
-      </section>
+      <header style={styles.header}>
+        <div>
+          <h1 style={styles.title}>{view?.title ?? INITIAL_VIEW}</h1>
+          <div style={styles.meta}>
+            {PROJECT_ID}
+            {version === null ? "" : ` · v${version}`}
+          </div>
+        </div>
+        <ConnectionBadge state={connectionState} />
+      </header>
+
+      {connectionState === "reconnecting" || connectionState === "closed" ? (
+        <div role="status" style={styles.banner}>
+          Gateway disconnected. Showing the last loaded view.
+        </div>
+      ) : null}
+
+      {error ? (
+        <section role="alert" style={styles.error}>
+          {error}
+        </section>
+      ) : view ? (
+        <ViewRenderer
+          view={view}
+          boundValues={boundValues}
+          onWriteTag={writeTag}
+        />
+      ) : (
+        <section role="status" style={styles.loading}>
+          {connectionState === "connecting" ? "Connecting..." : "Loading view..."}
+        </section>
+      )}
     </main>
   );
 }
 
-function TagRow({ label, tag }: { label: string; tag: LiveTag }) {
+function ConnectionBadge({ state }: { state: ConnectionState }) {
+  const connected = state === "connected";
   return (
-    <div style={styles.row}>
-      <div>
-        <div style={styles.path}>{label}</div>
-        <div style={styles.meta}>
-          {tag.quality ?? "unknown"} ·{" "}
-          {tag.ts === null ? "no updates yet" : new Date(tag.ts).toLocaleTimeString()}
-        </div>
-      </div>
-      <div style={styles.value}>{formatTagValue(tag.value)}</div>
+    <div
+      aria-label="Gateway connection state"
+      style={{
+        ...styles.badge,
+        background: connected ? "#ecfdf3" : "#fff7ed",
+        borderColor: connected ? "#86efac" : "#fdba74",
+        color: connected ? "#166534" : "#9a3412",
+      }}
+    >
+      {stateLabel(state)}
     </div>
   );
 }
 
-function toLiveTag(update: TagUpdate): LiveTag {
-  return {
-    value: update.value,
-    quality: update.quality,
-    ts: update.ts,
-  };
+function stateLabel(state: ConnectionState): string {
+  switch (state) {
+    case "connected":
+      return "Connected";
+    case "reconnecting":
+      return "Reconnecting";
+    case "closed":
+      return "Closed";
+    default:
+      return "Connecting";
+  }
 }
 
-function formatTagValue(value: TagValue | null): string {
-  if (value === null) {
-    return "—";
-  }
-
-  if (value.type === "real") {
-    return value.value.toFixed(4);
-  }
-
-  return String(value.value);
-}
+const fontFamily =
+  'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 const styles = {
   page: {
-    margin: 0,
     minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
+    boxSizing: "border-box" as const,
+    padding: 24,
     background: "#f4f6f8",
     color: "#1f2933",
-    fontFamily:
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontFamily,
   },
-  panel: {
-    width: "min(720px, calc(100vw - 32px))",
-    background: "#ffffff",
-    border: "1px solid #d9e2ec",
-    borderRadius: 8,
-    padding: 24,
-    boxShadow: "0 12px 32px rgba(16, 24, 40, 0.08)",
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    marginBottom: 16,
   },
-  heading: {
-    margin: "0 0 8px",
+  title: {
+    margin: 0,
     fontSize: 24,
     fontWeight: 700,
   },
-  status: {
-    marginBottom: 20,
-    color: "#52606d",
-    fontSize: 14,
-  },
-  row: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 16,
-    padding: "16px 0",
-    borderTop: "1px solid #e4e7eb",
-  },
-  path: {
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-    fontSize: 14,
-  },
   meta: {
     marginTop: 4,
-    color: "#697586",
+    color: "#52606d",
     fontSize: 13,
   },
-  value: {
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-    fontSize: 28,
-    fontWeight: 700,
-    minWidth: 160,
-    textAlign: "right" as const,
+  badge: {
+    minWidth: 116,
+    boxSizing: "border-box" as const,
+    padding: "6px 10px",
+    border: "1px solid",
+    borderRadius: 6,
+    textAlign: "center" as const,
+    fontSize: 13,
+    fontWeight: 600,
+  },
+  banner: {
+    marginBottom: 16,
+    padding: "10px 12px",
+    border: "1px solid #fdba74",
+    borderRadius: 6,
+    background: "#fff7ed",
+    color: "#9a3412",
+    fontSize: 14,
+  },
+  loading: {
+    padding: 24,
+    border: "1px solid #d9e2ec",
+    borderRadius: 8,
+    background: "#ffffff",
+    color: "#52606d",
+  },
+  error: {
+    padding: 24,
+    border: "1px solid #fca5a5",
+    borderRadius: 8,
+    background: "#fef2f2",
+    color: "#991b1b",
   },
 };

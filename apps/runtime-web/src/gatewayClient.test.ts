@@ -141,4 +141,104 @@ describe("GatewayClient", () => {
     vi.mocked(Math.random).mockRestore();
     vi.useRealTimers();
   });
+
+  it("routes view definitions to openView callbacks", () => {
+    MockWebSocket.instances = [];
+
+    const definitions: unknown[] = [];
+    const client = new GatewayClient({
+      url: "ws://127.0.0.1:8080",
+      webSocketImpl: MockWebSocket,
+    });
+
+    client.connect();
+    const socket = MockWebSocket.instances[0]!;
+    socket.open();
+
+    client.openView("phase1-demo", "home", (definition) =>
+      definitions.push(definition),
+    );
+
+    expect(socket.sent).toContain(
+      '{"kind":"view.open","project_id":"phase1-demo","view_id":"home"}',
+    );
+
+    socket.onmessage?.({
+      data: JSON.stringify({
+        kind: "view.definition",
+        project_id: "phase1-demo",
+        view_id: "home",
+        version: 2,
+        view: {
+          id: "home",
+          title: "Home",
+          schema_version: 1,
+          root: {
+            id: "root",
+            kind: "Container",
+            props: {},
+            bindings: [],
+            children: [],
+          },
+        },
+      }),
+    } as MessageEvent<string>);
+
+    expect(definitions).toHaveLength(1);
+    expect(definitions[0]).toMatchObject({
+      project_id: "phase1-demo",
+      view_id: "home",
+      version: 2,
+    });
+
+    client.disconnect();
+  });
+
+  it("stops routing view definitions after openView unsubscriber", () => {
+    MockWebSocket.instances = [];
+
+    const definitions: unknown[] = [];
+    const client = new GatewayClient({
+      url: "ws://127.0.0.1:8080",
+      webSocketImpl: MockWebSocket,
+    });
+
+    client.connect();
+    const socket = MockWebSocket.instances[0]!;
+    socket.open();
+
+    const unsubscribe = client.openView("phase1-demo", "home", (definition) =>
+      definitions.push(definition),
+    );
+    unsubscribe();
+
+    expect(socket.sent.at(-1)).toBe(
+      '{"kind":"view.close","project_id":"phase1-demo","view_id":"home"}',
+    );
+
+    socket.onmessage?.({
+      data: JSON.stringify({
+        kind: "view.definition",
+        project_id: "phase1-demo",
+        view_id: "home",
+        version: 2,
+        view: {
+          id: "home",
+          title: "Home",
+          schema_version: 1,
+          root: {
+            id: "root",
+            kind: "Container",
+            props: {},
+            bindings: [],
+            children: [],
+          },
+        },
+      }),
+    } as MessageEvent<string>);
+
+    expect(definitions).toEqual([]);
+
+    client.disconnect();
+  });
 });

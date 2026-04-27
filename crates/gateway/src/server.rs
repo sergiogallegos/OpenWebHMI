@@ -5,8 +5,8 @@ use std::net::SocketAddr;
 
 use anyhow::Context;
 use futures_util::{SinkExt, StreamExt};
-use openwebhmi_project_store::{ArtifactKind, ProjectStore};
-use openwebhmi_protocol::{ClientMessage, ServerMessage};
+use openwebhmi_project_store::ProjectStore;
+use openwebhmi_protocol::{ArtifactKind, ClientMessage, ServerMessage};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc::{self, error::TrySendError};

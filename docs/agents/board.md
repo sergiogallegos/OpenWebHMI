@@ -8,15 +8,17 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | open (I, J, K merged → unblocked) | 2026-04-27 claude | [tasks/CODEX-L-runtime-view-loading.md](tasks/CODEX-L-runtime-view-loading.md) |
-| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | open (blocked-by L) | 2026-04-27 claude | [tasks/CODEX-M-designer-shell.md](tasks/CODEX-M-designer-shell.md) |
+| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | open (L merged → unblocked) | 2026-04-27 claude | [tasks/CODEX-M-designer-shell.md](tasks/CODEX-M-designer-shell.md) |
+| CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-N-tag-write.md](tasks/CODEX-N-tag-write.md) |
 
 ### Phase 2 dependency graph
 
 ```
-CODEX-L  (runtime view loading) ← unblocked, ready to start
-CODEX-M  (designer)             blocked-by L (Phase 2 exit demo)
+CODEX-M  (designer)             ← unblocked, ready to start
+CODEX-N  (tag.write end-to-end) ← unblocked, ready to start in parallel
 ```
+
+CODEX-N is a small focused task that closes a brief-error from CODEX-L (Phase 0 didn't actually ship `tag.write` despite the L brief saying it did). It can run in parallel with CODEX-M; landing it before CODEX-M's manual smoke makes the designer's NumericInput preview meaningful.
 
 ## Phase 1 — Vertical slice (PLC tag in browser, simulator-backed)
 
@@ -39,6 +41,7 @@ CODEX-M  (designer)             blocked-by L (Phase 2 exit demo)
 | CODEX-I | `crates/project-store` — gateway-side project storage with versioning | codex | `24c1ac7` | 2 |
 | CODEX-J | View schema + protocol additions for view-tree authoring | codex | `24c1ac7` | 2 |
 | CODEX-K | `packages/component-library` — 6 essential components | codex | `24c1ac7` | 2 |
+| CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | *(this commit)* | 2 |
 
 ## Conventions
 

@@ -33,11 +33,17 @@ async fn main() -> anyhow::Result<()> {
 
     let store = TagStore::new();
     tokio::spawn(sim_provider::run(store.clone()));
+    let project_store_root = args.project_store.clone().or_else(|| {
+        args.project
+            .as_ref()
+            .and_then(|path| infer_project_store_root(path))
+    });
+
     if let Some(path) = args.project {
         let project = project::load(&path)?;
         project::spawn_project(project, store.clone())?;
     }
-    let project_store = match args.project_store {
+    let project_store = match project_store_root {
         Some(root) => Some(ProjectStore::open(root)?),
         None => None,
     };
@@ -71,4 +77,8 @@ fn init_tracing(log_level: &str) -> anyhow::Result<()> {
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
     Ok(())
+}
+
+fn infer_project_store_root(project_path: &std::path::Path) -> Option<PathBuf> {
+    project_path.parent()?.parent().map(PathBuf::from)
 }

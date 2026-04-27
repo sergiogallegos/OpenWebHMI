@@ -1,0 +1,115 @@
+{
+  "id": "home",
+  "title": "Phase 1 Demo",
+  "schema_version": 1,
+  "root": {
+    "id": "root",
+    "kind": "Container",
+    "props": {
+      "direction": "column",
+      "gap": 12,
+      "padding": 20,
+      "background": "#ffffff"
+    },
+    "bindings": [],
+    "children": [
+      {
+        "id": "heading",
+        "kind": "Label",
+        "props": {
+          "text": "Rockwell Demo",
+          "color": "#1f2933",
+          "fontSize": 22
+        },
+        "bindings": [],
+        "children": []
+      },
+      {
+        "id": "pressure-row",
+        "kind": "Container",
+        "props": {
+          "direction": "row",
+          "gap": 12,
+          "padding": 8,
+          "background": "#f8fafc"
+        },
+        "bindings": [],
+        "children": [
+          {
+            "id": "pressure-label",
+            "kind": "Label",
+            "props": {
+              "text": "Pressure",
+              "color": "#1f2933",
+              "fontSize": 16
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "pressure-value",
+            "kind": "ValueDisplay",
+            "props": {
+              "format": "number",
+              "decimals": 2,
+              "unit": "psi"
+            },
+            "bindings": [
+              {
+                "prop": "value",
+                "source": {
+                  "kind": "tag",
+                  "path": "rockwell-1/Pressure"
+                }
+              }
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "counter-row",
+        "kind": "Container",
+        "props": {
+          "direction": "row",
+          "gap": 12,
+          "padding": 8,
+          "background": "#ffffff"
+        },
+        "bindings": [],
+        "children": [
+          {
+            "id": "counter-label",
+            "kind": "Label",
+            "props": {
+              "text": "Counter",
+              "color": "#1f2933",
+              "fontSize": 16
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "counter-value",
+            "kind": "ValueDisplay",
+            "props": {
+              "format": "number",
+              "decimals": 0,
+              "unit": ""
+            },
+            "bindings": [
+              {
+                "prop": "value",
+                "source": {
+                  "kind": "tag",
+                  "path": "rockwell-1/Counter"
+                }
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

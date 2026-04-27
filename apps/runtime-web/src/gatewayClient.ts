@@ -2,6 +2,7 @@ import {
   isServerMessage,
   type ClientMessage,
   type Quality,
+  type ServerMessage,
   type TagValue,
 } from "@openwebhmi/protocol";
 
@@ -11,6 +12,18 @@ export type TagUpdate = {
   ts: number;
 };
 
+export type ViewDefinition = Extract<
+  ServerMessage,
+  { kind: "view.definition" }
+>;
+
+export type ProjectChange = Extract<
+  ServerMessage,
+  { kind: "project.changed" }
+>;
+
+export type GatewayError = Extract<ServerMessage, { kind: "error" }>;
+
 export type ConnectionState =
   | "idle"
   | "connecting"
@@ -19,6 +32,9 @@ export type ConnectionState =
   | "closed";
 
 type TagCallback = (update: TagUpdate) => void;
+type ViewCallback = (definition: ViewDefinition) => void;
+type ProjectChangeCallback = (change: ProjectChange) => void;
+type ErrorCallback = (error: GatewayError) => void;
 type StateCallback = (state: ConnectionState) => void;
 type WebSocketCtor = new (url: string) => WebSocketLike;
 
@@ -42,7 +58,11 @@ export class GatewayClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private manuallyClosed = false;
   private readonly callbacks = new Map<string, Set<TagCallback>>();
+  private readonly viewCallbacks = new Map<string, Set<ViewCallback>>();
+  private readonly projectCallbacks = new Map<string, Set<ProjectChangeCallback>>();
+  private readonly errorCallbacks = new Set<ErrorCallback>();
   private readonly stateCallbacks = new Set<StateCallback>();
+  private readonly lastTagUpdates = new Map<string, TagUpdate>();
   private currentState: ConnectionState = "idle";
 
   constructor(
@@ -86,11 +106,23 @@ export class GatewayClient {
     };
   }
 
+  onError(callback: ErrorCallback): () => void {
+    this.errorCallbacks.add(callback);
+    return () => {
+      this.errorCallbacks.delete(callback);
+    };
+  }
+
   subscribe(path: string, callback: TagCallback): () => void {
     const callbacks = this.callbacks.get(path) ?? new Set<TagCallback>();
     const wasEmpty = callbacks.size === 0;
     callbacks.add(callback);
     this.callbacks.set(path, callbacks);
+
+    const last = this.lastTagUpdates.get(path);
+    if (last) {
+      callback(last);
+    }
 
     if (wasEmpty) {
       this.send({ kind: "tag.subscribe", paths: [path] });
@@ -113,8 +145,85 @@ export class GatewayClient {
 
     if (callbacks.size === 0) {
       this.callbacks.delete(path);
+      this.lastTagUpdates.delete(path);
       this.send({ kind: "tag.unsubscribe", paths: [path] });
     }
+  }
+
+  subscribeProject(
+    projectId: string,
+    callback: ProjectChangeCallback,
+  ): () => void {
+    const callbacks =
+      this.projectCallbacks.get(projectId) ?? new Set<ProjectChangeCallback>();
+    const wasEmpty = callbacks.size === 0;
+    callbacks.add(callback);
+    this.projectCallbacks.set(projectId, callbacks);
+
+    if (wasEmpty) {
+      this.send({ kind: "project.subscribe", project_id: projectId });
+    }
+
+    return () => this.unsubscribeProject(projectId, callback);
+  }
+
+  unsubscribeProject(projectId: string, callback?: ProjectChangeCallback) {
+    const callbacks = this.projectCallbacks.get(projectId);
+    if (!callbacks) {
+      return;
+    }
+
+    if (callback) {
+      callbacks.delete(callback);
+    } else {
+      callbacks.clear();
+    }
+
+    if (callbacks.size === 0) {
+      this.projectCallbacks.delete(projectId);
+      this.send({ kind: "project.unsubscribe", project_id: projectId });
+    }
+  }
+
+  openView(projectId: string, viewId: string, callback: ViewCallback): () => void {
+    const key = viewKey(projectId, viewId);
+    const callbacks = this.viewCallbacks.get(key) ?? new Set<ViewCallback>();
+    const wasEmpty = callbacks.size === 0;
+    callbacks.add(callback);
+    this.viewCallbacks.set(key, callbacks);
+
+    if (wasEmpty) {
+      this.requestView(projectId, viewId);
+    }
+
+    return () => this.closeView(projectId, viewId, callback);
+  }
+
+  requestView(projectId: string, viewId: string) {
+    this.send({ kind: "view.open", project_id: projectId, view_id: viewId });
+  }
+
+  closeView(projectId: string, viewId: string, callback?: ViewCallback) {
+    const key = viewKey(projectId, viewId);
+    const callbacks = this.viewCallbacks.get(key);
+    if (!callbacks) {
+      return;
+    }
+
+    if (callback) {
+      callbacks.delete(callback);
+    } else {
+      callbacks.clear();
+    }
+
+    if (callbacks.size === 0) {
+      this.viewCallbacks.delete(key);
+      this.send({ kind: "view.close", project_id: projectId, view_id: viewId });
+    }
+  }
+
+  writeTag(path: string, value: TagValue) {
+    this.sendRaw({ kind: "tag.write", path, value });
   }
 
   disconnect() {
@@ -130,6 +239,10 @@ export class GatewayClient {
   }
 
   private send(message: ClientMessage) {
+    this.sendRaw(message);
+  }
+
+  private sendRaw(message: unknown) {
     if (this.ws?.readyState !== OPEN) {
       return;
     }
@@ -144,9 +257,37 @@ export class GatewayClient {
       return;
     }
 
-    if (!isServerMessage(parsed) || parsed.kind !== "tag.update") {
+    if (!isServerMessage(parsed)) {
       return;
     }
+
+    switch (parsed.kind) {
+      case "tag.update":
+        this.dispatchTagUpdate(parsed);
+        break;
+      case "view.definition":
+        this.dispatchViewDefinition(parsed);
+        break;
+      case "project.changed":
+        this.dispatchProjectChange(parsed);
+        break;
+      case "error":
+        for (const callback of this.errorCallbacks) {
+          callback(parsed);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  private dispatchTagUpdate(parsed: Extract<ServerMessage, { kind: "tag.update" }>) {
+    const update = {
+      value: parsed.value,
+      quality: parsed.quality,
+      ts: parsed.ts,
+    };
+    this.lastTagUpdates.set(parsed.path, update);
 
     const callbacks = this.callbacks.get(parsed.path);
     if (!callbacks) {
@@ -154,11 +295,31 @@ export class GatewayClient {
     }
 
     for (const callback of callbacks) {
-      callback({
-        value: parsed.value,
-        quality: parsed.quality,
-        ts: parsed.ts,
-      });
+      callback(update);
+    }
+  }
+
+  private dispatchViewDefinition(definition: ViewDefinition) {
+    const callbacks = this.viewCallbacks.get(
+      viewKey(definition.project_id, definition.view_id),
+    );
+    if (!callbacks) {
+      return;
+    }
+
+    for (const callback of callbacks) {
+      callback(definition);
+    }
+  }
+
+  private dispatchProjectChange(change: ProjectChange) {
+    const callbacks = this.projectCallbacks.get(change.project_id);
+    if (!callbacks) {
+      return;
+    }
+
+    for (const callback of callbacks) {
+      callback(change);
     }
   }
 
@@ -167,6 +328,15 @@ export class GatewayClient {
     if (paths.length > 0) {
       this.send({ kind: "tag.subscribe", paths });
     }
+
+    for (const projectId of this.projectCallbacks.keys()) {
+      this.send({ kind: "project.subscribe", project_id: projectId });
+    }
+
+    for (const key of this.viewCallbacks.keys()) {
+      const [projectId, viewId] = splitViewKey(key);
+      this.requestView(projectId, viewId);
+    }
   }
 
   private scheduleReconnect() {
@@ -174,6 +344,7 @@ export class GatewayClient {
       return;
     }
 
+    this.markBindingsBad();
     this.setState("reconnecting");
     const delay = withJitter(this.reconnectDelayMs);
     this.reconnectDelayMs = Math.min(this.reconnectDelayMs * 2, 8_000);
@@ -183,6 +354,24 @@ export class GatewayClient {
         this.connect();
       }
     }, delay);
+  }
+
+  private markBindingsBad() {
+    for (const [path, update] of this.lastTagUpdates) {
+      if (update.quality === "bad") {
+        continue;
+      }
+
+      const staleUpdate = { ...update, quality: "bad" as const };
+      this.lastTagUpdates.set(path, staleUpdate);
+      const callbacks = this.callbacks.get(path);
+      if (!callbacks) {
+        continue;
+      }
+      for (const callback of callbacks) {
+        callback(staleUpdate);
+      }
+    }
   }
 
   private clearReconnectTimer() {
@@ -198,6 +387,15 @@ export class GatewayClient {
       callback(state);
     }
   }
+}
+
+function viewKey(projectId: string, viewId: string): string {
+  return JSON.stringify([projectId, viewId]);
+}
+
+function splitViewKey(key: string): [string, string] {
+  const parsed = JSON.parse(key) as [string, string];
+  return parsed;
 }
 
 function withJitter(delayMs: number): number {
