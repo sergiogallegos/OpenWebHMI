@@ -31,7 +31,7 @@
 | CODEX-K | `packages/component-library` — 6 essential components | codex | `24c1ac7` | 2 |
 | CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | `921e3d9` | 2 |
 | CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | `f40b780` | 2 |
-| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | *(this commit)* | 2 |
+| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | `bc5bd38` | 2 |
 
 ## Conventions
 
