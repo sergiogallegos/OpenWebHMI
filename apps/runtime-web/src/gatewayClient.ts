@@ -223,7 +223,7 @@ export class GatewayClient {
   }
 
   writeTag(path: string, value: TagValue) {
-    this.sendRaw({ kind: "tag.write", path, value });
+    this.send({ kind: "tag.write", path, value });
   }
 
   disconnect() {

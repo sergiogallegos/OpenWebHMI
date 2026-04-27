@@ -35,6 +35,19 @@ describe("ClientMessage wire form", () => {
     expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
   });
 
+  it("serializes tag.write exactly like Rust serde", () => {
+    const message: ClientMessage = {
+      kind: "tag.write",
+      path: "rockwell-1/Setpoint",
+      value: { type: "real", value: 42.5 },
+    };
+
+    expect(JSON.stringify(message)).toBe(
+      '{"kind":"tag.write","path":"rockwell-1/Setpoint","value":{"type":"real","value":42.5}}',
+    );
+    expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
+  });
+
   it("serializes ping exactly like Rust serde", () => {
     const message: ClientMessage = { kind: "ping" };
 

@@ -39,10 +39,12 @@ async fn main() -> anyhow::Result<()> {
             .and_then(|path| infer_project_store_root(path))
     });
 
-    if let Some(path) = args.project {
+    let driver_handles = if let Some(path) = args.project {
         let project = project::load(&path)?;
-        project::spawn_project(project, store.clone())?;
-    }
+        project::spawn_project(project, store.clone())?
+    } else {
+        project::DriverHandles::new()
+    };
     let project_store = match project_store_root {
         Some(root) => Some(ProjectStore::open(root)?),
         None => None,
@@ -50,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
 
     // TODO Phase 3 auth/TLS: this Phase 0 endpoint is intentionally unauthenticated WS.
     tokio::select! {
-        result = run_server(args.bind, store, project_store) => result,
+        result = run_server(args.bind, store, project_store, driver_handles) => result,
         signal = tokio::signal::ctrl_c() => {
             signal.context("failed to listen for ctrl-c")?;
             info!("shutdown signal received");
@@ -63,10 +65,22 @@ async fn run_server(
     bind: SocketAddr,
     store: TagStore,
     project_store: Option<ProjectStore>,
+    driver_handles: project::DriverHandles,
 ) -> anyhow::Result<()> {
     match project_store {
-        Some(project_store) => server::run_with_project_store(bind, store, project_store).await,
-        None => server::run(bind, store).await,
+        Some(project_store) => {
+            let listener = tokio::net::TcpListener::bind(bind)
+                .await
+                .with_context(|| format!("failed to bind gateway listener at {bind}"))?;
+            server::serve_with_project_store_and_driver_handles(
+                listener,
+                store,
+                project_store,
+                driver_handles,
+            )
+            .await
+        }
+        None => server::run_with_driver_handles(bind, store, driver_handles).await,
     }
 }
 

@@ -8,17 +8,9 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | open (L merged → unblocked) | 2026-04-27 claude | [tasks/CODEX-M-designer-shell.md](tasks/CODEX-M-designer-shell.md) |
-| CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-N-tag-write.md](tasks/CODEX-N-tag-write.md) |
+| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | open (no remaining blockers — Phase 2 exit demo) | 2026-04-27 claude | [tasks/CODEX-M-designer-shell.md](tasks/CODEX-M-designer-shell.md) |
 
-### Phase 2 dependency graph
-
-```
-CODEX-M  (designer)             ← unblocked, ready to start
-CODEX-N  (tag.write end-to-end) ← unblocked, ready to start in parallel
-```
-
-CODEX-N is a small focused task that closes a brief-error from CODEX-L (Phase 0 didn't actually ship `tag.write` despite the L brief saying it did). It can run in parallel with CODEX-M; landing it before CODEX-M's manual smoke makes the designer's NumericInput preview meaningful.
+CODEX-M is the only open Phase 2 task. With `tag.write` now wired end-to-end (CODEX-N), the designer's NumericInput preview will exercise the full operator-write loop on first run.
 
 ## Phase 1 — Vertical slice (PLC tag in browser, simulator-backed)
 
@@ -42,6 +34,7 @@ CODEX-N is a small focused task that closes a brief-error from CODEX-L (Phase 0 
 | CODEX-J | View schema + protocol additions for view-tree authoring | codex | `24c1ac7` | 2 |
 | CODEX-K | `packages/component-library` — 6 essential components | codex | `24c1ac7` | 2 |
 | CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | `921e3d9` | 2 |
+| CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | *(this commit)* | 2 |
 
 ## Conventions
 

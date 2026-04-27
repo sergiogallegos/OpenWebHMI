@@ -20,3 +20,8 @@ address = "Pressure"
 path = "rockwell-1/Counter"
 driver = "rockwell-1"
 address = "Counter"
+
+[[tags]]
+path = "rockwell-1/Setpoint"
+driver = "rockwell-1"
+address = "Setpoint"

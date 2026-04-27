@@ -11,11 +11,50 @@ use openwebhmi_driver_rockwell::{RockwellConfig, RockwellDriver};
 use openwebhmi_project_store::{DriverConfig, Project, ProjectStore, TagConfig};
 use openwebhmi_protocol::{Quality, TagValue};
 use openwebhmi_tag_engine::TagStore;
+use tokio::sync::mpsc;
 use tokio::time;
 use tracing::{info, warn};
 
 const STATUS_PREFIX: &str = "system/drivers";
 const RECONNECT_BACKOFF: Duration = Duration::from_millis(250);
+const WRITE_QUEUE_CAPACITY: usize = 64;
+
+/// Handles for project drivers keyed by project-local driver id.
+pub type DriverHandles = HashMap<String, DriverHandle>;
+
+/// Lightweight command handle for a running project driver.
+#[derive(Debug, Clone)]
+pub struct DriverHandle {
+    tx: mpsc::Sender<WriteCommand>,
+}
+
+/// One operator write command routed from a websocket client to a driver task.
+#[derive(Debug, Clone)]
+pub struct WriteCommand {
+    /// Driver-native address.
+    pub address: TagAddress,
+    /// Value to write.
+    pub value: TagValue,
+}
+
+/// Result of trying to enqueue a write command.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WriteEnqueueError {
+    /// The per-driver queue is full.
+    Busy,
+    /// The driver task has stopped.
+    Closed,
+}
+
+impl DriverHandle {
+    /// Try to enqueue a write without blocking the websocket handler.
+    pub fn try_write(&self, command: WriteCommand) -> Result<(), WriteEnqueueError> {
+        self.tx.try_send(command).map_err(|err| match err {
+            mpsc::error::TrySendError::Full(_) => WriteEnqueueError::Busy,
+            mpsc::error::TrySendError::Closed(_) => WriteEnqueueError::Closed,
+        })
+    }
+}
 
 /// Load and validate a Phase 1 project file.
 pub fn load(path: impl AsRef<Path>) -> anyhow::Result<Project> {
@@ -33,8 +72,9 @@ pub fn load(path: impl AsRef<Path>) -> anyhow::Result<Project> {
 }
 
 /// Start all project drivers and tag publishers.
-pub fn spawn_project(project: Project, store: TagStore) -> anyhow::Result<()> {
+pub fn spawn_project(project: Project, store: TagStore) -> anyhow::Result<DriverHandles> {
     let tags_by_driver = group_tags_by_driver(&project);
+    let mut handles = DriverHandles::new();
 
     for driver in project.drivers {
         let tags = tags_by_driver.get(&driver.id).cloned().unwrap_or_default();
@@ -42,13 +82,15 @@ pub fn spawn_project(project: Project, store: TagStore) -> anyhow::Result<()> {
             continue;
         }
 
+        let (tx, rx) = mpsc::channel(WRITE_QUEUE_CAPACITY);
+        handles.insert(driver.id.clone(), DriverHandle { tx });
         let store = store.clone();
         tokio::spawn(async move {
-            run_driver(driver, tags, store).await;
+            run_driver(driver, tags, store, rx).await;
         });
     }
 
-    Ok(())
+    Ok(handles)
 }
 
 fn group_tags_by_driver(project: &Project) -> HashMap<String, Vec<TagConfig>> {
@@ -62,7 +104,12 @@ fn group_tags_by_driver(project: &Project) -> HashMap<String, Vec<TagConfig>> {
     grouped
 }
 
-async fn run_driver(driver: DriverConfig, tags: Vec<TagConfig>, store: TagStore) {
+async fn run_driver(
+    driver: DriverConfig,
+    tags: Vec<TagConfig>,
+    store: TagStore,
+    mut write_rx: mpsc::Receiver<WriteCommand>,
+) {
     let status_path = status_path(&driver.id);
     publish_status(&store, &status_path, "connecting");
 
@@ -71,7 +118,14 @@ async fn run_driver(driver: DriverConfig, tags: Vec<TagConfig>, store: TagStore)
             Ok(rockwell) => {
                 info!(driver_id = %driver.id, "driver connected");
                 publish_status(&store, &status_path, "connected");
-                run_subscription_until_disconnect(&driver.id, &tags, &store, rockwell).await;
+                run_subscription_until_disconnect(
+                    &driver.id,
+                    &tags,
+                    &store,
+                    rockwell,
+                    &mut write_rx,
+                )
+                .await;
                 publish_status(&store, &status_path, "disconnected");
             }
             Err(err) => {
@@ -99,6 +153,7 @@ async fn run_subscription_until_disconnect(
     tags: &[TagConfig],
     store: &TagStore,
     driver: RockwellDriver,
+    write_rx: &mut mpsc::Receiver<WriteCommand>,
 ) {
     let addresses = tags
         .iter()
@@ -118,19 +173,50 @@ async fn run_subscription_until_disconnect(
         }
     };
 
-    while let Some(update) = stream.next().await {
-        let Some(path) = path_by_address.get(&update.address.raw) else {
-            continue;
-        };
+    loop {
+        tokio::select! {
+            update = stream.next() => {
+                let Some(update) = update else {
+                    publish_bad_for_tags(tags, store, "disconnected".to_string());
+                    return;
+                };
+                let Some(path) = path_by_address.get(&update.address.raw) else {
+                    continue;
+                };
 
-        store.publish(path, update.value, update.quality);
-        if update.quality == Quality::Bad {
-            publish_bad_for_tags(tags, store, "disconnected".to_string());
-            return;
+                store.publish(path, update.value, update.quality);
+                if update.quality == Quality::Bad {
+                    publish_bad_for_tags(tags, store, "disconnected".to_string());
+                    return;
+                }
+            }
+            command = write_rx.recv() => {
+                let Some(command) = command else {
+                    return;
+                };
+                if let Err(err) = driver.write(&command.address, command.value).await {
+                    warn!(
+                        %driver_id,
+                        address = %command.address.raw,
+                        error = %err,
+                        "driver write failed"
+                    );
+                    store.publish(
+                        tag_path_for_address(tags, &command.address.raw)
+                            .unwrap_or(&command.address.raw),
+                        TagValue::String(err.to_string()),
+                        err.into_quality(),
+                    );
+                }
+            }
         }
     }
+}
 
-    publish_bad_for_tags(tags, store, "disconnected".to_string());
+fn tag_path_for_address<'a>(tags: &'a [TagConfig], address: &str) -> Option<&'a str> {
+    tags.iter()
+        .find(|tag| tag.address == address)
+        .map(|tag| tag.path.as_str())
 }
 
 fn publish_bad_for_tags(tags: &[TagConfig], store: &TagStore, message: String) {

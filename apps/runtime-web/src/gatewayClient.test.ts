@@ -241,4 +241,25 @@ describe("GatewayClient", () => {
 
     client.disconnect();
   });
+
+  it("sends tag.write frames", () => {
+    MockWebSocket.instances = [];
+
+    const client = new GatewayClient({
+      url: "ws://127.0.0.1:8080",
+      webSocketImpl: MockWebSocket,
+    });
+
+    client.connect();
+    const socket = MockWebSocket.instances[0]!;
+    socket.open();
+
+    client.writeTag("rockwell-1/Setpoint", { type: "real", value: 42.5 });
+
+    expect(socket.sent.at(-1)).toBe(
+      '{"kind":"tag.write","path":"rockwell-1/Setpoint","value":{"type":"real","value":42.5}}',
+    );
+
+    client.disconnect();
+  });
 });

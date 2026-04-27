@@ -14,6 +14,8 @@ use tokio::task::JoinHandle;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{debug, info, warn};
 
+use crate::project::{DriverHandle, DriverHandles, WriteCommand, WriteEnqueueError};
+
 type OutboundTx = mpsc::Sender<ServerMessage>;
 const OUTBOUND_CAPACITY: usize = 256;
 
@@ -23,6 +25,18 @@ pub async fn run(addr: SocketAddr, store: TagStore) -> anyhow::Result<()> {
         .await
         .with_context(|| format!("failed to bind gateway listener at {addr}"))?;
     serve(listener, store).await
+}
+
+/// Bind `addr` and serve WebSocket clients with driver write handles.
+pub async fn run_with_driver_handles(
+    addr: SocketAddr,
+    store: TagStore,
+    driver_handles: DriverHandles,
+) -> anyhow::Result<()> {
+    let listener = TcpListener::bind(addr)
+        .await
+        .with_context(|| format!("failed to bind gateway listener at {addr}"))?;
+    serve_with_driver_handles(listener, store, driver_handles).await
 }
 
 /// Bind `addr` and serve WebSocket clients with project-store protocol support.
@@ -39,7 +53,16 @@ pub async fn run_with_project_store(
 
 /// Serve WebSocket clients from an already-bound listener.
 pub async fn serve(listener: TcpListener, store: TagStore) -> anyhow::Result<()> {
-    serve_inner(listener, store, None).await
+    serve_inner(listener, store, None, DriverHandles::new()).await
+}
+
+/// Serve WebSocket clients with driver write handles.
+pub async fn serve_with_driver_handles(
+    listener: TcpListener,
+    store: TagStore,
+    driver_handles: DriverHandles,
+) -> anyhow::Result<()> {
+    serve_inner(listener, store, None, driver_handles).await
 }
 
 /// Serve WebSocket clients with project-store protocol support.
@@ -48,13 +71,24 @@ pub async fn serve_with_project_store(
     store: TagStore,
     project_store: ProjectStore,
 ) -> anyhow::Result<()> {
-    serve_inner(listener, store, Some(project_store)).await
+    serve_inner(listener, store, Some(project_store), DriverHandles::new()).await
+}
+
+/// Serve WebSocket clients with project-store protocol and driver write handles.
+pub async fn serve_with_project_store_and_driver_handles(
+    listener: TcpListener,
+    store: TagStore,
+    project_store: ProjectStore,
+    driver_handles: DriverHandles,
+) -> anyhow::Result<()> {
+    serve_inner(listener, store, Some(project_store), driver_handles).await
 }
 
 async fn serve_inner(
     listener: TcpListener,
     store: TagStore,
     project_store: Option<ProjectStore>,
+    driver_handles: DriverHandles,
 ) -> anyhow::Result<()> {
     let local_addr = listener
         .local_addr()
@@ -65,9 +99,12 @@ async fn serve_inner(
         let (stream, peer_addr) = listener.accept().await.context("accept failed")?;
         let store = store.clone();
         let project_store = project_store.clone();
+        let driver_handles = driver_handles.clone();
 
         tokio::spawn(async move {
-            if let Err(err) = handle_connection(stream, peer_addr, store, project_store).await {
+            if let Err(err) =
+                handle_connection(stream, peer_addr, store, project_store, driver_handles).await
+            {
                 warn!(%peer_addr, error = %err, "connection handler failed");
             }
         });
@@ -79,6 +116,7 @@ async fn handle_connection(
     peer_addr: SocketAddr,
     store: TagStore,
     project_store: Option<ProjectStore>,
+    driver_handles: DriverHandles,
 ) -> anyhow::Result<()> {
     let ws = tokio_tungstenite::accept_async(stream)
         .await
@@ -173,6 +211,9 @@ async fn handle_connection(
                         handle.abort();
                     }
                 }
+            }
+            ClientMessage::TagWrite { path, value } => {
+                handle_tag_write(&out_tx, &driver_handles, path, value);
             }
             ClientMessage::Ping => {
                 try_send_message(&out_tx, ServerMessage::Pong);
@@ -279,6 +320,61 @@ async fn handle_connection(
     info!(%peer_addr, "connection cleanup complete");
 
     Ok(())
+}
+
+fn handle_tag_write(
+    out_tx: &OutboundTx,
+    driver_handles: &DriverHandles,
+    path: String,
+    value: openwebhmi_protocol::TagValue,
+) {
+    let Some((driver_id, address)) = split_tag_path(&path) else {
+        send_error(
+            out_tx,
+            "tag.write.failed",
+            format!("tag path '{path}' must be '<driver_id>/<address>'"),
+        );
+        return;
+    };
+
+    let Some(driver) = driver_handles.get(driver_id) else {
+        send_error(
+            out_tx,
+            "tag.write.unknown_driver",
+            format!("unknown driver '{driver_id}'"),
+        );
+        return;
+    };
+
+    match try_write(driver, address, value) {
+        Ok(()) => {}
+        Err(WriteEnqueueError::Busy) => send_error(
+            out_tx,
+            "tag.write.busy",
+            format!("driver '{driver_id}' write queue is full"),
+        ),
+        Err(WriteEnqueueError::Closed) => send_error(
+            out_tx,
+            "tag.write.failed",
+            format!("driver '{driver_id}' write channel is closed"),
+        ),
+    }
+}
+
+fn try_write(
+    driver: &DriverHandle,
+    address: &str,
+    value: openwebhmi_protocol::TagValue,
+) -> Result<(), WriteEnqueueError> {
+    driver.try_write(WriteCommand {
+        address: openwebhmi_driver_api::TagAddress::new(address.to_string()),
+        value,
+    })
+}
+
+fn split_tag_path(path: &str) -> Option<(&str, &str)> {
+    let (driver_id, address) = path.split_once('/')?;
+    (!driver_id.is_empty() && !address.is_empty()).then_some((driver_id, address))
 }
 
 fn spawn_project_change_forwarder(

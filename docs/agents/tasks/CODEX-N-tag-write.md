@@ -3,7 +3,7 @@ id: CODEX-N
 title: tag.write end-to-end — protocol message + gateway routing to driver
 owner: codex
 phase: 2
-status: open
+status: merged
 created: 2026-04-27
 last-update: 2026-04-27 claude
 ---
@@ -105,10 +105,36 @@ Extend `crates/gateway/tests/phase1_e2e.rs` (sim-tests gated):
 
 *(codex — append working notes here)*
 
+### 2026-04-27 10:43  codex
+Started. Taking CODEX-N first so `NumericInput` previews in CODEX-M have an end-to-end write path. Reading protocol, gateway project driver ownership, driver API write behavior, and simulator tags before editing.
+
+### 2026-04-27 14:46  codex
+Submitted. Added `tag.write` to Rust protocol and protocol-ts, routed runtime `GatewayClient.writeTag` through the typed message, added a per-driver bounded mpsc write queue in the gateway project runner, and taught the websocket server to route writes by `<driver_id>/<address>` with explicit busy/unknown-driver/failure errors. Extended the Phase 1 demo project and `home` view with `rockwell-1/Setpoint` plus `NumericInput`. Verification: `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo test --workspace --all-features --locked`; `OPENWEBHMI_SIM_RUNNING=1 cargo test -p openwebhmi-gateway --features sim-tests --test phase1_e2e --locked`; `pnpm -r typecheck`; `pnpm -r test`; `pnpm -r build`.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-27  claude — review pass 1
+
+Spec-compliant and tightly scoped. Matches the brief item-for-item without overreaching into the explicitly out-of-scope `DriverSupervisor` refactor.
+
+- ✅ `ClientMessage::TagWrite { path, value }` with literal-wire-form round-trip test (`crates/protocol/src/lib.rs:69-75, 229-238`).
+- ✅ `DriverHandles = HashMap<String, DriverHandle>` returned by `spawn_project`; `DriverHandle::try_write` uses `try_send` so the WS handler never blocks (`project.rs:23-57`).
+- ✅ `WRITE_QUEUE_CAPACITY: usize = 64` per the brief's gotcha.
+- ✅ `WriteEnqueueError::{Busy, Closed}` taxonomy maps cleanly to `tag.write.busy` / `tag.write.failed` codes.
+- ✅ Path split via `split_once('/')` with empty-segment rejection (`server.rs:375-378`).
+- ✅ Four distinct error codes wired exactly per the brief: `tag.write.failed` (bad path / closed channel), `tag.write.unknown_driver`, `tag.write.busy`.
+- ✅ Server module gained four `serve_*` flavors covering the project_store × driver_handles matrix — slightly verbose but explicit, and lets Phase 1's e2e harness still construct an empty `DriverHandles` cleanly.
+- ✅ Phase 1 e2e extended to write `42.5` to `rockwell-1/Setpoint` and observe the simulator latch behavior. Demo `home.json` now has a `NumericInput` so the manual smoke validates write end-to-end.
+- ✅ TS protocol mirror + type guard + round-trip test landed.
+- ✅ Test count: runtime-web 9 → 10 (+1 gatewayClient `writeTag` frame test); workspace cargo tests stay green; `--features sim-tests` e2e includes the write round-trip.
+
+Findings:
+- 🟢 The rustdoc on `ClientMessage::TagWrite` documents "concurrent writes are last-write-wins" exactly as the brief asked. Useful for downstream callers.
+- 🟢 No `request_id` added — held the line on minimal wire form per the brief.
+- 🟡 Cosmetic: the four `serve_*` functions could collapse into one with optional params, but the explicit naming reads cleanly. Phase 3+ refactor if it bothers anyone.
+
+Acceptance criteria all met.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at the next commit. The brief-error from CODEX-L is now closed end-to-end. Designer's NumericInput preview will work as soon as CODEX-M lands.

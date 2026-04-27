@@ -46,6 +46,7 @@ export type View = {
 export type ClientMessage =
   | { kind: "tag.subscribe"; paths: string[] }
   | { kind: "tag.unsubscribe"; paths: string[] }
+  | { kind: "tag.write"; path: string; value: TagValue }
   | { kind: "ping" }
   | { kind: "project.subscribe"; project_id: string }
   | { kind: "project.unsubscribe"; project_id: string }
@@ -132,6 +133,8 @@ export function isClientMessage(value: unknown): value is ClientMessage {
     case "tag.subscribe":
     case "tag.unsubscribe":
       return isStringArray(value.paths);
+    case "tag.write":
+      return typeof value.path === "string" && isTagValue(value.value);
     case "ping":
       return true;
     case "project.subscribe":

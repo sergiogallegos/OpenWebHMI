@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use openwebhmi_gateway::{project, server, sim_provider};
-use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage};
+use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagValue};
 use openwebhmi_tag_engine::TagStore;
 use tokio::process::{Child, Command};
 use tokio::time::{sleep, timeout};
@@ -27,16 +27,24 @@ async fn phase1_project_publishes_rockwell_tags_and_recovers() {
     let store = TagStore::new();
     tokio::spawn(sim_provider::run(store.clone()));
     let project = project::load(&project_path).unwrap();
-    project::spawn_project(project, store.clone()).unwrap();
+    let driver_handles = project::spawn_project(project, store.clone()).unwrap();
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let gateway_addr: SocketAddr = listener.local_addr().unwrap();
-    let gateway = tokio::spawn(server::serve(listener, store));
+    let gateway = tokio::spawn(server::serve_with_driver_handles(
+        listener,
+        store,
+        driver_handles,
+    ));
 
     let (mut ws, _) = connect_async(format!("ws://{gateway_addr}")).await.unwrap();
     subscribe(
         &mut ws,
-        &["system/drivers/rockwell-1/status", "rockwell-1/Pressure"],
+        &[
+            "system/drivers/rockwell-1/status",
+            "rockwell-1/Pressure",
+            "rockwell-1/Setpoint",
+        ],
     )
     .await;
 
@@ -46,6 +54,8 @@ async fn phase1_project_publishes_rockwell_tags_and_recovers() {
 
     assert_status(&mut ws, "connected", Duration::from_secs(8)).await;
     assert_good_pressure_updates(&mut ws, 2, Duration::from_secs(3)).await;
+    write_tag(&mut ws, "rockwell-1/Setpoint", TagValue::Real(42.5)).await;
+    assert_setpoint_value(&mut ws, 42.5, Duration::from_secs(3)).await;
 
     let _ = sim.kill().await;
     assert_status_and_pressure(
@@ -61,7 +71,25 @@ async fn phase1_project_publishes_rockwell_tags_and_recovers() {
 
     let _ = sim.kill().await;
     gateway.abort();
-    let _ = std::fs::remove_file(project_path);
+    if let Some(dir) = project_path.parent() {
+        let _ = std::fs::remove_dir_all(dir);
+    }
+}
+
+async fn write_tag(
+    ws: &mut tokio_tungstenite::WebSocketStream<
+        tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+    >,
+    path: &str,
+    value: TagValue,
+) {
+    let message = ClientMessage::TagWrite {
+        path: path.to_string(),
+        value,
+    };
+    ws.send(Message::Text(serde_json::to_string(&message).unwrap()))
+        .await
+        .unwrap();
 }
 
 async fn subscribe(
@@ -118,6 +146,33 @@ async fn assert_good_pressure_updates(
         }
     }
     assert!(seen >= count, "expected {count} good pressure updates");
+}
+
+async fn assert_setpoint_value(
+    ws: &mut tokio_tungstenite::WebSocketStream<
+        tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+    >,
+    expected: f64,
+    wait: Duration,
+) {
+    let deadline = tokio::time::Instant::now() + wait;
+    while tokio::time::Instant::now() < deadline {
+        match next_message(ws, Duration::from_millis(750)).await {
+            ServerMessage::Error { code, message } if code == "protocol.parse" => {
+                panic!("tag.write parsed as invalid protocol: {message}");
+            }
+            ServerMessage::TagUpdate {
+                path,
+                value: TagValue::Real(value),
+                quality: Quality::Good,
+                ..
+            } if path == "rockwell-1/Setpoint" && (value - expected).abs() < 0.001 => {
+                return;
+            }
+            _ => {}
+        }
+    }
+    panic!("setpoint did not update to {expected}");
 }
 
 async fn assert_status_and_pressure(
@@ -183,10 +238,9 @@ fn unused_port() -> u16 {
 }
 
 fn write_project_file(port: u16) -> PathBuf {
-    let path = std::env::temp_dir().join(format!(
-        "openwebhmi-phase1-{}-{port}.toml",
-        std::process::id()
-    ));
+    let dir = std::env::temp_dir().join(format!("openwebhmi-phase1-{}-{port}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("create project dir");
+    let path = dir.join("project.toml");
     let body = format!(
         r#"
 schema_version = 1
@@ -211,6 +265,11 @@ address = "Pressure"
 path = "rockwell-1/Counter"
 driver = "rockwell-1"
 address = "Counter"
+
+[[tags]]
+path = "rockwell-1/Setpoint"
+driver = "rockwell-1"
+address = "Setpoint"
 "#
     );
     std::fs::write(&path, body).expect("write project file");

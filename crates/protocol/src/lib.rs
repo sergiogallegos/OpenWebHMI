@@ -60,6 +60,19 @@ pub enum ClientMessage {
         /// Tag paths to unsubscribe from.
         paths: Vec<String>,
     },
+    /// Write one tag through its owning driver.
+    ///
+    /// Writes are serialized by the gateway's per-driver command queue;
+    /// concurrent writes to the same tag are last-write-wins. A successful
+    /// write has no separate acknowledgement in v1; the next
+    /// [`ServerMessage::TagUpdate`] publishes the resulting value.
+    #[serde(rename = "tag.write")]
+    TagWrite {
+        /// Full tag path including provider.
+        path: String,
+        /// Value to write.
+        value: TagValue,
+    },
     /// Liveness ping. Gateway responds with [`ServerMessage::Pong`].
     #[serde(rename = "ping")]
     Ping,
@@ -208,6 +221,21 @@ mod tests {
             paths: vec!["a/b".into(), "c/d".into()],
         };
         let json = serde_json::to_string(&m).unwrap();
+        let back: ClientMessage = serde_json::from_str(&json).unwrap();
+        assert_eq!(m, back);
+    }
+
+    #[test]
+    fn client_tag_write_round_trips_with_stable_wire_form() {
+        let m = ClientMessage::TagWrite {
+            path: "rockwell-1/Setpoint".into(),
+            value: TagValue::Real(42.5),
+        };
+        let json = serde_json::to_string(&m).unwrap();
+        assert_eq!(
+            json,
+            r#"{"kind":"tag.write","path":"rockwell-1/Setpoint","value":{"type":"real","value":42.5}}"#
+        );
         let back: ClientMessage = serde_json::from_str(&json).unwrap();
         assert_eq!(m, back);
     }

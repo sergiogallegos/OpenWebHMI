@@ -109,6 +109,51 @@
             "children": []
           }
         ]
+      },
+      {
+        "id": "setpoint-row",
+        "kind": "Container",
+        "props": {
+          "direction": "row",
+          "gap": 12,
+          "padding": 8,
+          "background": "#f8fafc"
+        },
+        "bindings": [],
+        "children": [
+          {
+            "id": "setpoint-label",
+            "kind": "Label",
+            "props": {
+              "text": "Setpoint",
+              "color": "#1f2933",
+              "fontSize": 16
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "setpoint-input",
+            "kind": "NumericInput",
+            "props": {
+              "tagPath": "rockwell-1/Setpoint",
+              "min": 0,
+              "max": 500,
+              "step": 0.5,
+              "disabled": false
+            },
+            "bindings": [
+              {
+                "prop": "value",
+                "source": {
+                  "kind": "tag",
+                  "path": "rockwell-1/Setpoint"
+                }
+              }
+            ],
+            "children": []
+          }
+        ]
       }
     ]
   }
