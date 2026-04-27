@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Parser;
 use openwebhmi_gateway::{project, server, sim_provider};
+use openwebhmi_project_store::ProjectStore;
 use openwebhmi_tag_engine::TagStore;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -20,6 +21,9 @@ struct Args {
     /// Optional Phase 1 project file.
     #[arg(long)]
     project: Option<PathBuf>,
+    /// Optional project-store root for designer/runtime project protocol.
+    #[arg(long)]
+    project_store: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -33,15 +37,30 @@ async fn main() -> anyhow::Result<()> {
         let project = project::load(&path)?;
         project::spawn_project(project, store.clone())?;
     }
+    let project_store = match args.project_store {
+        Some(root) => Some(ProjectStore::open(root)?),
+        None => None,
+    };
 
     // TODO Phase 3 auth/TLS: this Phase 0 endpoint is intentionally unauthenticated WS.
     tokio::select! {
-        result = server::run(args.bind, store) => result,
+        result = run_server(args.bind, store, project_store) => result,
         signal = tokio::signal::ctrl_c() => {
             signal.context("failed to listen for ctrl-c")?;
             info!("shutdown signal received");
             Ok(())
         }
+    }
+}
+
+async fn run_server(
+    bind: SocketAddr,
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+) -> anyhow::Result<()> {
+    match project_store {
+        Some(project_store) => server::run_with_project_store(bind, store, project_store).await,
+        None => server::run(bind, store).await,
     }
 }
 

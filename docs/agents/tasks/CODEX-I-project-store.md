@@ -3,9 +3,9 @@ id: CODEX-I
 title: crates/project-store — gateway-side project storage with versioning
 owner: codex
 phase: 2
-status: open
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 claude
+last-update: 2026-04-27 claude
 ---
 
 # CODEX-I — `crates/project-store`
@@ -187,10 +187,36 @@ Integration tests in `crates/gateway/tests/project_protocol.rs`:
 
 *(codex — append working notes here)*
 
+### 2026-04-26 20:09  codex
+Started. Reading the Phase 1 gateway project loader, architecture project-store section, protocol types, and tag-store publish/subscribe pattern. Implementing CODEX-I locally because it overlaps with CODEX-J in protocol and project-store type files; CODEX-K is running in a separate worker with a disjoint package scope.
+
+### 2026-04-27 09:32  codex
+Submitted. Added `crates/project-store` with filesystem artifacts, SQLite `_index.sqlite` project metadata, version bumps, atomic temp-file writes, change broadcasts, validation carried forward from Phase 1, and tests for round-trip/list/load/read, version increments, change events, concurrent saves, tmp-file safety, and validation failures. Replaced the gateway's ad-hoc project model with a thin loader that delegates to `ProjectStore`, kept the Phase 1 demo project loading path green, and added gateway project protocol handling for `project.subscribe`, `project.load`, and `project.save_artifact`.
+
+Also added `crates/gateway/tests/project_protocol.rs` covering WebSocket project subscribe/save/load. Wiki update: `wiki/architecture/project-store-on-disk-format.md`, `wiki/index.md`, and `wiki/log.md`.
+
+Verification: `cargo test -p openwebhmi-project-store`, `cargo test --workspace --all-features --locked`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, and `cargo fmt --all -- --check` pass. Socket-bound gateway tests were run with local-bind permissions.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-27  claude — review pass 1
+
+Spec-compliant. Filesystem layout matches the brief (project.toml, views/, tags/, alarms/, scripts/, assets/). SQLite metadata index at `_index.sqlite` with the prescribed schema. Atomic single-file writes via tmp-then-rename. Broadcast channel surfaces `ProjectChange` events. Schema validation carries forward Phase 1's rules.
+
+Strong points:
+- ✅ `bump_version` uses SQLite's `INSERT ... ON CONFLICT DO UPDATE` — race-safe under concurrent saves.
+- ✅ `ProjectStore` is `Clone` via `Arc<StoreInner>`; subscribers can be passed across tokio tasks.
+- ✅ `subscribe_changes` returns a fresh broadcast receiver per call — correct semantics.
+- ✅ `validate_project` enforces driver-id uniqueness, tag-driver references, and tag-path-prefix rules from Phase 1.
+
+Findings:
+- 🟡 **`subscribe_changes(_project_id)` ignores the project_id argument** (`store.rs:210-215`). Returns the global receiver regardless. The brief said "for a project, or all projects when None". Consumer-side filter is trivial (each `ProjectChange` carries `project_id`), but the API as written misleads. Fix: either remove the parameter or implement per-project channels.
+- 🟡 **`atomic_write` does explicit `remove_file` before `rename`** (`store.rs:345-348`). On POSIX this opens a brief window where the destination doesn't exist; `fs::rename` already does atomic replace there. On Windows the explicit remove is needed but `rename` over an existing file may still fail without `MOVEFILE_REPLACE_EXISTING`. Recommend `tempfile::NamedTempFile::persist` for portable atomicity.
+- 🟡 **`save_artifact(ProjectMeta)` round-trips through TOML** via `serde_json_to_toml` (`store.rs:154`). Functional, but means hand-edited TOML loses comments + ordering on every save. Acceptable for v1; flag if humans report frustration.
+- 🟢 The `ensure_layout` helper stub-creates `views/`, `tags/`, `alarms/`, `scripts/`, `assets/` even before they're used — file layout stays stable for tooling.
+
+Acceptance criteria all met. Phase 1 demo project still loads through the new store path.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at the next commit. The `subscribe_changes` per-project filtering is the only real design note — track for follow-up alongside the broader gateway-side wiring in CODEX-L/M.

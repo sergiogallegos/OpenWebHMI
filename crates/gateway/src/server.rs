@@ -5,6 +5,7 @@ use std::net::SocketAddr;
 
 use anyhow::Context;
 use futures_util::{SinkExt, StreamExt};
+use openwebhmi_project_store::{ArtifactKind, ProjectStore};
 use openwebhmi_protocol::{ClientMessage, ServerMessage};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::net::{TcpListener, TcpStream};
@@ -24,8 +25,37 @@ pub async fn run(addr: SocketAddr, store: TagStore) -> anyhow::Result<()> {
     serve(listener, store).await
 }
 
+/// Bind `addr` and serve WebSocket clients with project-store protocol support.
+pub async fn run_with_project_store(
+    addr: SocketAddr,
+    store: TagStore,
+    project_store: ProjectStore,
+) -> anyhow::Result<()> {
+    let listener = TcpListener::bind(addr)
+        .await
+        .with_context(|| format!("failed to bind gateway listener at {addr}"))?;
+    serve_with_project_store(listener, store, project_store).await
+}
+
 /// Serve WebSocket clients from an already-bound listener.
 pub async fn serve(listener: TcpListener, store: TagStore) -> anyhow::Result<()> {
+    serve_inner(listener, store, None).await
+}
+
+/// Serve WebSocket clients with project-store protocol support.
+pub async fn serve_with_project_store(
+    listener: TcpListener,
+    store: TagStore,
+    project_store: ProjectStore,
+) -> anyhow::Result<()> {
+    serve_inner(listener, store, Some(project_store)).await
+}
+
+async fn serve_inner(
+    listener: TcpListener,
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+) -> anyhow::Result<()> {
     let local_addr = listener
         .local_addr()
         .context("failed to read listener local addr")?;
@@ -34,9 +64,10 @@ pub async fn serve(listener: TcpListener, store: TagStore) -> anyhow::Result<()>
     loop {
         let (stream, peer_addr) = listener.accept().await.context("accept failed")?;
         let store = store.clone();
+        let project_store = project_store.clone();
 
         tokio::spawn(async move {
-            if let Err(err) = handle_connection(stream, peer_addr, store).await {
+            if let Err(err) = handle_connection(stream, peer_addr, store, project_store).await {
                 warn!(%peer_addr, error = %err, "connection handler failed");
             }
         });
@@ -47,6 +78,7 @@ async fn handle_connection(
     stream: TcpStream,
     peer_addr: SocketAddr,
     store: TagStore,
+    project_store: Option<ProjectStore>,
 ) -> anyhow::Result<()> {
     let ws = tokio_tungstenite::accept_async(stream)
         .await
@@ -74,6 +106,7 @@ async fn handle_connection(
     });
 
     let mut subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
+    let mut project_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
 
     while let Some(item) = incoming.next().await {
         let message = match item {
@@ -144,10 +177,101 @@ async fn handle_connection(
             ClientMessage::Ping => {
                 try_send_message(&out_tx, ServerMessage::Pong);
             }
+            ClientMessage::ProjectSubscribe { project_id } => {
+                let Some(project_store) = project_store.clone() else {
+                    send_unavailable(&out_tx);
+                    continue;
+                };
+                if project_subscriptions.contains_key(&project_id) {
+                    continue;
+                }
+                let handle = spawn_project_change_forwarder(
+                    project_id.clone(),
+                    project_store,
+                    out_tx.clone(),
+                );
+                project_subscriptions.insert(project_id, handle);
+            }
+            ClientMessage::ProjectUnsubscribe { project_id } => {
+                if let Some(handle) = project_subscriptions.remove(&project_id) {
+                    handle.abort();
+                }
+            }
+            ClientMessage::ProjectLoad { project_id } => {
+                let Some(project_store) = project_store.as_ref() else {
+                    send_unavailable(&out_tx);
+                    continue;
+                };
+                match project_store.load(&project_id) {
+                    Ok(project) => {
+                        let version = project.version;
+                        match serde_json::to_value(project) {
+                            Ok(project) => try_send_message(
+                                &out_tx,
+                                ServerMessage::ProjectSnapshot { project, version },
+                            ),
+                            Err(err) => send_error(&out_tx, "project.serialize", err.to_string()),
+                        }
+                    }
+                    Err(err) => send_error(&out_tx, "project.load", err.to_string()),
+                }
+            }
+            ClientMessage::ProjectSaveArtifact {
+                request_id,
+                project_id,
+                artifact,
+                body,
+            } => {
+                let Some(project_store) = project_store.as_ref() else {
+                    send_unavailable(&out_tx);
+                    continue;
+                };
+                match project_store.save_artifact(&project_id, artifact, body) {
+                    Ok(version) => try_send_message(
+                        &out_tx,
+                        ServerMessage::ProjectSaveResult {
+                            request_id,
+                            project_id,
+                            version,
+                        },
+                    ),
+                    Err(err) => send_error(&out_tx, "project.save_artifact", err.to_string()),
+                }
+            }
+            ClientMessage::ViewOpen {
+                project_id,
+                view_id,
+            } => {
+                let Some(project_store) = project_store.as_ref() else {
+                    send_unavailable(&out_tx);
+                    continue;
+                };
+                match project_store.load(&project_id) {
+                    Ok(project) => {
+                        match project.views.into_iter().find(|view| view.id == view_id) {
+                            Some(view) => try_send_message(
+                                &out_tx,
+                                ServerMessage::ViewDefinition {
+                                    project_id,
+                                    view_id,
+                                    version: project.version,
+                                    view,
+                                },
+                            ),
+                            None => send_error(&out_tx, "view.not_found", "view not found".into()),
+                        }
+                    }
+                    Err(err) => send_error(&out_tx, "view.open", err.to_string()),
+                }
+            }
+            ClientMessage::ViewClose { .. } => {}
         }
     }
 
     for (_, handle) in subscriptions {
+        handle.abort();
+    }
+    for (_, handle) in project_subscriptions {
         handle.abort();
     }
     drop(out_tx);
@@ -155,6 +279,40 @@ async fn handle_connection(
     info!(%peer_addr, "connection cleanup complete");
 
     Ok(())
+}
+
+fn spawn_project_change_forwarder(
+    project_id: String,
+    project_store: ProjectStore,
+    out_tx: OutboundTx,
+) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut rx = project_store.subscribe_changes(Some(&project_id));
+        loop {
+            match rx.recv().await {
+                Ok(change) if change.project_id == project_id => {
+                    let is_view = matches!(change.artifact, ArtifactKind::View { .. });
+                    try_send_message(
+                        &out_tx,
+                        ServerMessage::ProjectChanged {
+                            project_id: change.project_id,
+                            version: change.version,
+                            artifact: change.artifact,
+                            action: change.action,
+                        },
+                    );
+                    if is_view {
+                        // CODEX-L pushes refreshed view definitions to open views.
+                    }
+                }
+                Ok(_) => {}
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                    warn!(%project_id, skipped, "project subscriber lagged");
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    })
 }
 
 fn spawn_forwarder(path: String, store: TagStore, out_tx: OutboundTx) -> JoinHandle<()> {
@@ -182,6 +340,24 @@ fn try_send_message(out_tx: &OutboundTx, message: ServerMessage) {
         }
         Err(TrySendError::Closed(_)) => {}
     }
+}
+
+fn send_unavailable(out_tx: &OutboundTx) {
+    send_error(
+        out_tx,
+        "project_store.unavailable",
+        "project store is not enabled".to_string(),
+    );
+}
+
+fn send_error(out_tx: &OutboundTx, code: &str, message: String) {
+    try_send_message(
+        out_tx,
+        ServerMessage::Error {
+            code: code.to_string(),
+            message,
+        },
+    );
 }
 
 fn snapshot_to_message(snapshot: TagSnapshot) -> ServerMessage {

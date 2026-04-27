@@ -11,6 +11,8 @@
 
 use serde::{Deserialize, Serialize};
 
+pub use openwebhmi_project_store::{ArtifactKind, ChangeAction, View};
+
 /// A tag's current value.
 ///
 /// The runtime carries quality + timestamp alongside this value via
@@ -61,6 +63,53 @@ pub enum ClientMessage {
     /// Liveness ping. Gateway responds with [`ServerMessage::Pong`].
     #[serde(rename = "ping")]
     Ping,
+    /// Subscribe to project change events.
+    #[serde(rename = "project.subscribe")]
+    ProjectSubscribe {
+        /// Project id.
+        project_id: String,
+    },
+    /// Unsubscribe from project change events.
+    #[serde(rename = "project.unsubscribe")]
+    ProjectUnsubscribe {
+        /// Project id.
+        project_id: String,
+    },
+    /// Load a project snapshot.
+    #[serde(rename = "project.load")]
+    ProjectLoad {
+        /// Project id.
+        project_id: String,
+    },
+    /// Save a single project artifact.
+    #[serde(rename = "project.save_artifact")]
+    ProjectSaveArtifact {
+        /// Optional request id echoed in save result.
+        #[serde(default)]
+        request_id: Option<String>,
+        /// Project id.
+        project_id: String,
+        /// Artifact to save.
+        artifact: ArtifactKind,
+        /// Artifact body.
+        body: serde_json::Value,
+    },
+    /// Open a view and request its current definition.
+    #[serde(rename = "view.open")]
+    ViewOpen {
+        /// Project id.
+        project_id: String,
+        /// View id.
+        view_id: String,
+    },
+    /// Close a view.
+    #[serde(rename = "view.close")]
+    ViewClose {
+        /// Project id.
+        project_id: String,
+        /// View id.
+        view_id: String,
+    },
 }
 
 /// Messages from the gateway to a client.
@@ -90,11 +139,54 @@ pub enum ServerMessage {
         /// Human-readable message.
         message: String,
     },
+    /// Full project snapshot.
+    #[serde(rename = "project.snapshot")]
+    ProjectSnapshot {
+        /// Project JSON payload.
+        project: serde_json::Value,
+        /// Project version.
+        version: u64,
+    },
+    /// Project artifact changed.
+    #[serde(rename = "project.changed")]
+    ProjectChanged {
+        /// Project id.
+        project_id: String,
+        /// Project version.
+        version: u64,
+        /// Changed artifact.
+        artifact: ArtifactKind,
+        /// Change action.
+        action: ChangeAction,
+    },
+    /// Result of a project artifact save.
+    #[serde(rename = "project.save_result")]
+    ProjectSaveResult {
+        /// Optional request id echoed from client.
+        request_id: Option<String>,
+        /// Project id.
+        project_id: String,
+        /// New project version.
+        version: u64,
+    },
+    /// View definition for an opened view.
+    #[serde(rename = "view.definition")]
+    ViewDefinition {
+        /// Project id.
+        project_id: String,
+        /// View id.
+        view_id: String,
+        /// Project version that produced this view.
+        version: u64,
+        /// View schema.
+        view: View,
+    },
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use openwebhmi_project_store::{Binding, BindingSource, Component};
 
     #[test]
     fn client_subscribe_round_trips_with_stable_wire_form() {
@@ -199,5 +291,80 @@ mod tests {
             serde_json::to_string(&Quality::Uncertain).unwrap(),
             r#""uncertain""#
         );
+    }
+
+    #[test]
+    fn project_save_artifact_wire_form_is_stable() {
+        let m = ClientMessage::ProjectSaveArtifact {
+            request_id: Some("r1".into()),
+            project_id: "demo".into(),
+            artifact: ArtifactKind::View { id: "home".into() },
+            body: serde_json::json!({"id":"home"}),
+        };
+        assert_eq!(
+            serde_json::to_string(&m).unwrap(),
+            r#"{"kind":"project.save_artifact","request_id":"r1","project_id":"demo","artifact":{"kind":"view","id":"home"},"body":{"id":"home"}}"#
+        );
+    }
+
+    #[test]
+    fn view_tree_round_trips() {
+        let view = sample_view();
+        let json = serde_json::to_string(&view).unwrap();
+        assert_eq!(serde_json::from_str::<View>(&json).unwrap(), view);
+    }
+
+    #[test]
+    fn view_open_and_definition_round_trip() {
+        let open = ClientMessage::ViewOpen {
+            project_id: "demo".into(),
+            view_id: "home".into(),
+        };
+        assert_eq!(
+            serde_json::to_string(&open).unwrap(),
+            r#"{"kind":"view.open","project_id":"demo","view_id":"home"}"#
+        );
+
+        let definition = ServerMessage::ViewDefinition {
+            project_id: "demo".into(),
+            view_id: "home".into(),
+            version: 7,
+            view: sample_view(),
+        };
+        let json = serde_json::to_string(&definition).unwrap();
+        let back = serde_json::from_str::<ServerMessage>(&json).unwrap();
+        assert_eq!(back, definition);
+    }
+
+    fn sample_view() -> View {
+        View {
+            id: "home".into(),
+            title: "Home".into(),
+            schema_version: 1,
+            root: Component {
+                id: "root".into(),
+                kind: "Container".into(),
+                props: serde_json::json!({}),
+                bindings: Vec::new(),
+                children: vec![Component {
+                    id: "nested".into(),
+                    kind: "Container".into(),
+                    props: serde_json::json!({}),
+                    bindings: Vec::new(),
+                    children: vec![Component {
+                        id: "pressure".into(),
+                        kind: "ValueDisplay".into(),
+                        props: serde_json::json!({"format":"number"}),
+                        bindings: vec![Binding {
+                            prop: "value".into(),
+                            source: BindingSource::Tag {
+                                path: "rockwell-1/Pressure".into(),
+                            },
+                        }],
+                        children: Vec::new(),
+                    }],
+                }],
+            },
+        }
     }
 }

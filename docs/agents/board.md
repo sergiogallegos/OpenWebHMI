@@ -8,23 +8,15 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-I | `crates/project-store` — gateway-side project storage with versioning | codex | open | 2026-04-26 claude | [tasks/CODEX-I-project-store.md](tasks/CODEX-I-project-store.md) |
-| CODEX-J | View schema + protocol additions for view-tree authoring | codex | open | 2026-04-26 claude | [tasks/CODEX-J-view-schema.md](tasks/CODEX-J-view-schema.md) |
-| CODEX-K | `packages/component-library` — 6 essential components | codex | open | 2026-04-26 claude | [tasks/CODEX-K-component-library-v1.md](tasks/CODEX-K-component-library-v1.md) |
-| CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | open (blocked-by I, J, K) | 2026-04-26 claude | [tasks/CODEX-L-runtime-view-loading.md](tasks/CODEX-L-runtime-view-loading.md) |
-| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | open (blocked-by I, J, K, L) | 2026-04-26 claude | [tasks/CODEX-M-designer-shell.md](tasks/CODEX-M-designer-shell.md) |
+| CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | open (I, J, K merged → unblocked) | 2026-04-27 claude | [tasks/CODEX-L-runtime-view-loading.md](tasks/CODEX-L-runtime-view-loading.md) |
+| CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | open (blocked-by L) | 2026-04-27 claude | [tasks/CODEX-M-designer-shell.md](tasks/CODEX-M-designer-shell.md) |
 
 ### Phase 2 dependency graph
 
 ```
-CODEX-I  (project-store)        no blockers — start anytime
-CODEX-J  (view schema)          no blockers — start anytime
-CODEX-K  (component library)    no blockers — start anytime
-CODEX-L  (runtime view loading) blocked-by I, J, K
-CODEX-M  (designer)             blocked-by I, J, K, L (exit criterion)
+CODEX-L  (runtime view loading) ← unblocked, ready to start
+CODEX-M  (designer)             blocked-by L (Phase 2 exit demo)
 ```
-
-I, J, and K can start in parallel. L starts when all three land. M starts when L lands and is the Phase 2 exit demo.
 
 ## Phase 1 — Vertical slice (PLC tag in browser, simulator-backed)
 
@@ -44,6 +36,9 @@ I, J, and K can start in parallel. L starts when all three land. M starts when L
 | CODEX-G | `examples/sim-rockwell` — EtherNet/IP simulator harness | codex | `e19a3c2` | 1 |
 | CODEX-F | `crates/driver-rockwell` — wrap `rust-ethernet-ip` 0.7.x | codex | `bc2d568` | 1 |
 | CODEX-H | Phase 1 wire-up — gateway loads driver-rockwell, runtime-web shows PLC tag | codex | `ca481d4` | 1 |
+| CODEX-I | `crates/project-store` — gateway-side project storage with versioning | codex | *(this commit)* | 2 |
+| CODEX-J | View schema + protocol additions for view-tree authoring | codex | *(this commit)* | 2 |
+| CODEX-K | `packages/component-library` — 6 essential components | codex | *(this commit)* | 2 |
 
 ## Conventions
 

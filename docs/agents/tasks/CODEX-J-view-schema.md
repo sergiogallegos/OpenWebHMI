@@ -3,9 +3,9 @@ id: CODEX-J
 title: View schema + protocol additions for view-tree authoring
 owner: codex
 phase: 2
-status: open
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 claude
+last-update: 2026-04-27 claude
 ---
 
 # CODEX-J — View schema + view protocol additions
@@ -130,10 +130,32 @@ TS (vitest in `packages/protocol-ts`):
 
 *(codex — append working notes here)*
 
+### 2026-04-26 20:09  codex
+Started alongside CODEX-I. Holding the schema/protocol edits locally because the files overlap with project-store protocol work; keeping CODEX-K separate in a worker because its package scope is disjoint.
+
+### 2026-04-27 09:32  codex
+Submitted. Added view schema v1 types to `crates/project-store`: `View`, `Component`, `Binding`, and `BindingSource` with tree-shaped components, loose JSON props, ordered bindings, and tag/expression/constant sources. Extended Rust protocol with `view.open`, `view.close`, and `view.definition`; extended TS protocol types and guards with matching view and project artifact shapes.
+
+Documented view schema v1 in `docs/architecture.md` §4.10.1 and appended the wiki log entry. Verification: `cargo test -p openwebhmi-protocol`, `cargo test -p openwebhmi-project-store`, `pnpm --filter @openwebhmi/protocol test`, `pnpm --filter @openwebhmi/protocol build`, and full workspace cargo checks pass.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-27  claude — review pass 1
+
+Spec-compliant. View / Component / Binding / BindingSource match the brief exactly: tree (not flat), `props: serde_json::Value` (loose, decoupled from component-library), per-view component-id uniqueness, binding-list-with-last-write-wins. Wire-protocol additions (`view.open`, `view.close`, `view.definition`, `project.subscribe`/`unsubscribe`/`load`/`save_artifact`/`changed`/`save_result`/`snapshot`) all round-trip through the test suite with literal wire-form assertions on the load-bearing variants.
+
+Strong points:
+- ✅ A 3-level nested view (Container > Container > ValueDisplay) round-trips in `view_tree_round_trips`.
+- ✅ Literal wire-form assertion on `project.save_artifact` and `view.open` — matches the discipline established by Phase 0's protocol tests.
+- ✅ `ArtifactKind` is adjacently tagged (`{ kind: "view", id: "home" }`) so future variants don't break existing parsers.
+- ✅ The project-store types live in one place and the protocol crate re-exports the wire-relevant subset — no duplication.
+
+Findings:
+- 🟡 **`crates/protocol` now depends on `crates/project-store`** (`Cargo.toml:15`). Direction is non-obvious — typically a wire-protocol crate is the lower-level dep, not the consumer. The pragmatic justification: project-store owns the canonical Rust types; protocol re-exports the subset that lives on the wire. The cost: every consumer of `openwebhmi-protocol` now pulls SQLite/rusqlite/anyhow as transitive deps, even if they never touch the project store. For Phase 2 only the gateway consumes this surface, so it's a non-issue in practice. **Track for cleanup**: either flatten the wire-relevant types into protocol with project-store re-exporting from protocol, or split a `crates/wire-types` for the truly shared shapes.
+- 🟢 Test for project `save_artifact` wire form catches the `request_id` skip-when-None semantics implicitly (it's `Some` in the test). A second test asserting `request_id` omission when `None` would be cheap insurance.
+
+Acceptance criteria met. No view-rendering code introduced (correctly stayed in CODEX-J's lane).
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at the next commit. The protocol → project-store dep direction is the only architectural note; not blocking, tracked here for cleanup when CODEX-L/M land.

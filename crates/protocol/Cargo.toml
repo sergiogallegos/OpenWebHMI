@@ -12,5 +12,6 @@ description = "Wire protocol types shared between the OpenWebHMI gateway and TS 
 path = "src/lib.rs"
 
 [dependencies]
+openwebhmi-project-store = { path = "../project-store" }
 serde = { workspace = true }
 serde_json = { workspace = true }

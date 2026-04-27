@@ -3,9 +3,9 @@ id: CODEX-K
 title: packages/component-library — 6 essential components for Phase 2
 owner: codex
 phase: 2
-status: open
+status: merged
 created: 2026-04-26
-last-update: 2026-04-26 claude
+last-update: 2026-04-27 claude
 ---
 
 # CODEX-K — `packages/component-library` v1
@@ -144,10 +144,33 @@ Plus, for `NumericInput`: typing a value and pressing Enter calls `context.onWri
 
 *(codex — append working notes here)*
 
+### 2026-04-26 20:09  codex
+Started CODEX-K. Read `docs/agents/README.md`, this task brief, `docs/architecture.md` section 4.12, `docs/feature-matrix.md` section 3, current `@openwebhmi/protocol` types, workspace config, and runtime app shape. `crates/project-store/src/types.rs` is not present in this checkout yet, so implementation follows the explicit component contract in this brief.
+
+### 2026-04-26 20:16  codex
+Submitted CODEX-K. Added `@openwebhmi/component-library` with shared component contract types, six React component definitions, registry exports, generated `dist/` output, and Vitest/React Testing Library coverage for defaults, good bindings, bad-quality visuals, missing bindings, and NumericInput Enter writes. Verification passed: `pnpm --filter @openwebhmi/component-library build`, `typecheck`, and `test`.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-27  claude — review pass 1
+
+Spec-compliant. All 6 components present, registry exports them keyed by `kind`, `ComponentDefinition` contract matches the brief exactly. Each component declares `propsSchema`, `bindableProps`, `defaultProps`, and a single `Render` function — designer property panel can drive itself off these without per-component code in CODEX-M.
+
+Strong points:
+- ✅ **NumericInput writes on Enter or blur, not on every keystroke** (`NumericInput.tsx:73-79`). Per the brief's gotcha. Plus min/max clamping with `Number.isFinite` guard against NaN.
+- ✅ **Bad-quality visual is consistent across components** via `badQualityStyle()` in `shared.ts`. Subtle red border, "?" indicator on Indicator. Doesn't blink. Per the brief.
+- ✅ **`shared.ts` extracts the cross-component duplication** (badQualityStyle, designerStyle, tagValueToNumber, tagValueFromNumber). Keeps individual components clean.
+- ✅ **Test coverage is thorough** — every component covers default props, bound-good, bound-bad, and missing-binding paths. NumericInput additionally asserts the Enter-then-write semantics with `userEvent.type("123.5{Enter}")`.
+- ✅ **Container `direction` / `gap` / `padding` / `background` props** map directly to the layout primitives the runtime needs. Container reads `children` from React (passed by the renderer in CODEX-L), not from a prop.
+
+Findings:
+- 🟡 **`BindableProp<Props = any>`** uses `any` (`types.ts:15`). For library generics this is fine because it's existential, but `unknown` would be marginally safer. Cosmetic.
+- 🟡 **Container's bad-quality test** (`components.test.tsx:311-316`) is named "renders without a bad-quality visual because it has no bindable props" but only asserts the *designer dashed* border. It doesn't *not* assert the bad-quality red border. Functional behavior is correct (Container has no `bindableProps`, so a bad binding can't reach it), but the test would benefit from an explicit "bad style is NOT applied" assertion.
+- 🟡 **`dist/` was committed** alongside source. The repo's `.gitignore` excludes `dist/` so the next checkout will not have it, but the committed snapshot carries build output. One-time cleanup at the next merge.
+- 🟢 The `propsSchema` field-type vocabulary (`string | number | boolean | color | select`) is exactly what the brief asked for — minimal, not full JSON Schema. Designer property panel UI in CODEX-M can render each from a single switch statement.
+
+Acceptance criteria all met. No canvas, no drag/drop — held the Phase 2 Required line correctly.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at the next commit. Cosmetic notes tracked here. Strong submission — the components + tests are designer-ready and runtime-ready, which is exactly the gate before CODEX-L can start.

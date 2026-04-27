@@ -260,6 +260,27 @@ Modules:
 
 The designer talks to the gateway over the **same WebSocket protocol** as the runtime, just with `Designer` role privileges (write-project, run-tests, etc.).
 
+#### 4.10.1 View schema v1
+
+Views are stored as a tree, not a flat component list. A `Container` component owns child components and defines their relative layout. Component ids are unique within a view; the same id may appear in different views.
+
+```json
+{
+  "id": "home",
+  "title": "Home",
+  "schema_version": 1,
+  "root": {
+    "id": "root",
+    "kind": "Container",
+    "props": {},
+    "bindings": [],
+    "children": []
+  }
+}
+```
+
+Each component has `id`, `kind`, loose JSON `props`, ordered `bindings`, and `children`. `props` remains untyped at the storage/protocol layer; the component library and designer validate it against each component's `propsSchema`. Bindings are ordered, and if multiple bindings target the same prop, the last binding wins. Binding sources are `tag`, `constant`, and a Phase 3 placeholder `expression`.
+
 ### 4.11 HMI Runtime (`apps/runtime-web`)
 
 A React SPA loaded from the gateway HTTP endpoint. On boot:

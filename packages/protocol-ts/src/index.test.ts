@@ -4,8 +4,10 @@ import {
   isQuality,
   isServerMessage,
   isTagValue,
+  isView,
   type ClientMessage,
   type ServerMessage,
+  type View,
 } from "./index";
 
 describe("ClientMessage wire form", () => {
@@ -37,6 +39,34 @@ describe("ClientMessage wire form", () => {
     const message: ClientMessage = { kind: "ping" };
 
     expect(JSON.stringify(message)).toBe('{"kind":"ping"}');
+    expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
+  });
+
+  it("serializes project.save_artifact exactly like Rust serde", () => {
+    const message: ClientMessage = {
+      kind: "project.save_artifact",
+      request_id: "r1",
+      project_id: "demo",
+      artifact: { kind: "view", id: "home" },
+      body: { id: "home" },
+    };
+
+    expect(JSON.stringify(message)).toBe(
+      '{"kind":"project.save_artifact","request_id":"r1","project_id":"demo","artifact":{"kind":"view","id":"home"},"body":{"id":"home"}}',
+    );
+    expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
+  });
+
+  it("serializes view.open exactly like Rust serde", () => {
+    const message: ClientMessage = {
+      kind: "view.open",
+      project_id: "demo",
+      view_id: "home",
+    };
+
+    expect(JSON.stringify(message)).toBe(
+      '{"kind":"view.open","project_id":"demo","view_id":"home"}',
+    );
     expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
   });
 
@@ -82,6 +112,30 @@ describe("ServerMessage parsing", () => {
     });
   });
 
+  it("parses view.definition into a typed value", () => {
+    const view = sampleView();
+    const parsed = {
+      kind: "view.definition",
+      project_id: "demo",
+      view_id: "home",
+      version: 7,
+      view,
+    };
+
+    expect(isServerMessage(parsed)).toBe(true);
+    expect(isView(view)).toBe(true);
+  });
+
+  it("rejects malformed view definitions defensively", () => {
+    expect(isView({ ...sampleView(), id: undefined })).toBe(false);
+    expect(
+      isView({
+        ...sampleView(),
+        root: { ...sampleView().root, kind: undefined },
+      }),
+    ).toBe(false);
+  });
+
   it("rejects unknown message kinds defensively", () => {
     expect(isClientMessage({ kind: "project.delete" })).toBe(false);
     expect(isServerMessage({ kind: "project.deleted" })).toBe(false);
@@ -107,3 +161,39 @@ describe("ServerMessage parsing", () => {
     expect(isQuality("excellent")).toBe(false);
   });
 });
+
+function sampleView(): View {
+  return {
+    id: "home",
+    title: "Home",
+    schema_version: 1,
+    root: {
+      id: "root",
+      kind: "Container",
+      props: {},
+      bindings: [],
+      children: [
+        {
+          id: "nested",
+          kind: "Container",
+          props: {},
+          bindings: [],
+          children: [
+            {
+              id: "pressure",
+              kind: "ValueDisplay",
+              props: { format: "number" },
+              bindings: [
+                {
+                  prop: "value",
+                  source: { kind: "tag", path: "rockwell-1/Pressure" },
+                },
+              ],
+              children: [],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}

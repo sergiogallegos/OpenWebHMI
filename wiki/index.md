@@ -15,7 +15,7 @@ Status values:
 
 ## Architecture
 
-*(seed — pages added as architectural questions arise during implementation)*
+- [architecture/project-store-on-disk-format.md](architecture/project-store-on-disk-format.md) — Phase 2 project-store directory layout, SQLite metadata role, versioning, and atomic artifact saves. `active`
 
 Planned high-value pages:
 - `architecture/protocol-evolution.md` — How the WebSocket message schema is versioned. `seed`
