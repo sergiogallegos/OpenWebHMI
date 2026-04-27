@@ -2,6 +2,34 @@
 
 > Snapshot of every cross-agent task. Update the row whenever a task's status changes. Authoring rules: see [`README.md`](README.md).
 
+## Phase 3 — Core SCADA features
+
+> Phase 3 is the largest phase by scope: alarms + history + trends + auth + scripting + script editor. Seven tasks. Most can run in parallel — the dependency graph below shows which ones gate others. Phase 3 exit criterion (per `docs/roadmap.md`): the demo HMI raises a high-temperature alarm, trends a process variable for 24h, requires login with an `Operator` role to write tags, and runs a Python script that writes a derived setpoint based on two inputs.
+
+| Id | Title | Owner | Status | Last update | File |
+|---|---|---|---|---|---|
+| CODEX-O | `crates/historian` — tag time-series storage + read API | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-O-historian.md](tasks/CODEX-O-historian.md) |
+| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open (blocked-by O) | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
+| CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-Q-alarm-engine.md](tasks/CODEX-Q-alarm-engine.md) |
+| CODEX-R | `AlarmTable` component + designer alarm config | codex | open (blocked-by Q) | 2026-04-27 claude | [tasks/CODEX-R-alarm-ui.md](tasks/CODEX-R-alarm-ui.md) |
+| CODEX-S | `crates/auth` — local users + roles + JWT + per-view ACLs | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-S-auth.md](tasks/CODEX-S-auth.md) |
+| CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-T-scripting-host.md](tasks/CODEX-T-scripting-host.md) |
+| CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (blocked-by T) | 2026-04-27 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
+
+### Phase 3 dependency graph
+
+```
+CODEX-O  (historian)             ← no blockers
+CODEX-P  (Trend component)       blocked-by O
+CODEX-Q  (alarm engine)          ← no blockers
+CODEX-R  (AlarmTable + UI)       blocked-by Q
+CODEX-S  (auth)                  ← no blockers
+CODEX-T  (scripting host)        ← no blockers
+CODEX-U  (script editor)         blocked-by T
+```
+
+**Four can start in parallel: O, Q, S, T.** Once those land, P / R / U unblock. CODEX-S touches the most surface (every WS handshake gets gated) so it's worth landing early so other tasks build on the auth-aware baseline.
+
 ## Phase 2 — Designer MVP
 
 **🎉 Phase 2 code-complete.** All Required-slice tasks (I/J/K/L/M + the CODEX-N follow-up) merged. Awaiting **manual-smoke validation** of the 10-step checklist in [`apps/designer/README.md`](../../apps/designer/README.md) before tagging `v0.2.0`. The Stretch slice (visual canvas, drag/drop, snap-to-grid, undo/redo, theme editor UI, four more components) is deferred to Phase 4 per the de-risked plan.
