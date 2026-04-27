@@ -164,4 +164,4 @@ Acceptance criteria: 5/6 met. The remaining one (manual browser smoke) is a foll
 
 ## Verdict
 
-**Merged** at the next commit. Three Phase 3 polish items tracked here (use `DriverSupervisor` for subscriptions, distinguish per-tag from group Bad, exponential backoff) — together they're a focused refactor PR when the same author returns to this code. Phase 1 vertical slice is done; the next milestone is a clean Phase 1 demo capture (browser smoke + GIF/screenshot for the README) before Phase 2 starts.
+**Merged** at `ca481d4`. Three Phase 3 polish items tracked here (use `DriverSupervisor` for subscriptions, distinguish per-tag from group Bad, exponential backoff) — together they're a focused refactor PR when the same author returns to this code. Phase 1 vertical slice is done; the next milestone is a clean Phase 1 demo capture (browser smoke + GIF/screenshot for the README) before Phase 2 starts.
