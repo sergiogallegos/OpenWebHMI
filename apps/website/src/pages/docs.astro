@@ -1,0 +1,212 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const REPO = "https://github.com/sergiogallegos/OpenWebHMI";
+const BLOB = `${REPO}/blob/main`;
+
+interface DocLink {
+  title: string;
+  description: string;
+  href: string;
+  audience: "everyone" | "contributors" | "agents";
+}
+
+const sections: { name: string; description: string; docs: DocLink[] }[] = [
+  {
+    name: "Project overview",
+    description: "What OpenWebHMI is, what it isn't, where it's going.",
+    docs: [
+      {
+        title: "README",
+        description: "Quick orientation: vision, stack, scope envelope, roadmap headline.",
+        href: `${BLOB}/README.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Architecture",
+        description: "Full v1 system design — components, data flows, failure modes, security boundaries.",
+        href: `${BLOB}/docs/architecture.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Roadmap",
+        description: "Phase 0 → 1.0 plan with concrete exit criteria per phase.",
+        href: `${BLOB}/docs/roadmap.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Feature matrix",
+        description: "Side-by-side feature catalog vs Ignition and Optix; v1 / post-1.0 / not-planned markers.",
+        href: `${BLOB}/docs/feature-matrix.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Stack rationale",
+        description: "Why Rust + Python + TypeScript instead of Java/Jython or C#/.NET. The AI/ML differentiator.",
+        href: `${BLOB}/docs/stack-rationale.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Scale estimates",
+        description: "Expected lines of code per component for v1.0 (target floor 2M), with actuals tracked over time.",
+        href: `${BLOB}/docs/scale-estimates.md`,
+        audience: "everyone",
+      },
+    ],
+  },
+  {
+    name: "For contributors",
+    description: "How to add drivers, components, scripts, and how the PR / review workflow runs.",
+    docs: [
+      {
+        title: "Contributing guide",
+        description: "Plugin extension model (drivers / components / scripts) and the local-dev runbook.",
+        href: `${BLOB}/docs/contributing.md`,
+        audience: "contributors",
+      },
+      {
+        title: "Driver wiki — rust-ethernet-ip",
+        description: "How driver-rockwell wraps the upstream EtherNet/IP crate, with versioned source citations and the upgrade workflow.",
+        href: `${BLOB}/wiki/drivers/rust-ethernet-ip-integration.md`,
+        audience: "contributors",
+      },
+      {
+        title: "Engineering wiki",
+        description: "Synthesized engineering knowledge — vendor quirks, validation results, decision rationale.",
+        href: `${BLOB}/tree/main/wiki`,
+        audience: "contributors",
+      },
+    ],
+  },
+  {
+    name: "For AI agents (and humans following the same playbook)",
+    description: "OpenWebHMI is built collaboratively by Claude (design + review) and Codex (development + debug). All hand-offs are durable in markdown.",
+    docs: [
+      {
+        title: "AGENTS.md",
+        description: "Three-layer doc model (raw sources → wiki → user docs) and source-authority rules.",
+        href: `${BLOB}/AGENTS.md`,
+        audience: "agents",
+      },
+      {
+        title: "docs/agents/",
+        description: "Cross-LLM collaboration protocol: per-task lifecycle files, board, append-only log.",
+        href: `${BLOB}/tree/main/docs/agents`,
+        audience: "agents",
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Documentation"
+  description="OpenWebHMI documentation — architecture, roadmap, feature matrix, stack rationale, contributing guide, and engineering wiki."
+>
+  <div class="container docs">
+    <header class="docs-header">
+      <span class="badge warn">Pre-alpha · docs are in the GitHub repo</span>
+      <h1>Documentation</h1>
+      <p class="muted">
+        Every architectural decision, task brief, code review, and
+        validation run lives in markdown next to the code. This page is the
+        index; all links go to the canonical source on GitHub.
+      </p>
+      <p class="subtle">
+        A standalone docs site (search, versioned API reference, embedded
+        live runtime) is a Phase 4 deliverable. For now: the markdown.
+      </p>
+    </header>
+
+    {sections.map((section) => (
+      <section class="docs-section">
+        <h2>{section.name}</h2>
+        <p class="muted">{section.description}</p>
+        <ul class="doc-grid">
+          {section.docs.map((doc) => (
+            <li>
+              <a href={doc.href} target="_blank" rel="noopener noreferrer">
+                <h3>{doc.title} <span class="ext">↗</span></h3>
+                <p class="muted">{doc.description}</p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+
+    <section class="docs-section">
+      <h2>API reference</h2>
+      <p class="muted">
+        Auto-generated rustdoc for the workspace crates. Available locally:
+      </p>
+      <pre><code>cargo doc --workspace --no-deps --open</code></pre>
+      <p class="muted">
+        A hosted rustdoc at <code>docs.openwebhmi.dev</code> ships with v1.0.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .docs {
+    padding: 56px 0;
+  }
+
+  .docs-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .docs-header h1 {
+    margin: 16px 0 12px;
+  }
+
+  .docs-section {
+    margin-top: 48px;
+  }
+
+  .doc-grid {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .doc-grid a {
+    display: block;
+    padding: 18px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: inherit;
+    transition: all 120ms ease;
+  }
+
+  .doc-grid a:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .doc-grid h3 {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+
+  .doc-grid p {
+    margin: 0;
+    font-size: 0.92rem;
+  }
+
+  .ext {
+    color: var(--text-subtle);
+    font-weight: 400;
+    font-size: 0.85em;
+  }
+</style>

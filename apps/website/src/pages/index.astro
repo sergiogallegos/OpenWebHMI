@@ -1,0 +1,285 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Logo from "../components/Logo.astro";
+---
+
+<BaseLayout title="OpenWebHMI">
+  <section class="hero">
+    <div class="container hero-inner">
+      <Logo size={88} />
+      <span class="badge warn">Pre-alpha · v0.1.0 (Phase 1)</span>
+      <h1>The open-source SCADA & HMI platform.</h1>
+      <p class="lede">
+        Web-first runtime, cross-platform desktop designer, plant-floor
+        connectivity. Built on <strong>Rust</strong>,
+        <strong>TypeScript</strong>, and modern <strong>Python</strong> for
+        in-platform AI/ML — not Java, not .NET, not Jython 2.7.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="/download">Get started →</a>
+        <a
+          class="button secondary"
+          href="https://github.com/sergiogallegos/OpenWebHMI"
+          target="_blank"
+          rel="noopener noreferrer"
+        >GitHub ↗</a>
+      </div>
+      <p class="hero-meta subtle">
+        MIT-licensed · single static binary · no JVM · no per-server fees
+      </p>
+    </div>
+  </section>
+
+  <section class="container section">
+    <h2>Why another platform?</h2>
+    <p>
+      Industrial automation has been locked behind closed source and
+      tens-of-thousands-per-gateway licenses for decades. Tools like
+      Inductive Automation Ignition and Rockwell FactoryTalk Optix are
+      excellent, but there is no equivalent open-source platform a small or
+      mid-size plant could actually run. OpenWebHMI's goal is to change that.
+    </p>
+    <p>
+      AI-assisted development makes the timeline plausible in a way it
+      wasn't five years ago.
+    </p>
+  </section>
+
+  <section class="container section">
+    <h2>v1.0 scope</h2>
+    <p class="muted">
+      Concrete bounds. If anything in the project implies bigger numbers,
+      it's wrong and gets fixed.
+    </p>
+    <ul class="scope-list">
+      <li><strong>Single gateway</strong> per deployment</li>
+      <li><strong>≤ 10,000</strong> live tags per gateway</li>
+      <li><strong>≤ 50</strong> concurrent runtime clients per gateway</li>
+      <li><strong>Two shipped drivers:</strong> Rockwell EtherNet/IP, OPC UA</li>
+      <li><strong>Web-only runtime</strong>; Tauri desktop runtime is post-1.0</li>
+      <li><strong>Linux, macOS, Windows</strong> for gateway and designer</li>
+    </ul>
+  </section>
+
+  <section class="container section">
+    <h2>Stack at a glance</h2>
+    <div class="stack-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Ignition</th>
+            <th>Optix</th>
+            <th>OpenWebHMI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Gateway</td>
+            <td>Java (JVM)</td>
+            <td>C# / .NET</td>
+            <td><strong>Rust</strong> (single static binary)</td>
+          </tr>
+          <tr>
+            <td>Designer</td>
+            <td>Java + Swing</td>
+            <td>Visual Studio (Win-only)</td>
+            <td><strong>Tauri + React/TS</strong> (Win + Mac)</td>
+          </tr>
+          <tr>
+            <td>Web HMI</td>
+            <td>Perspective (React/TS over Java)</td>
+            <td>Optix WebPresentation</td>
+            <td><strong>React + TypeScript</strong></td>
+          </tr>
+          <tr>
+            <td>Scripting</td>
+            <td>Jython 2.7 (frozen 2010)</td>
+            <td>C# / JS</td>
+            <td><strong>CPython 3.11+</strong> in worker subprocesses</td>
+          </tr>
+          <tr>
+            <td>Open source?</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✅ <strong>MIT</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">
+      The CPython 3.11+ scripting layer is the headline differentiator:
+      <code>numpy</code>, <code>pandas</code>, <code>scikit-learn</code>,
+      <code>torch</code>, and LLM SDKs all run natively in scripts.
+      In-platform predictive maintenance and AI-assisted authoring become
+      normal features, not external integration projects.
+    </p>
+    <p>
+      <a
+        href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/stack-rationale.md"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Full reasoning: docs/stack-rationale.md ↗</a>
+    </p>
+  </section>
+
+  <section class="container section">
+    <h2>Where we are</h2>
+    <ol class="phase-list">
+      <li>
+        <span class="badge success">✓ Phase 0</span>
+        Foundations — gateway boots, simulated tags flow to a browser.
+      </li>
+      <li>
+        <span class="badge success">✓ Phase 1</span>
+        Vertical slice — Rockwell driver wired end-to-end, validated against
+        a simulator. Released as v0.1.0.
+      </li>
+      <li>
+        <span class="badge">⏳ Phase 2</span>
+        Designer MVP — visual authoring, 6 essential components, hot reload.
+      </li>
+      <li>
+        <span class="muted">Phase 3</span>
+        Core SCADA — alarms, historian + trends, auth, Python scripting.
+      </li>
+      <li>
+        <span class="muted">Phase 4</span>
+        1.0 release — second driver, plugin SDK, real-hardware validation gate.
+      </li>
+    </ol>
+    <p>
+      <a
+        href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/roadmap.md"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Detailed roadmap ↗</a>
+    </p>
+  </section>
+
+  <section class="container section">
+    <h2>What we explicitly don't try to be</h2>
+    <ul class="dont-list">
+      <li>A hard-real-time control platform.</li>
+      <li>A safety-rated (IEC 61508 / SIL) system.</li>
+      <li>A replacement for vendor-specific PLC engineering tooling.</li>
+      <li>An MES platform — that's a year-2+ conversation, not a 1.0 promise.</li>
+      <li>An enterprise-scale (&gt;10K tag, &gt;50 client, multi-gateway) system in v1.</li>
+    </ul>
+  </section>
+
+  <section class="container section cta">
+    <h2>Want to follow along?</h2>
+    <p>
+      The repo is the source of truth — every architectural decision, task
+      brief, code review, and validation run is in markdown alongside the
+      code.
+    </p>
+    <div class="hero-actions">
+      <a class="button primary" href="/docs">Browse docs →</a>
+      <a
+        class="button secondary"
+        href="https://github.com/sergiogallegos/OpenWebHMI"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Star on GitHub ↗</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 80px 0 64px;
+    border-bottom: 1px solid var(--border);
+    background:
+      radial-gradient(
+        ellipse at top,
+        var(--brand-soft) 0%,
+        transparent 60%
+      );
+  }
+
+  .hero-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .hero h1 {
+    margin: 0;
+    max-width: 18ch;
+  }
+
+  .lede {
+    font-size: 1.2rem;
+    line-height: 1.55;
+    max-width: 64ch;
+    color: var(--text-muted);
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hero-meta {
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
+
+  .section {
+    padding: 56px 0;
+  }
+
+  .scope-list,
+  .dont-list,
+  .phase-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .scope-list li,
+  .dont-list li {
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .phase-list {
+    counter-reset: phase;
+  }
+
+  .phase-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .stack-table-wrap {
+    overflow-x: auto;
+  }
+
+  .cta {
+    text-align: center;
+    background: var(--surface);
+    margin-top: 32px;
+    padding: 56px 0;
+    border-radius: var(--radius-lg);
+  }
+
+  .cta .hero-actions {
+    margin-top: 16px;
+  }
+</style>

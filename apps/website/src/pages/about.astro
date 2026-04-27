@@ -1,0 +1,187 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="About"
+  description="OpenWebHMI is an open-source SCADA / HMI platform built collaboratively by humans and AI. Learn about the project's mission, contribution model, and license."
+>
+  <div class="container about">
+    <header>
+      <h1>About OpenWebHMI</h1>
+      <p class="lede muted">
+        An open-source, web-first SCADA / HMI platform for small and mid-size
+        industrial systems. MIT-licensed. Built in the open, on GitHub, by
+        humans collaborating with AI.
+      </p>
+    </header>
+
+    <section>
+      <h2>Mission</h2>
+      <p>
+        Industrial automation has been locked behind closed source and
+        per-server licenses for decades. There is no equivalent open-source
+        platform with reach comparable to Inductive Automation Ignition or
+        Rockwell FactoryTalk Optix. Most open-source HMIs are toy-scale,
+        abandoned, or single-language stacks that don't address the SCADA +
+        HMI surface seriously.
+      </p>
+      <p>
+        OpenWebHMI's goal is a credible open-source platform a small or
+        mid-size plant could actually run — without a JVM, without
+        per-server licensing, with a modern Python ecosystem in scripts so
+        predictive maintenance and AI assistance are normal features rather
+        than external integration projects.
+      </p>
+    </section>
+
+    <section>
+      <h2>How it's built</h2>
+      <p>
+        Two AI agents collaborate on the codebase under explicit role
+        separation, with all hand-offs in durable markdown:
+      </p>
+      <ul class="role-list">
+        <li>
+          <strong>Claude</strong> — design, architecture, and code review.
+        </li>
+        <li>
+          <strong>Codex (GPT)</strong> — development, debugging,
+          refactoring.
+        </li>
+        <li>
+          <strong>The maintainer</strong> — routes messages between agents,
+          steers product direction, runs hardware validation.
+        </li>
+      </ul>
+      <p>
+        Every task brief, working note, code review, and merge verdict lives
+        in <code>docs/agents/tasks/</code> as a versioned markdown file. The
+        protocol is documented in <code>docs/agents/README.md</code>.
+        Anyone can read the project's full development history, review by
+        review, by reading the repo.
+      </p>
+    </section>
+
+    <section>
+      <h2>Contributing</h2>
+      <p>
+        Contributions are welcome — the project is structured around
+        community-built drivers, components, and script libraries. Three
+        plugin extension points:
+      </p>
+      <ul class="role-list">
+        <li>
+          <strong>Drivers</strong> (Rust, published to crates.io) implementing
+          the <code>Driver</code> trait.
+        </li>
+        <li>
+          <strong>Components</strong> (TS / React, published to npm)
+          declaring a <code>propsSchema</code> that drives the designer's
+          property panel automatically.
+        </li>
+        <li>
+          <strong>Script libraries</strong> (Python, project-bundled or
+          PyPI) exercising the <code>system.*</code> standard library.
+        </li>
+      </ul>
+      <p>
+        Read
+        <a
+          href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/contributing.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        ><code>docs/contributing.md</code> ↗</a>
+        for the PR workflow and quality bar.
+      </p>
+    </section>
+
+    <section>
+      <h2>License</h2>
+      <p>
+        OpenWebHMI is released under the <strong>MIT License</strong>. The
+        runtime is free; there are no per-server fees, no module licenses,
+        no activation servers. Brand assets are MIT-licensed too — fork
+        away.
+      </p>
+      <p>
+        <a
+          href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/LICENSE"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Read the LICENSE ↗</a>
+      </p>
+    </section>
+
+    <section>
+      <h2>Maintainer</h2>
+      <p>
+        <strong>Sergio Gallegos</strong> · repo owner ·
+        <a href="https://sergiogallegos.net" target="_blank" rel="noopener noreferrer">sergiogallegos.net</a>
+      </p>
+      <p>
+        Sponsorship is open via GitHub Sponsors. Project sponsors get
+        acknowledgement on this page once the program launches.
+      </p>
+    </section>
+
+    <section class="warning">
+      <h2>Status</h2>
+      <p>
+        <strong>Pre-alpha.</strong> The architecture, roadmap, and feature
+        scope are committed. Code is being written. Don't deploy this
+        anywhere that matters yet. Real-hardware validation against a
+        physical Rockwell PLC is a hard gate before 1.0.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .about {
+    padding: 56px 0;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  section {
+    margin-top: 48px;
+  }
+
+  .lede {
+    font-size: 1.15rem;
+    max-width: 64ch;
+    margin: 16px auto 0;
+  }
+
+  .role-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+    display: grid;
+    gap: 10px;
+  }
+
+  .role-list li {
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  section.warning {
+    margin-top: 64px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+  }
+
+  section.warning h2 {
+    margin-top: 0;
+    color: var(--warn);
+  }
+</style>

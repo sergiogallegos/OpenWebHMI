@@ -1,0 +1,96 @@
+---
+const year = new Date().getUTCFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <strong>OpenWebHMI</strong>
+        <p class="muted">
+          Open-source, web-first SCADA / HMI platform for small and mid-size
+          industrial systems.
+        </p>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="/docs">Documentation</a></li>
+          <li><a href="/download">Download</a></li>
+          <li><a href="/about">About</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Source</h4>
+        <ul>
+          <li>
+            <a href="https://github.com/sergiogallegos/OpenWebHMI" target="_blank" rel="noopener noreferrer">GitHub repository ↗</a>
+          </li>
+          <li>
+            <a href="https://github.com/sergiogallegos/OpenWebHMI/issues" target="_blank" rel="noopener noreferrer">Issues ↗</a>
+          </li>
+          <li>
+            <a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License ↗</a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h4>Standing on</h4>
+        <ul>
+          <li><a href="https://www.rust-lang.org/" target="_blank" rel="noopener noreferrer">Rust</a></li>
+          <li><a href="https://www.typescriptlang.org/" target="_blank" rel="noopener noreferrer">TypeScript</a></li>
+          <li><a href="https://www.python.org/" target="_blank" rel="noopener noreferrer">Python</a></li>
+          <li><a href="https://tauri.app/" target="_blank" rel="noopener noreferrer">Tauri</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="subtle">© {year} OpenWebHMI contributors. MIT-licensed.</span>
+      <span class="subtle">Pre-alpha · not for production deployment.</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: 80px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 48px 0 24px;
+    font-size: 0.92rem;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 32px;
+  }
+
+  h4 {
+    margin-top: 0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .footer-bottom {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.85rem;
+  }
+</style>

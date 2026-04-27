@@ -17,6 +17,9 @@ out/
 apps/designer/src-tauri/target/
 apps/designer/src-tauri/gen/
 
+# Astro (website)
+apps/website/.astro/
+
 # Python (scripting host work)
 __pycache__/
 *.py[cod]

@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Not found">
+  <div class="container not-found">
+    <h1>404</h1>
+    <p class="muted">That page doesn't exist (or hasn't shipped yet).</p>
+    <p>
+      <a class="button primary" href="/">Back to home</a>
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .not-found {
+    padding: 120px 0;
+    text-align: center;
+  }
+
+  .not-found h1 {
+    font-size: 5rem;
+    margin: 0 0 8px;
+    color: var(--brand);
+  }
+</style>

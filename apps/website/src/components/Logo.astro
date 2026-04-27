@@ -1,0 +1,37 @@
+---
+interface Props {
+  size?: number;
+  /** Use the white variant on dark backgrounds. Defaults to currentColor-friendly blue. */
+  variant?: "color" | "light" | "dark";
+}
+
+const { size = 32, variant = "color" } = Astro.props;
+const stroke = variant === "light" ? "#ffffff" : variant === "dark" ? "#1d1d1f" : "#0066ff";
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  width={size}
+  height={size}
+  fill="none"
+  aria-label="OpenWebHMI logo"
+>
+  <path
+    d="M22 14 L12 14 L12 50 L22 50"
+    stroke={stroke}
+    stroke-width="4"
+    stroke-linecap="square"
+    stroke-linejoin="miter"
+    fill="none"
+  ></path>
+  <path
+    d="M42 14 L52 14 L52 50 L42 50"
+    stroke={stroke}
+    stroke-width="4"
+    stroke-linecap="square"
+    stroke-linejoin="miter"
+    fill="none"
+  ></path>
+  <circle cx="32" cy="32" r="5" fill={stroke}></circle>
+</svg>

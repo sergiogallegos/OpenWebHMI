@@ -1,0 +1,108 @@
+---
+import Logo from "./Logo.astro";
+const { pathname } = Astro.url;
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/docs", label: "Docs" },
+  { href: "/download", label: "Download" },
+  { href: "/about", label: "About" },
+];
+function isActive(href: string): boolean {
+  if (href === "/") return pathname === "/" || pathname === "";
+  return pathname.startsWith(href);
+}
+---
+
+<header class="site-header">
+  <div class="container nav">
+    <a class="brand" href="/">
+      <Logo size={28} />
+      <span>OpenWebHMI</span>
+    </a>
+    <nav>
+      {links.map((link) => (
+        <a class={isActive(link.href) ? "active" : ""} href={link.href}>
+          {link.label}
+        </a>
+      ))}
+      <a
+        class="github"
+        href="https://github.com/sergiogallegos/OpenWebHMI"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="OpenWebHMI on GitHub"
+      >
+        GitHub ↗
+      </a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: saturate(140%) blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .site-header {
+      background: rgba(10, 14, 26, 0.85);
+    }
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .brand:hover {
+    text-decoration: none;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  nav a {
+    padding: 8px 14px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  nav a:hover {
+    color: var(--text);
+    background: var(--surface);
+    text-decoration: none;
+  }
+
+  nav a.active {
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  nav a.github {
+    margin-left: 8px;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+</style>
