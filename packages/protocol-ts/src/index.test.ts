@@ -83,6 +83,23 @@ describe("ClientMessage wire form", () => {
     expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
   });
 
+  it("serializes history.read exactly like Rust serde", () => {
+    const message: ClientMessage = {
+      kind: "history.read",
+      request_id: "r1",
+      tag_path: "rockwell-1/Pressure",
+      t_start_ms: 10,
+      t_end_ms: 20,
+      aggregation: "avg",
+      max_points: 100,
+    };
+
+    expect(JSON.stringify(message)).toBe(
+      '{"kind":"history.read","request_id":"r1","tag_path":"rockwell-1/Pressure","t_start_ms":10,"t_end_ms":20,"aggregation":"avg","max_points":100}',
+    );
+    expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
+  });
+
   it("serializes tag values and quality exactly like Rust serde", () => {
     expect(JSON.stringify({ type: "real", value: 2.5 })).toBe(
       '{"type":"real","value":2.5}',
@@ -137,6 +154,17 @@ describe("ServerMessage parsing", () => {
 
     expect(isServerMessage(parsed)).toBe(true);
     expect(isView(view)).toBe(true);
+  });
+
+  it("parses history.result into a typed value", () => {
+    const parsed = {
+      kind: "history.result",
+      request_id: "r1",
+      tag_path: "rockwell-1/Pressure",
+      points: [{ ts_ms: 10, value: { type: "real", value: 2.5 }, quality: "good" }],
+    };
+
+    expect(isServerMessage(parsed)).toBe(true);
   });
 
   it("rejects malformed view definitions defensively", () => {

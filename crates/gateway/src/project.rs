@@ -8,6 +8,7 @@ use anyhow::Context;
 use futures_util::StreamExt;
 use openwebhmi_driver_api::{Driver, TagAddress};
 use openwebhmi_driver_rockwell::{RockwellConfig, RockwellDriver};
+use openwebhmi_historian::HistoryTagConfig;
 use openwebhmi_project_store::{DriverConfig, Project, ProjectStore, TagConfig};
 use openwebhmi_protocol::{Quality, TagValue};
 use openwebhmi_tag_engine::TagStore;
@@ -91,6 +92,21 @@ pub fn spawn_project(project: Project, store: TagStore) -> anyhow::Result<Driver
     }
 
     Ok(handles)
+}
+
+/// Extract historian configs from project tags.
+pub fn history_configs(project: &Project) -> Vec<HistoryTagConfig> {
+    project
+        .tags
+        .iter()
+        .filter_map(|tag| {
+            tag.history.as_ref().map(|history| HistoryTagConfig {
+                path: tag.path.clone(),
+                rate_ms: history.rate_ms.unwrap_or(1_000),
+                deadband: history.deadband.unwrap_or(0.0),
+            })
+        })
+        .collect()
 }
 
 fn group_tags_by_driver(project: &Project) -> HashMap<String, Vec<TagConfig>> {
@@ -254,6 +270,7 @@ mod tests {
                 path: "other/Pressure".to_string(),
                 driver: "rockwell-1".to_string(),
                 address: "Pressure".to_string(),
+                history: None,
             }],
             views: Vec::new(),
         };

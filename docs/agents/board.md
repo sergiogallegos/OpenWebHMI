@@ -8,7 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-O | `crates/historian` — tag time-series storage + read API | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-O-historian.md](tasks/CODEX-O-historian.md) |
+| CODEX-O | `crates/historian` — tag time-series storage + read API | codex | submitted | 2026-04-27 18:31 codex | [tasks/CODEX-O-historian.md](tasks/CODEX-O-historian.md) |
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open (blocked-by O) | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-Q-alarm-engine.md](tasks/CODEX-Q-alarm-engine.md) |
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | open (blocked-by Q) | 2026-04-27 claude | [tasks/CODEX-R-alarm-ui.md](tasks/CODEX-R-alarm-ui.md) |

@@ -42,6 +42,12 @@ export type View = {
   schema_version: number;
 };
 
+export type HistoryPoint = {
+  ts_ms: number;
+  value: TagValue;
+  quality: Quality;
+};
+
 /** Messages accepted by the gateway from a runtime or designer client. */
 export type ClientMessage =
   | { kind: "tag.subscribe"; paths: string[] }
@@ -51,6 +57,15 @@ export type ClientMessage =
   | { kind: "project.subscribe"; project_id: string }
   | { kind: "project.unsubscribe"; project_id: string }
   | { kind: "project.load"; project_id: string }
+  | {
+      kind: "history.read";
+      request_id?: string | null;
+      tag_path: string;
+      t_start_ms: number;
+      t_end_ms: number;
+      aggregation: string;
+      max_points: number;
+    }
   | {
       kind: "project.save_artifact";
       request_id?: string | null;
@@ -73,6 +88,12 @@ export type ServerMessage =
   | { kind: "pong" }
   | { kind: "error"; code: string; message: string }
   | { kind: "project.snapshot"; project: unknown; version: number }
+  | {
+      kind: "history.result";
+      request_id?: string | null;
+      tag_path: string;
+      points: HistoryPoint[];
+    }
   | {
       kind: "project.changed";
       project_id: string;
@@ -141,6 +162,20 @@ export function isClientMessage(value: unknown): value is ClientMessage {
     case "project.unsubscribe":
     case "project.load":
       return typeof value.project_id === "string";
+    case "history.read":
+      return (
+        typeof value.tag_path === "string" &&
+        typeof value.t_start_ms === "number" &&
+        Number.isFinite(value.t_start_ms) &&
+        typeof value.t_end_ms === "number" &&
+        Number.isFinite(value.t_end_ms) &&
+        typeof value.aggregation === "string" &&
+        typeof value.max_points === "number" &&
+        Number.isFinite(value.max_points) &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
     case "project.save_artifact":
       return (
         typeof value.project_id === "string" &&
@@ -181,6 +216,15 @@ export function isServerMessage(value: unknown): value is ServerMessage {
       return typeof value.code === "string" && typeof value.message === "string";
     case "project.snapshot":
       return typeof value.version === "number" && Number.isFinite(value.version);
+    case "history.result":
+      return (
+        typeof value.tag_path === "string" &&
+        Array.isArray(value.points) &&
+        value.points.every(isHistoryPoint) &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
     case "project.changed":
       return (
         typeof value.project_id === "string" &&
@@ -209,6 +253,16 @@ export function isServerMessage(value: unknown): value is ServerMessage {
     default:
       return false;
   }
+}
+
+function isHistoryPoint(value: unknown): value is HistoryPoint {
+  return (
+    isRecord(value) &&
+    typeof value.ts_ms === "number" &&
+    Number.isFinite(value.ts_ms) &&
+    isTagValue(value.value) &&
+    isQuality(value.quality)
+  );
 }
 
 export function isView(value: unknown): value is View {

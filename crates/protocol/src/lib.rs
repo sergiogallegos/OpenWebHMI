@@ -13,6 +13,17 @@ use serde::{Deserialize, Serialize};
 
 pub use openwebhmi_project_store::{ArtifactKind, ChangeAction, View};
 
+/// A historical tag sample returned by `history.result`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HistoryPoint {
+    /// Unix epoch milliseconds.
+    pub ts_ms: u64,
+    /// Historical value.
+    pub value: TagValue,
+    /// Historical quality.
+    pub quality: Quality,
+}
+
 /// A tag's current value.
 ///
 /// The runtime carries quality + timestamp alongside this value via
@@ -94,6 +105,23 @@ pub enum ClientMessage {
         /// Project id.
         project_id: String,
     },
+    /// Read historical samples for one tag.
+    #[serde(rename = "history.read")]
+    HistoryRead {
+        /// Optional request id echoed in the result.
+        #[serde(default)]
+        request_id: Option<String>,
+        /// Tag path to query.
+        tag_path: String,
+        /// Inclusive start time in Unix epoch milliseconds.
+        t_start_ms: u64,
+        /// Inclusive end time in Unix epoch milliseconds.
+        t_end_ms: u64,
+        /// Aggregation name.
+        aggregation: String,
+        /// Maximum points to return.
+        max_points: u32,
+    },
     /// Save a single project artifact.
     #[serde(rename = "project.save_artifact")]
     ProjectSaveArtifact {
@@ -159,6 +187,16 @@ pub enum ServerMessage {
         project: serde_json::Value,
         /// Project version.
         version: u64,
+    },
+    /// Historical points for one tag.
+    #[serde(rename = "history.result")]
+    HistoryResult {
+        /// Optional request id from the read request.
+        request_id: Option<String>,
+        /// Tag path queried.
+        tag_path: String,
+        /// Returned points.
+        points: Vec<HistoryPoint>,
     },
     /// Project artifact changed.
     #[serde(rename = "project.changed")]
@@ -247,6 +285,24 @@ mod tests {
         assert_eq!(json, r#"{"kind":"ping"}"#);
         let back: ClientMessage = serde_json::from_str(&json).unwrap();
         assert_eq!(m, back);
+    }
+
+    #[test]
+    fn history_read_wire_form_is_stable() {
+        let m = ClientMessage::HistoryRead {
+            request_id: Some("r1".into()),
+            tag_path: "rockwell-1/Pressure".into(),
+            t_start_ms: 10,
+            t_end_ms: 20,
+            aggregation: "avg".into(),
+            max_points: 100,
+        };
+        let json = serde_json::to_string(&m).unwrap();
+        assert_eq!(
+            json,
+            r#"{"kind":"history.read","request_id":"r1","tag_path":"rockwell-1/Pressure","t_start_ms":10,"t_end_ms":20,"aggregation":"avg","max_points":100}"#
+        );
+        assert_eq!(serde_json::from_str::<ClientMessage>(&json).unwrap(), m);
     }
 
     #[test]

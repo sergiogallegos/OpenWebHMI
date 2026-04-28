@@ -4,6 +4,7 @@ members = [
     "crates/driver-api",
     "crates/driver-rockwell",
     "crates/gateway",
+    "crates/historian",
     "crates/project-store",
     "crates/protocol",
     "crates/tag-engine",

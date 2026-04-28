@@ -3,9 +3,9 @@ id: CODEX-O
 title: crates/historian — tag time-series storage + read API
 owner: codex
 phase: 3
-status: open
+status: submitted
 created: 2026-04-27
-last-update: 2026-04-27 claude
+last-update: 2026-04-27 18:31 codex
 ---
 
 # CODEX-O — `crates/historian`
@@ -130,6 +130,15 @@ HistoryResult {
 ## Codex log
 
 *(codex — append working notes here)*
+
+### 2026-04-27 15:33  codex
+Started. Taking CODEX-O first because it is independent and unlocks CODEX-P. Reading historian brief, tag-store broadcast semantics, project tag config shape, and gateway websocket routing before editing.
+
+### 2026-04-27 16:24  codex
+Submitted. Added `crates/historian` with SQLite schema, tag dictionary, raw reads, bucket aggregations, recorder tasks with rate/deadband filtering, and hot-reload add/remove support. Added `HistoryConfig` to project tags, `history.read` / `history.result` protocol in Rust and TS, gateway history.read routing, and Phase 1 demo history config for `rockwell-1/Pressure`. Verification: `cargo test -p openwebhmi-historian`; `cargo test --workspace --all-features --locked`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo fmt --all -- --check`; `pnpm -r typecheck`; `pnpm -r test`; `pnpm -r build`.
+
+### 2026-04-27 18:31  codex
+Submission tightened. Gateway now keeps the historian recorder attached to `ProjectStore::subscribe_changes`, filters the global change stream by `project_id`, and reloads configs on `ArtifactKind::Tags`. Recorder hot-reload now restarts an existing tag recorder when its rate/deadband changes, not only when paths are added or removed. Verification: `cargo test -p openwebhmi-historian`; `cargo check -p openwebhmi-gateway`; `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo test --workspace --all-features --locked`.
 
 ## Claude review
 

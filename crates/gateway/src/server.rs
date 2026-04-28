@@ -2,9 +2,12 @@
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::str::FromStr;
+use std::sync::OnceLock;
 
 use anyhow::Context;
 use futures_util::{SinkExt, StreamExt};
+use openwebhmi_historian::{Aggregation, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
 use openwebhmi_protocol::{ArtifactKind, ClientMessage, ServerMessage};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
@@ -18,6 +21,12 @@ use crate::project::{DriverHandle, DriverHandles, WriteCommand, WriteEnqueueErro
 
 type OutboundTx = mpsc::Sender<ServerMessage>;
 const OUTBOUND_CAPACITY: usize = 256;
+static DEFAULT_HISTORIAN: OnceLock<HistorianStore> = OnceLock::new();
+
+/// Set the process-wide historian used by websocket `history.read` handlers.
+pub fn set_default_historian(historian: HistorianStore) {
+    let _ = DEFAULT_HISTORIAN.set(historian);
+}
 
 /// Bind `addr` and serve WebSocket clients forever.
 pub async fn run(addr: SocketAddr, store: TagStore) -> anyhow::Result<()> {
@@ -255,6 +264,48 @@ async fn handle_connection(
                         }
                     }
                     Err(err) => send_error(&out_tx, "project.load", err.to_string()),
+                }
+            }
+            ClientMessage::HistoryRead {
+                request_id,
+                tag_path,
+                t_start_ms,
+                t_end_ms,
+                aggregation,
+                max_points,
+            } => {
+                let Some(historian) = DEFAULT_HISTORIAN.get() else {
+                    send_error(
+                        &out_tx,
+                        "history.unavailable",
+                        "historian is not enabled".into(),
+                    );
+                    continue;
+                };
+                let aggregation = match Aggregation::from_str(&aggregation) {
+                    Ok(aggregation) => aggregation,
+                    Err(err) => {
+                        send_error(&out_tx, "history.aggregation", err.to_string());
+                        continue;
+                    }
+                };
+                match historian.read(&tag_path, t_start_ms, t_end_ms, aggregation, max_points) {
+                    Ok(points) => try_send_message(
+                        &out_tx,
+                        ServerMessage::HistoryResult {
+                            request_id,
+                            tag_path,
+                            points: points
+                                .into_iter()
+                                .map(|point| openwebhmi_protocol::HistoryPoint {
+                                    ts_ms: point.ts_ms,
+                                    value: point.value,
+                                    quality: point.quality,
+                                })
+                                .collect(),
+                        },
+                    ),
+                    Err(err) => send_error(&out_tx, "history.read", err.to_string()),
                 }
             }
             ClientMessage::ProjectSaveArtifact {

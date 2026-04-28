@@ -16,6 +16,9 @@ path = "rockwell-1/Pressure"
 driver = "rockwell-1"
 address = "Pressure"
 
+[tags.history]
+rate_ms = 500
+
 [[tags]]
 path = "rockwell-1/Counter"
 driver = "rockwell-1"

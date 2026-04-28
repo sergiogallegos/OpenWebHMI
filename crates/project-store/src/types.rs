@@ -46,7 +46,7 @@ pub struct DriverConfig {
 }
 
 /// Tag mapping from a project path to a driver address.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TagConfig {
     /// Gateway tag path exposed to runtime clients.
     pub path: String,
@@ -54,6 +54,20 @@ pub struct TagConfig {
     pub driver: String,
     /// Driver-native tag address.
     pub address: String,
+    /// Optional historian recording configuration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub history: Option<HistoryConfig>,
+}
+
+/// Optional tag history recording configuration.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HistoryConfig {
+    /// Minimum interval between recorded samples.
+    #[serde(default)]
+    pub rate_ms: Option<u64>,
+    /// Numeric deadband; non-numeric values ignore it.
+    #[serde(default)]
+    pub deadband: Option<f64>,
 }
 
 /// HMI view definition.

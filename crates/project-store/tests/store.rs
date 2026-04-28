@@ -33,7 +33,12 @@ fn save_list_load_and_read_artifacts() {
             "demo",
             ArtifactKind::Tags,
             json!([
-                { "path": "rockwell-1/Pressure", "driver": "rockwell-1", "address": "Pressure" }
+                {
+                    "path": "rockwell-1/Pressure",
+                    "driver": "rockwell-1",
+                    "address": "Pressure",
+                    "history": { "rate_ms": 500, "deadband": 0.1 }
+                }
             ]),
         )
         .unwrap();
@@ -49,6 +54,7 @@ fn save_list_load_and_read_artifacts() {
     let project = store.load("demo").unwrap();
     assert_eq!(project.version, 3);
     assert_eq!(project.tags.len(), 1);
+    assert_eq!(project.tags[0].history.as_ref().unwrap().rate_ms, Some(500));
     assert_eq!(project.views[0].id, "home");
     assert!(store
         .read_artifact("demo", ArtifactKind::View { id: "home".into() })

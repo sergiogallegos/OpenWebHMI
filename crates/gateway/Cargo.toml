@@ -25,6 +25,7 @@ clap = { workspace = true }
 futures-util = { workspace = true }
 openwebhmi-driver-api = { path = "../driver-api" }
 openwebhmi-driver-rockwell = { path = "../driver-rockwell" }
+openwebhmi-historian = { path = "../historian" }
 openwebhmi-project-store = { path = "../project-store" }
 openwebhmi-protocol = { path = "../protocol" }
 openwebhmi-tag-engine = { path = "../tag-engine" }

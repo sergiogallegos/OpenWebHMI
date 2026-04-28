@@ -4,9 +4,11 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Parser;
 use openwebhmi_gateway::{project, server, sim_provider};
+use openwebhmi_historian::{spawn_recorder, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
+use openwebhmi_protocol::ArtifactKind;
 use openwebhmi_tag_engine::TagStore;
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
@@ -39,15 +41,17 @@ async fn main() -> anyhow::Result<()> {
             .and_then(|path| infer_project_store_root(path))
     });
 
-    let driver_handles = if let Some(path) = args.project {
-        let project = project::load(&path)?;
-        project::spawn_project(project, store.clone())?
-    } else {
-        project::DriverHandles::new()
-    };
     let project_store = match project_store_root {
         Some(root) => Some(ProjectStore::open(root)?),
         None => None,
+    };
+
+    let driver_handles = if let Some(path) = args.project {
+        let project = project::load(&path)?;
+        spawn_history_recorder(store.clone(), project_store.clone(), &project)?;
+        project::spawn_project(project, store.clone())?
+    } else {
+        project::DriverHandles::new()
     };
 
     // TODO Phase 3 auth/TLS: this Phase 0 endpoint is intentionally unauthenticated WS.
@@ -59,6 +63,58 @@ async fn main() -> anyhow::Result<()> {
             Ok(())
         }
     }
+}
+
+fn spawn_history_recorder(
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+    project: &openwebhmi_project_store::Project,
+) -> anyhow::Result<()> {
+    let historian = HistorianStore::open("openwebhmi-history.sqlite")?;
+    server::set_default_historian(historian.clone());
+
+    let mut recorder = spawn_recorder(store, historian, project::history_configs(project));
+    let Some(project_store) = project_store else {
+        tokio::spawn(async move {
+            std::future::pending::<()>().await;
+            recorder.abort();
+        });
+        return Ok(());
+    };
+
+    let project_id = project.id.clone();
+    tokio::spawn(async move {
+        let mut changes = project_store.subscribe_changes(Some(&project_id));
+        loop {
+            match changes.recv().await {
+                Ok(change)
+                    if change.project_id == project_id
+                        && matches!(change.artifact, ArtifactKind::Tags) =>
+                {
+                    match project_store.load(&project_id) {
+                        Ok(project) => recorder.update_configs(project::history_configs(&project)),
+                        Err(err) => {
+                            warn!(
+                                project_id = %project_id,
+                                error = %err,
+                                "failed to reload historian tag configuration"
+                            );
+                        }
+                    }
+                }
+                Ok(_) => {}
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                    warn!(
+                        project_id = %project_id,
+                        skipped,
+                        "historian project change subscriber lagged"
+                    );
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => return,
+            }
+        }
+    });
+    Ok(())
 }
 
 async fn run_server(
