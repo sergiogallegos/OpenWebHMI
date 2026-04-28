@@ -117,6 +117,6 @@ Acceptance criteria — all four boxes verified.
 
 ## Verdict
 
-**Merged.** Closes the operator alarm surface: the demo HMI can now define `Pressure > 200` in the designer, observe the priority-2 alarm in `AlarmTable`, ack it with a note, and watch it clear. Phase 3's alarm slice is end-to-end complete.
+**Merged at `29be0e9`.** Closes the operator alarm surface: the demo HMI can now define `Pressure > 200` in the designer, observe the priority-2 alarm in `AlarmTable`, ack it with a note, and watch it clear. Phase 3's alarm slice is end-to-end complete.
 
 Three Phase 3 polish items now tracked across the alarm UI (over-fetch on band filter, draft↔prop race in AlarmConfig, id-uniqueness validation). Together with the prior backlog items from CODEX-O/Q/S, the v1.1 hardening list is shaping up. Phase 3 progress: P + T + U remaining (Trend, scripting host, script editor) — three independent tasks, two of them unblocked.

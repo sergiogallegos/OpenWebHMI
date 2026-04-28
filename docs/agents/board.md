@@ -55,7 +55,7 @@ CODEX-U  (script editor)         blocked-by T
 | CODEX-O | `crates/historian` — tag time-series storage + read API | codex | `9db711e` | 3 |
 | CODEX-S | `crates/auth` — local users + roles + JWT sessions + per-view ACLs | codex | `7eff30a` | 3 |
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | `ff56780` | 3 |
-| CODEX-R | `AlarmTable` component + designer alarm config | codex | _pending merge_ | 3 |
+| CODEX-R | `AlarmTable` component + designer alarm config | codex | `29be0e9` | 3 |
 
 ## Conventions
 
