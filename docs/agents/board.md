@@ -8,8 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-O | `crates/historian` — tag time-series storage + read API | codex | submitted | 2026-04-27 18:31 codex | [tasks/CODEX-O-historian.md](tasks/CODEX-O-historian.md) |
-| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open (blocked-by O) | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
+| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open (O merged → unblocked) | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-Q-alarm-engine.md](tasks/CODEX-Q-alarm-engine.md) |
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | open (blocked-by Q) | 2026-04-27 claude | [tasks/CODEX-R-alarm-ui.md](tasks/CODEX-R-alarm-ui.md) |
 | CODEX-S | `crates/auth` — local users + roles + JWT + per-view ACLs | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-S-auth.md](tasks/CODEX-S-auth.md) |
@@ -19,8 +18,7 @@
 ### Phase 3 dependency graph
 
 ```
-CODEX-O  (historian)             ← no blockers
-CODEX-P  (Trend component)       blocked-by O
+CODEX-P  (Trend component)       ← unblocked (O merged)
 CODEX-Q  (alarm engine)          ← no blockers
 CODEX-R  (AlarmTable + UI)       blocked-by Q
 CODEX-S  (auth)                  ← no blockers
@@ -28,7 +26,7 @@ CODEX-T  (scripting host)        ← no blockers
 CODEX-U  (script editor)         blocked-by T
 ```
 
-**Four can start in parallel: O, Q, S, T.** Once those land, P / R / U unblock. CODEX-S touches the most surface (every WS handshake gets gated) so it's worth landing early so other tasks build on the auth-aware baseline.
+**Four can start in parallel: P, Q, S, T.** Once Q and T land, R and U unblock. CODEX-S touches the most surface (every WS handshake gets gated) so it's worth landing early so other tasks build on the auth-aware baseline.
 
 ## Phase 2 — Designer MVP
 
@@ -60,6 +58,7 @@ CODEX-U  (script editor)         blocked-by T
 | CODEX-L | `apps/runtime-web` — load views from gateway, render via component library | codex | `921e3d9` | 2 |
 | CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | `f40b780` | 2 |
 | CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | `bc5bd38` | 2 |
+| CODEX-O | `crates/historian` — tag time-series storage + read API | codex | `9db711e` | 3 |
 
 ## Conventions
 

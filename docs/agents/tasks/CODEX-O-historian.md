@@ -3,9 +3,10 @@ id: CODEX-O
 title: crates/historian — tag time-series storage + read API
 owner: codex
 phase: 3
-status: submitted
+status: merged
 created: 2026-04-27
-last-update: 2026-04-27 18:31 codex
+last-update: 2026-04-27 claude
+merge-commit: 9db711e
 ---
 
 # CODEX-O — `crates/historian`
@@ -142,8 +143,29 @@ Submission tightened. Gateway now keeps the historian recorder attached to `Proj
 
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-27  claude — review pass 1
+
+Spec-compliant. Schema, recorder, aggregations, and hot-reload all match the brief exactly. The code shipped as part of the user-requested bulk checkpoint `9db711e`; this review formalizes the merge.
+
+Strong points:
+- ✅ **SQLite schema verbatim per brief** (`store.rs:135-148`): `tag_dictionary` with autoincrement, `tag_history` `PRIMARY KEY (tag_id, ts_ms) WITHOUT ROWID`. Tag-path interning keeps history rows compact.
+- ✅ **`HistorianStore` is `Clone` via `Arc<Mutex<Connection>>`** — passable across tokio tasks. `memory()` constructor for tests, `open()` for production.
+- ✅ **Aggregations cover every brief'd variant**: `Raw, Avg, Min, Max, Count, Sum, First, Last`. `AggregationError::NonNumeric` surfaces cleanly when numeric aggs are run over `Bool`/`String`.
+- ✅ **Bucket boundary convention**: left-closed, right-open, with the final bucket inclusive (`aggregations.rs:79`). Documented in rustdoc.
+- ✅ **Recorder filter ordering**: rate-limit first, then deadband, then write (`recorder.rs:142-165`). Non-numeric values bypass deadband but still respect rate-limit.
+- ✅ **Hot-reload via `RecorderHandle::update_configs`** diffs added/removed/changed tags; *changed* configs (same path, different rate/deadband) restart cleanly. Two dedicated tests cover both paths.
+- ✅ **Subscribe-then-prime ordering** (`recorder.rs:115-119`) avoids the race we flagged in CODEX-B's review: subscribe to broadcast first, then call `tag_store.get()` to seed initial value. Any in-flight publish lands as a duplicate that `INSERT OR REPLACE` on `(tag_id, ts_ms)` absorbs as a no-op.
+- ✅ **Lagged broadcast handled with `warn!`**, not panic. Same discipline as the gateway forwarders.
+- ✅ Comprehensive tests: round-trip + ordering + quality preservation, all aggregations on a known dataset, deadband filter, rate-limit filter, hot-reload add/remove, hot-reload restart-on-config-change.
+
+Findings:
+
+- 🟡 **Quality serialization is round-trip via `trim_matches('"')` + re-quoting** (`store.rs:66, 117`). Functionally correct, but indirect — a `Quality::as_str()` / `Quality::from_str()` pair on the protocol crate would be cleaner. Cosmetic; track for the next protocol-crate cleanup PR alongside the protocol→project-store dep direction note from CODEX-J.
+- 🟡 **Recorder writes individual rows, not batched.** Fine for v1 poll rates (≤4Hz per logged tag); if Phase 5+ adds hundreds of high-rate tags, batched inserts inside a transaction would help. Not urgent.
+- 🟢 The `recorder_hot_reload_restarts_changed_config` test is exactly the right shape — same path, different `rate_ms`, verifies the new rate takes effect.
+
+Acceptance criteria: all four checkboxes verified. The Phase 1 demo's `[tags.history]` config for `rockwell-1/Pressure` at `rate_ms = 500` is in place; recorder writes samples; `history.read` returns them.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at `9db711e`. CODEX-P (Trend component) is now unblocked.
