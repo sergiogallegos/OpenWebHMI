@@ -33,8 +33,8 @@ The `dist/` directory is a static site ready to upload anywhere. Per host:
 
 | Host | Notes |
 |---|---|
+| **Cloudflare Pages (current)** | See [`DEPLOY.md`](DEPLOY.md) for the dashboard walkthrough. Auto-deploys on push to `main`; preview URLs on every PR. |
 | GitHub Pages | Push `dist/` to a `gh-pages` branch (or use `peaceiris/actions-gh-pages`). |
-| Cloudflare Pages | Connect the repo, set build command `pnpm --filter @openwebhmi/website build`, output dir `apps/website/dist`. |
 | Vercel | Same shape; framework preset = Astro. |
 
 ## Brand assets
