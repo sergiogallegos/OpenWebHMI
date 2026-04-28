@@ -177,6 +177,7 @@ fn sample_view() -> View {
     View {
         id: "home".to_string(),
         title: "Home".to_string(),
+        allowed_roles: None,
         schema_version: 1,
         root: Component {
             id: "root".to_string(),

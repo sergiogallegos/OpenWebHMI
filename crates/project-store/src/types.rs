@@ -77,6 +77,13 @@ pub struct View {
     pub id: String,
     /// Human-readable title.
     pub title: String,
+    /// Roles allowed to write tags from this view. When omitted, role defaults apply.
+    #[serde(
+        default,
+        rename = "allowedRoles",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub allowed_roles: Option<Vec<String>>,
     /// Root component of the view tree.
     pub root: Component,
     /// View schema version. Phase 2 accepts `1`.

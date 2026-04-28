@@ -1,0 +1,23 @@
+[package]
+name = "openwebhmi-auth"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+base64.workspace = true
+bcrypt.workspace = true
+jsonwebtoken.workspace = true
+rand.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -3,7 +3,9 @@ import {
   type ArtifactRef,
   type ChangeAction,
   type ClientMessage,
+  type ServerMessage,
   type View,
+  type AuthUser,
 } from "@openwebhmi/protocol";
 
 /** Driver config shape consumed by the designer project tree. */
@@ -57,9 +59,14 @@ export class DesignerClient {
       reject: (error: Error) => void;
     }
   >();
+  private readonly pendingUserLists: Array<{
+    resolve: (users: AuthUser[]) => void;
+    reject: (error: Error) => void;
+  }> = [];
 
   constructor(
     private readonly url: string,
+    private token: string | null = null,
     private readonly webSocketImpl: WebSocketCtor = WebSocket,
   ) {}
 
@@ -70,13 +77,43 @@ export class DesignerClient {
     }
 
     return new Promise((resolve, reject) => {
-      const ws = new this.webSocketImpl(this.url);
+      const ws = new this.webSocketImpl(withToken(this.url, this.token));
       this.ws = ws;
       ws.onopen = () => resolve();
       ws.onerror = () => reject(new Error(`failed to connect to ${this.url}`));
       ws.onmessage = (event) => this.handleMessage(event.data);
       ws.onclose = () => {
         this.rejectPending(new Error("gateway connection closed"));
+      };
+    });
+  }
+
+  /** Authenticate and store the returned JWT for the next connection. */
+  login(username: string, password: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const ws = new this.webSocketImpl(this.url);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ kind: "auth.login", username, password }));
+      };
+      ws.onerror = () => reject(new Error(`failed to connect to ${this.url}`));
+      ws.onclose = () => reject(new Error("gateway closed before login completed"));
+      ws.onmessage = (event) => {
+        const parsed = parseServerMessage(event.data);
+        if (!parsed) {
+          return;
+        }
+        if (parsed.kind === "auth.result") {
+          if (!parsed.session_token) {
+            reject(new Error(parsed.error ?? "login failed"));
+            return;
+          }
+          this.token = parsed.session_token;
+          ws.onclose = null;
+          ws.close();
+          resolve();
+        } else if (parsed.kind === "error") {
+          reject(new Error(`${parsed.code}: ${parsed.message}`));
+        }
       };
     });
   }
@@ -127,6 +164,33 @@ export class DesignerClient {
     return request;
   }
 
+  /** List local users. */
+  listUsers(): Promise<AuthUser[]> {
+    const request = new Promise<AuthUser[]>((resolve, reject) => {
+      this.pendingUserLists.push({ resolve, reject });
+    });
+    this.send({ kind: "user.list" });
+    return request;
+  }
+
+  /** Create or update a local user. */
+  upsertUser(username: string, password: string | null, roles: string[]): Promise<AuthUser[]> {
+    const request = new Promise<AuthUser[]>((resolve, reject) => {
+      this.pendingUserLists.push({ resolve, reject });
+    });
+    this.send({ kind: "user.upsert", username, password, roles });
+    return request;
+  }
+
+  /** Delete a local user. */
+  deleteUser(userId: string): Promise<AuthUser[]> {
+    const request = new Promise<AuthUser[]>((resolve, reject) => {
+      this.pendingUserLists.push({ resolve, reject });
+    });
+    this.send({ kind: "user.delete", user_id: userId });
+    return request;
+  }
+
   private send(message: ClientMessage) {
     if (this.ws?.readyState !== WebSocket.OPEN) {
       throw new Error("gateway is not connected");
@@ -135,13 +199,8 @@ export class DesignerClient {
   }
 
   private handleMessage(raw: string) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    if (!isServerMessage(parsed)) {
+    const parsed = parseServerMessage(raw);
+    if (!parsed) {
       return;
     }
 
@@ -165,6 +224,11 @@ export class DesignerClient {
           callback(parsed);
         }
         break;
+      case "user.list": {
+        const pending = this.pendingUserLists.shift();
+        pending?.resolve(parsed.users);
+        break;
+      }
       case "error":
         this.rejectNext(new Error(`${parsed.code}: ${parsed.message}`));
         break;
@@ -194,5 +258,26 @@ export class DesignerClient {
       this.pendingSaves.delete(requestId);
       pending.reject(error);
     }
+    for (const pending of this.pendingUserLists.splice(0)) {
+      pending.reject(error);
+    }
   }
+}
+
+function parseServerMessage(raw: string): ServerMessage | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return isServerMessage(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function withToken(url: string, token: string | null): string {
+  if (!token) {
+    return url;
+  }
+  const parsed = new URL(url);
+  parsed.searchParams.set("token", token);
+  return parsed.toString();
 }

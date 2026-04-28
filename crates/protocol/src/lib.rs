@@ -13,6 +13,17 @@ use serde::{Deserialize, Serialize};
 
 pub use openwebhmi_project_store::{ArtifactKind, ChangeAction, View};
 
+/// User record exposed to administrator clients.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuthUser {
+    /// Stable user id.
+    pub id: String,
+    /// Login username.
+    pub username: String,
+    /// Built-in role names.
+    pub roles: Vec<String>,
+}
+
 /// A historical tag sample returned by `history.result`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HistoryPoint {
@@ -59,6 +70,17 @@ pub enum Quality {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum ClientMessage {
+    /// Authenticate with username/password credentials.
+    #[serde(rename = "auth.login")]
+    AuthLogin {
+        /// Username.
+        username: String,
+        /// Plaintext password sent over TLS in production.
+        password: String,
+    },
+    /// End the current client-side session.
+    #[serde(rename = "auth.logout")]
+    AuthLogout,
     /// Subscribe to live updates for one or more tag paths.
     #[serde(rename = "tag.subscribe")]
     TagSubscribe {
@@ -151,12 +173,44 @@ pub enum ClientMessage {
         /// View id.
         view_id: String,
     },
+    /// List local users.
+    #[serde(rename = "user.list")]
+    UserList,
+    /// Create or update a local user.
+    #[serde(rename = "user.upsert")]
+    UserUpsert {
+        /// Username to create or update.
+        username: String,
+        /// Optional new password. Required for new users.
+        #[serde(default)]
+        password: Option<String>,
+        /// Built-in role names.
+        roles: Vec<String>,
+    },
+    /// Delete a local user.
+    #[serde(rename = "user.delete")]
+    UserDelete {
+        /// User id.
+        user_id: String,
+    },
 }
 
 /// Messages from the gateway to a client.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum ServerMessage {
+    /// Authentication result.
+    #[serde(rename = "auth.result")]
+    AuthResult {
+        /// JWT session token, or `None` on failure.
+        session_token: Option<String>,
+        /// User id, or `None` on failure.
+        user_id: Option<String>,
+        /// Built-in role names.
+        roles: Vec<String>,
+        /// Error message, or `None` on success.
+        error: Option<String>,
+    },
     /// A tag's value has changed (or its first value is being delivered after subscribe).
     #[serde(rename = "tag.update")]
     TagUpdate {
@@ -232,6 +286,12 @@ pub enum ServerMessage {
         /// View schema.
         view: View,
     },
+    /// Local user list.
+    #[serde(rename = "user.list")]
+    UserList {
+        /// Users visible to administrators.
+        users: Vec<AuthUser>,
+    },
 }
 
 #[cfg(test)]
@@ -276,6 +336,29 @@ mod tests {
         );
         let back: ClientMessage = serde_json::from_str(&json).unwrap();
         assert_eq!(m, back);
+    }
+
+    #[test]
+    fn auth_messages_wire_form_is_stable() {
+        let login = ClientMessage::AuthLogin {
+            username: "admin".into(),
+            password: "secret".into(),
+        };
+        assert_eq!(
+            serde_json::to_string(&login).unwrap(),
+            r#"{"kind":"auth.login","username":"admin","password":"secret"}"#
+        );
+
+        let result = ServerMessage::AuthResult {
+            session_token: Some("jwt".into()),
+            user_id: Some("u1".into()),
+            roles: vec!["Administrator".into()],
+            error: None,
+        };
+        assert_eq!(
+            serde_json::to_string(&result).unwrap(),
+            r#"{"kind":"auth.result","session_token":"jwt","user_id":"u1","roles":["Administrator"],"error":null}"#
+        );
     }
 
     #[test]
@@ -424,6 +507,7 @@ mod tests {
         View {
             id: "home".into(),
             title: "Home".into(),
+            allowed_roles: None,
             schema_version: 1,
             root: Component {
                 id: "root".into(),

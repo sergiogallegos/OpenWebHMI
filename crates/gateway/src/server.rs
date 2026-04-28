@@ -3,17 +3,21 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::str::FromStr;
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use anyhow::Context;
 use futures_util::{SinkExt, StreamExt};
+use openwebhmi_auth::{Permission, Role, SessionManager, UserPatch, UserStore, VerifiedSession};
 use openwebhmi_historian::{Aggregation, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
-use openwebhmi_protocol::{ArtifactKind, ClientMessage, ServerMessage};
+use openwebhmi_protocol::{ArtifactKind, AuthUser, ClientMessage, ServerMessage};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
-use tokio::net::{TcpListener, TcpStream};
+use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::net::TcpListener;
 use tokio::sync::mpsc::{self, error::TrySendError};
 use tokio::task::JoinHandle;
+use tokio_tungstenite::accept_hdr_async;
+use tokio_tungstenite::tungstenite::handshake::server::{Request, Response};
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{debug, info, warn};
 
@@ -22,6 +26,20 @@ use crate::project::{DriverHandle, DriverHandles, WriteCommand, WriteEnqueueErro
 type OutboundTx = mpsc::Sender<ServerMessage>;
 const OUTBOUND_CAPACITY: usize = 256;
 static DEFAULT_HISTORIAN: OnceLock<HistorianStore> = OnceLock::new();
+
+/// Authentication state shared by websocket connections.
+#[derive(Clone)]
+pub struct AuthContext {
+    users: UserStore,
+    sessions: SessionManager,
+}
+
+impl AuthContext {
+    /// Create a websocket auth context.
+    pub fn new(users: UserStore, sessions: SessionManager) -> Self {
+        Self { users, sessions }
+    }
+}
 
 /// Set the process-wide historian used by websocket `history.read` handlers.
 pub fn set_default_historian(historian: HistorianStore) {
@@ -62,7 +80,7 @@ pub async fn run_with_project_store(
 
 /// Serve WebSocket clients from an already-bound listener.
 pub async fn serve(listener: TcpListener, store: TagStore) -> anyhow::Result<()> {
-    serve_inner(listener, store, None, DriverHandles::new()).await
+    serve_inner(listener, store, None, DriverHandles::new(), None).await
 }
 
 /// Serve WebSocket clients with driver write handles.
@@ -71,7 +89,7 @@ pub async fn serve_with_driver_handles(
     store: TagStore,
     driver_handles: DriverHandles,
 ) -> anyhow::Result<()> {
-    serve_inner(listener, store, None, driver_handles).await
+    serve_inner(listener, store, None, driver_handles, None).await
 }
 
 /// Serve WebSocket clients with project-store protocol support.
@@ -80,7 +98,14 @@ pub async fn serve_with_project_store(
     store: TagStore,
     project_store: ProjectStore,
 ) -> anyhow::Result<()> {
-    serve_inner(listener, store, Some(project_store), DriverHandles::new()).await
+    serve_inner(
+        listener,
+        store,
+        Some(project_store),
+        DriverHandles::new(),
+        None,
+    )
+    .await
 }
 
 /// Serve WebSocket clients with project-store protocol and driver write handles.
@@ -90,7 +115,27 @@ pub async fn serve_with_project_store_and_driver_handles(
     project_store: ProjectStore,
     driver_handles: DriverHandles,
 ) -> anyhow::Result<()> {
-    serve_inner(listener, store, Some(project_store), driver_handles).await
+    serve_inner(listener, store, Some(project_store), driver_handles, None).await
+}
+
+/// Serve WebSocket clients with auth enabled.
+pub async fn serve_with_auth(
+    listener: TcpListener,
+    store: TagStore,
+    auth: AuthContext,
+) -> anyhow::Result<()> {
+    serve_inner(listener, store, None, DriverHandles::new(), Some(auth)).await
+}
+
+/// Serve WebSocket clients with project-store protocol, driver handles, and auth.
+pub async fn serve_with_project_store_driver_handles_and_auth(
+    listener: TcpListener,
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+    driver_handles: DriverHandles,
+    auth: AuthContext,
+) -> anyhow::Result<()> {
+    serve_inner(listener, store, project_store, driver_handles, Some(auth)).await
 }
 
 async fn serve_inner(
@@ -98,6 +143,7 @@ async fn serve_inner(
     store: TagStore,
     project_store: Option<ProjectStore>,
     driver_handles: DriverHandles,
+    auth: Option<AuthContext>,
 ) -> anyhow::Result<()> {
     let local_addr = listener
         .local_addr()
@@ -109,10 +155,18 @@ async fn serve_inner(
         let store = store.clone();
         let project_store = project_store.clone();
         let driver_handles = driver_handles.clone();
+        let auth = auth.clone();
 
         tokio::spawn(async move {
-            if let Err(err) =
-                handle_connection(stream, peer_addr, store, project_store, driver_handles).await
+            if let Err(err) = handle_connection(
+                stream,
+                peer_addr,
+                store,
+                project_store,
+                driver_handles,
+                auth,
+            )
+            .await
             {
                 warn!(%peer_addr, error = %err, "connection handler failed");
             }
@@ -120,16 +174,31 @@ async fn serve_inner(
     }
 }
 
-async fn handle_connection(
-    stream: TcpStream,
+/// Handle one accepted websocket stream.
+#[allow(clippy::result_large_err)]
+pub async fn handle_connection<S>(
+    stream: S,
     peer_addr: SocketAddr,
     store: TagStore,
     project_store: Option<ProjectStore>,
     driver_handles: DriverHandles,
-) -> anyhow::Result<()> {
-    let ws = tokio_tungstenite::accept_async(stream)
-        .await
-        .context("websocket handshake failed")?;
+    auth: Option<AuthContext>,
+) -> anyhow::Result<()>
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
+{
+    let token = Arc::new(Mutex::new(None::<String>));
+    let token_for_callback = token.clone();
+    let ws = accept_hdr_async(stream, move |request: &Request, response: Response| {
+        if let Some(value) = query_token(request.uri().query()) {
+            if let Ok(mut token) = token_for_callback.lock() {
+                *token = Some(value.to_string());
+            }
+        }
+        Ok(response)
+    })
+    .await
+    .context("websocket handshake failed")?;
     info!(%peer_addr, "websocket connected");
 
     let (mut sink, mut incoming) = ws.split();
@@ -152,6 +221,26 @@ async fn handle_connection(
         }
     });
 
+    let token = token.lock().ok().and_then(|token| token.clone());
+    let mut session = match (&auth, token.as_deref()) {
+        (Some(auth), Some(token)) => match auth.sessions.verify(token) {
+            Ok(session) => Some(session),
+            Err(err) => {
+                debug!(error = %err, "websocket session token rejected");
+                try_send_message(
+                    &out_tx,
+                    ServerMessage::Error {
+                        code: "auth.required".to_string(),
+                        message: "session token is invalid or expired".to_string(),
+                    },
+                );
+                drop(out_tx);
+                return Ok(());
+            }
+        },
+        _ => None,
+    };
+    let mut current_view_allowed_roles: Option<Vec<String>> = None;
     let mut subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
     let mut project_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
 
@@ -200,7 +289,72 @@ async fn handle_connection(
         };
 
         match client_message {
+            ClientMessage::AuthLogin { username, password } => {
+                let Some(auth) = auth.as_ref() else {
+                    send_error(&out_tx, "auth.unavailable", "auth is not enabled".into());
+                    continue;
+                };
+                match auth.users.authenticate(&username, &password) {
+                    Ok(Some(user)) => {
+                        match auth.sessions.issue(&user.id, &user.username, &user.roles) {
+                            Ok(token) => {
+                                let roles = user
+                                    .roles
+                                    .iter()
+                                    .map(ToString::to_string)
+                                    .collect::<Vec<_>>();
+                                let user_id = user.id.clone();
+                                session = Some(VerifiedSession {
+                                    user_id: user_id.clone(),
+                                    username: user.username,
+                                    roles: user.roles,
+                                });
+                                try_send_message(
+                                    &out_tx,
+                                    ServerMessage::AuthResult {
+                                        session_token: Some(token),
+                                        user_id: Some(user_id),
+                                        roles,
+                                        error: None,
+                                    },
+                                );
+                            }
+                            Err(err) => send_error(&out_tx, "auth.session", err.to_string()),
+                        }
+                    }
+                    Ok(None) => try_send_message(
+                        &out_tx,
+                        ServerMessage::AuthResult {
+                            session_token: None,
+                            user_id: None,
+                            roles: Vec::new(),
+                            error: Some("invalid username or password".into()),
+                        },
+                    ),
+                    Err(err) => send_error(&out_tx, "auth.login", err.to_string()),
+                }
+            }
+            ClientMessage::AuthLogout => {
+                session = None;
+                try_send_message(
+                    &out_tx,
+                    ServerMessage::AuthResult {
+                        session_token: None,
+                        user_id: None,
+                        roles: Vec::new(),
+                        error: None,
+                    },
+                );
+            }
             ClientMessage::TagSubscribe { paths } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadTags,
+                ) {
+                    continue;
+                }
                 for path in paths {
                     if subscriptions.contains_key(&path) {
                         continue;
@@ -215,6 +369,14 @@ async fn handle_connection(
                 }
             }
             ClientMessage::TagUnsubscribe { paths } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadTags,
+                ) {
+                    continue;
+                }
                 for path in paths {
                     if let Some(handle) = subscriptions.remove(&path) {
                         handle.abort();
@@ -222,12 +384,28 @@ async fn handle_connection(
                 }
             }
             ClientMessage::TagWrite { path, value } => {
+                if !authorize_write(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    current_view_allowed_roles.as_deref(),
+                ) {
+                    continue;
+                }
                 handle_tag_write(&out_tx, &driver_handles, path, value);
             }
             ClientMessage::Ping => {
                 try_send_message(&out_tx, ServerMessage::Pong);
             }
             ClientMessage::ProjectSubscribe { project_id } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadViews,
+                ) {
+                    continue;
+                }
                 let Some(project_store) = project_store.clone() else {
                     send_unavailable(&out_tx);
                     continue;
@@ -243,11 +421,27 @@ async fn handle_connection(
                 project_subscriptions.insert(project_id, handle);
             }
             ClientMessage::ProjectUnsubscribe { project_id } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadViews,
+                ) {
+                    continue;
+                }
                 if let Some(handle) = project_subscriptions.remove(&project_id) {
                     handle.abort();
                 }
             }
             ClientMessage::ProjectLoad { project_id } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadViews,
+                ) {
+                    continue;
+                }
                 let Some(project_store) = project_store.as_ref() else {
                     send_unavailable(&out_tx);
                     continue;
@@ -274,6 +468,14 @@ async fn handle_connection(
                 aggregation,
                 max_points,
             } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadTags,
+                ) {
+                    continue;
+                }
                 let Some(historian) = DEFAULT_HISTORIAN.get() else {
                     send_error(
                         &out_tx,
@@ -314,6 +516,14 @@ async fn handle_connection(
                 artifact,
                 body,
             } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::AuthorProject,
+                ) {
+                    continue;
+                }
                 let Some(project_store) = project_store.as_ref() else {
                     send_unavailable(&out_tx);
                     continue;
@@ -334,6 +544,14 @@ async fn handle_connection(
                 project_id,
                 view_id,
             } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadViews,
+                ) {
+                    continue;
+                }
                 let Some(project_store) = project_store.as_ref() else {
                     send_unavailable(&out_tx);
                     continue;
@@ -341,15 +559,18 @@ async fn handle_connection(
                 match project_store.load(&project_id) {
                     Ok(project) => {
                         match project.views.into_iter().find(|view| view.id == view_id) {
-                            Some(view) => try_send_message(
-                                &out_tx,
-                                ServerMessage::ViewDefinition {
-                                    project_id,
-                                    view_id,
-                                    version: project.version,
-                                    view,
-                                },
-                            ),
+                            Some(view) => {
+                                current_view_allowed_roles = view.allowed_roles.clone();
+                                try_send_message(
+                                    &out_tx,
+                                    ServerMessage::ViewDefinition {
+                                        project_id,
+                                        view_id,
+                                        version: project.version,
+                                        view,
+                                    },
+                                )
+                            }
                             None => send_error(&out_tx, "view.not_found", "view not found".into()),
                         }
                     }
@@ -357,6 +578,72 @@ async fn handle_connection(
                 }
             }
             ClientMessage::ViewClose { .. } => {}
+            ClientMessage::UserList => {
+                let Some(auth) = auth.as_ref() else {
+                    send_error(&out_tx, "auth.unavailable", "auth is not enabled".into());
+                    continue;
+                };
+                if !authorize(
+                    &out_tx,
+                    Some(auth),
+                    session.as_ref(),
+                    Permission::ManageUsers,
+                ) {
+                    continue;
+                }
+                send_user_list(&out_tx, auth);
+            }
+            ClientMessage::UserUpsert {
+                username,
+                password,
+                roles,
+            } => {
+                let Some(auth) = auth.as_ref() else {
+                    send_error(&out_tx, "auth.unavailable", "auth is not enabled".into());
+                    continue;
+                };
+                if !authorize(
+                    &out_tx,
+                    Some(auth),
+                    session.as_ref(),
+                    Permission::ManageUsers,
+                ) {
+                    continue;
+                }
+                let roles = match parse_roles(&roles) {
+                    Ok(roles) => roles,
+                    Err(err) => {
+                        send_error(&out_tx, "auth.roles", err);
+                        continue;
+                    }
+                };
+                match auth.users.upsert_user(UserPatch {
+                    username,
+                    password,
+                    roles,
+                }) {
+                    Ok(_) => send_user_list(&out_tx, auth),
+                    Err(err) => send_error(&out_tx, "user.upsert", err.to_string()),
+                }
+            }
+            ClientMessage::UserDelete { user_id } => {
+                let Some(auth) = auth.as_ref() else {
+                    send_error(&out_tx, "auth.unavailable", "auth is not enabled".into());
+                    continue;
+                };
+                if !authorize(
+                    &out_tx,
+                    Some(auth),
+                    session.as_ref(),
+                    Permission::ManageUsers,
+                ) {
+                    continue;
+                }
+                match auth.users.delete_user(&user_id) {
+                    Ok(()) => send_user_list(&out_tx, auth),
+                    Err(err) => send_error(&out_tx, "user.delete", err.to_string()),
+                }
+            }
         }
     }
 
@@ -410,6 +697,100 @@ fn handle_tag_write(
             format!("driver '{driver_id}' write channel is closed"),
         ),
     }
+}
+
+fn authorize(
+    out_tx: &OutboundTx,
+    auth: Option<&AuthContext>,
+    session: Option<&VerifiedSession>,
+    permission: Permission,
+) -> bool {
+    if auth.is_none() {
+        return true;
+    }
+    let Some(session) = session else {
+        send_error(out_tx, "auth.required", "authentication required".into());
+        return false;
+    };
+    if session
+        .roles
+        .iter()
+        .copied()
+        .any(|role| role.allows(permission))
+    {
+        true
+    } else {
+        send_error(out_tx, "auth.forbidden", "permission denied".into());
+        false
+    }
+}
+
+fn authorize_write(
+    out_tx: &OutboundTx,
+    auth: Option<&AuthContext>,
+    session: Option<&VerifiedSession>,
+    allowed_roles: Option<&[String]>,
+) -> bool {
+    if !authorize(out_tx, auth, session, Permission::WriteTags) {
+        return false;
+    }
+    let Some(session) = session else {
+        return true;
+    };
+    let Some(allowed_roles) = allowed_roles else {
+        return true;
+    };
+    if session
+        .roles
+        .iter()
+        .any(|role| allowed_roles.iter().any(|allowed| allowed == role.as_str()))
+    {
+        true
+    } else {
+        send_error(
+            out_tx,
+            "auth.forbidden",
+            "view ACL denies tag writes".into(),
+        );
+        false
+    }
+}
+
+fn parse_roles(values: &[String]) -> Result<Vec<Role>, String> {
+    values
+        .iter()
+        .map(|value| Role::from_str(value).map_err(|err| err.to_string()))
+        .collect()
+}
+
+fn send_user_list(out_tx: &OutboundTx, auth: &AuthContext) {
+    match auth.users.list_users() {
+        Ok(users) => try_send_message(
+            out_tx,
+            ServerMessage::UserList {
+                users: users
+                    .into_iter()
+                    .map(|user| AuthUser {
+                        id: user.id,
+                        username: user.username,
+                        roles: user
+                            .roles
+                            .into_iter()
+                            .map(|role| role.to_string())
+                            .collect(),
+                    })
+                    .collect(),
+            },
+        ),
+        Err(err) => send_error(out_tx, "user.list", err.to_string()),
+    }
+}
+
+fn query_token(query: Option<&str>) -> Option<&str> {
+    query?.split('&').find_map(|pair| {
+        let (key, value) = pair.split_once('=')?;
+        (key == "token" && !value.is_empty()).then_some(value)
+    })
 }
 
 fn try_write(

@@ -5,6 +5,7 @@ import { PreviewPane } from "./modules/PreviewPane";
 import { ProjectExplorer } from "./modules/ProjectExplorer";
 import { PropertyPanel } from "./modules/PropertyPanel";
 import { TagBrowser } from "./modules/TagBrowser";
+import { UserAdmin } from "./modules/UserAdmin";
 import { ViewEditor } from "./modules/ViewEditor";
 import {
   DesignerClient,
@@ -44,12 +45,13 @@ export function App() {
     [project],
   );
 
-  const connect = async (url: string) => {
+  const connect = async (url: string, username: string, password: string) => {
     setConnection("connecting");
     setConnectionError(null);
     setGatewayUrl(url);
     const client = new DesignerClient(url);
     try {
+      await client.login(username, password);
       await client.connect();
       client.subscribeProject(DEFAULT_PROJECT_ID, (change) =>
         handleProjectChange(change),
@@ -235,6 +237,7 @@ export function App() {
         selectedTag={selectedTag}
         onSelectTag={setSelectedTag}
       />
+      <UserAdmin client={clientRef.current!} />
     </main>
   );
 }
@@ -243,7 +246,7 @@ const styles = {
   shell: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "280px minmax(0, 1fr) 280px",
+    gridTemplateColumns: "280px minmax(0, 1fr) 280px 320px",
     background: "#f4f6f8",
     color: "#1f2933",
     fontFamily:

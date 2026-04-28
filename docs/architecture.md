@@ -242,7 +242,10 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 
 - v1: username/password (bcrypt), session tokens (JWT), 4 built-in roles: `Administrator, Designer, Operator, Viewer`.
 - Per-project role bindings and per-view ACLs.
-- TLS-only on production deployments (TLS terminated by gateway via `rustls`).
+- Gateway accepts `Authorization`-equivalent WebSocket query tokens (`?token=<jwt>`) after `auth.login`; every non-login, non-ping message is checked server-side.
+- First run creates `admin` and logs a generated password once with `ROTATE THIS IMMEDIATELY`; `--admin-password` is for scripted bootstrap.
+- JWT signing secret comes from `--jwt-secret` / `OPENWEBHMI_JWT_SECRET`. Rotation is v1-manual: set a new secret, restart the gateway, and expect existing sessions to re-login.
+- TLS-only on production deployments (TLS terminated by gateway via `rustls`). `--tls-cert` and `--tls-key` must be supplied together; keep private key files readable only by the gateway process. `scripts/dev-self-signed-cert.sh` exists for local smoke tests only.
 - v2+: OIDC / SSO, AD/LDAP, audit log export.
 
 ### 4.10 Designer / IDE (`apps/designer`)

@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
+use openwebhmi_auth::{Role, SessionManager, UserStore};
 use openwebhmi_gateway::{server, sim_provider};
 use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagValue};
 use openwebhmi_tag_engine::TagStore;
@@ -74,6 +75,77 @@ async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscrib
         timeout(Duration::from_millis(50), ws.next()).await.is_err(),
         "no further tag.update should arrive after unsubscribe"
     );
+
+    server.abort();
+}
+
+#[tokio::test]
+async fn websocket_gateway_requires_auth_and_accepts_valid_session() {
+    let store = TagStore::new();
+    tokio::spawn(sim_provider::run(store.clone()));
+    let users = UserStore::memory().unwrap();
+    users
+        .create_user("admin", "admin-pass", vec![Role::Administrator])
+        .unwrap();
+    let sessions = SessionManager::new(b"test-secret".to_vec(), Duration::from_secs(60));
+    let token = sessions
+        .issue("test-admin", "admin", &[Role::Administrator])
+        .unwrap();
+    let auth = server::AuthContext::new(users, sessions);
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr: SocketAddr = listener.local_addr().unwrap();
+    let server = tokio::spawn(server::serve_with_auth(listener, store, auth));
+
+    let (mut anonymous, _) = connect_async(format!("ws://{addr}")).await.unwrap();
+    send_client(
+        &mut anonymous,
+        ClientMessage::TagSubscribe {
+            paths: vec!["system/sim/sin".to_string()],
+        },
+    )
+    .await;
+    assert!(matches!(
+        next_message(&mut anonymous, Duration::from_millis(100)).await,
+        ServerMessage::Error { code, .. } if code == "auth.required"
+    ));
+
+    send_client(
+        &mut anonymous,
+        ClientMessage::AuthLogin {
+            username: "admin".into(),
+            password: "admin-pass".into(),
+        },
+    )
+    .await;
+    match next_message(&mut anonymous, Duration::from_millis(2_500)).await {
+        ServerMessage::AuthResult {
+            session_token: Some(token),
+            roles,
+            ..
+        } => {
+            assert_eq!(roles, vec!["Administrator"]);
+            assert!(!token.is_empty());
+        }
+        other => panic!("expected auth.result, got {other:?}"),
+    };
+
+    let (mut authorized, _) = connect_async(format!("ws://{addr}/?token={token}"))
+        .await
+        .unwrap();
+    send_client(&mut authorized, ClientMessage::Ping).await;
+    assert_eq!(
+        next_message(&mut authorized, Duration::from_millis(1_000)).await,
+        ServerMessage::Pong
+    );
+    send_client(
+        &mut authorized,
+        ClientMessage::TagSubscribe {
+            paths: vec!["system/sim/sin".to_string()],
+        },
+    )
+    .await;
+    assert_valid_sin_update(next_message(&mut authorized, Duration::from_millis(2_500)).await);
 
     server.abort();
 }

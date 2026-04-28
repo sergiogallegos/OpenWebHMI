@@ -8,25 +8,23 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open (O merged → unblocked) | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
+| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-Q-alarm-engine.md](tasks/CODEX-Q-alarm-engine.md) |
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | open (blocked-by Q) | 2026-04-27 claude | [tasks/CODEX-R-alarm-ui.md](tasks/CODEX-R-alarm-ui.md) |
-| CODEX-S | `crates/auth` — local users + roles + JWT + per-view ACLs | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-S-auth.md](tasks/CODEX-S-auth.md) |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-T-scripting-host.md](tasks/CODEX-T-scripting-host.md) |
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (blocked-by T) | 2026-04-27 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
 
 ### Phase 3 dependency graph
 
 ```
-CODEX-P  (Trend component)       ← unblocked (O merged)
+CODEX-P  (Trend component)       ← unblocked
 CODEX-Q  (alarm engine)          ← no blockers
 CODEX-R  (AlarmTable + UI)       blocked-by Q
-CODEX-S  (auth)                  ← no blockers
 CODEX-T  (scripting host)        ← no blockers
 CODEX-U  (script editor)         blocked-by T
 ```
 
-**Four can start in parallel: P, Q, S, T.** Once Q and T land, R and U unblock. CODEX-S touches the most surface (every WS handshake gets gated) so it's worth landing early so other tasks build on the auth-aware baseline.
+**Three can start in parallel: P, Q, T.** Once Q and T land, R and U unblock. CODEX-S (auth) is now merged — every other Phase 3 task builds on the auth-aware baseline.
 
 ## Phase 2 — Designer MVP
 
@@ -59,6 +57,7 @@ CODEX-U  (script editor)         blocked-by T
 | CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | `f40b780` | 2 |
 | CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | `bc5bd38` | 2 |
 | CODEX-O | `crates/historian` — tag time-series storage + read API | codex | `9db711e` | 3 |
+| CODEX-S | `crates/auth` — local users + roles + JWT sessions + per-view ACLs | codex | *(this commit)* | 3 |
 
 ## Conventions
 

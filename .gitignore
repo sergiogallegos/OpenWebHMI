@@ -42,6 +42,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+.dev-certs/
 
 # Local data
 *.db

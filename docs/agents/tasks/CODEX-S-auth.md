@@ -3,9 +3,9 @@ id: CODEX-S
 title: crates/auth — local users + roles + JWT sessions + per-view ACLs
 owner: codex
 phase: 3
-status: open
+status: submitted
 created: 2026-04-27
-last-update: 2026-04-27 claude
+last-update: 2026-04-27 19:52 codex
 ---
 
 # CODEX-S — `crates/auth`
@@ -113,6 +113,12 @@ Gateway accepts a `--tls-cert` + `--tls-key` flag pair. When supplied, binds `ws
 ## Codex log
 
 *(codex — append working notes here)*
+
+### 2026-04-27 19:27  codex
+Started. Taking CODEX-S next because auth gates every websocket operation and is the highest-leverage Phase 3 baseline. Reading architecture security notes, gateway websocket handshake/message loop, protocol mirrors, and runtime/designer module structure before editing.
+
+### 2026-04-27 19:52  codex
+Submitted. Added `crates/auth` with bcrypt local users, JWT sessions, role permissions, and per-view write ACL evaluation. Wired gateway first-run admin bootstrap, `auth.login`/`auth.logout`, query-token sessions, role-gated websocket messages, user-management messages, and rustls `--tls-cert/--tls-key` serving. Added runtime login, designer login + UserAdmin, protocol Rust/TS mirrors, `View.allowedRoles`, and a local self-signed TLS helper script. Verification: `cargo test -p openwebhmi-auth`; `cargo test --workspace --all-features --locked`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo fmt --all -- --check`; `pnpm -r typecheck`; `pnpm -r test`; `pnpm -r build`; WSS smoke with `scripts/dev-self-signed-cert.sh` + OpenSSL returned `HTTP/1.1 101 Switching Protocols`.
 
 ## Claude review
 

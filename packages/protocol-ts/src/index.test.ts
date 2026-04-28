@@ -48,6 +48,19 @@ describe("ClientMessage wire form", () => {
     expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
   });
 
+  it("serializes auth.login exactly like Rust serde", () => {
+    const message: ClientMessage = {
+      kind: "auth.login",
+      username: "admin",
+      password: "secret",
+    };
+
+    expect(JSON.stringify(message)).toBe(
+      '{"kind":"auth.login","username":"admin","password":"secret"}',
+    );
+    expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
+  });
+
   it("serializes ping exactly like Rust serde", () => {
     const message: ClientMessage = { kind: "ping" };
 
@@ -165,6 +178,24 @@ describe("ServerMessage parsing", () => {
     };
 
     expect(isServerMessage(parsed)).toBe(true);
+  });
+
+  it("parses auth.result and user.list into typed values", () => {
+    expect(
+      isServerMessage({
+        kind: "auth.result",
+        session_token: "jwt",
+        user_id: "u1",
+        roles: ["Administrator"],
+        error: null,
+      }),
+    ).toBe(true);
+    expect(
+      isServerMessage({
+        kind: "user.list",
+        users: [{ id: "u1", username: "admin", roles: ["Administrator"] }],
+      }),
+    ).toBe(true);
   });
 
   it("rejects malformed view definitions defensively", () => {

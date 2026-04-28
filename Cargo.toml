@@ -5,6 +5,7 @@ members = [
     "crates/driver-rockwell",
     "crates/gateway",
     "crates/historian",
+    "crates/auth",
     "crates/project-store",
     "crates/protocol",
     "crates/tag-engine",
@@ -35,12 +36,17 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-trait = "0.1"
 uuid = { version = "1", features = ["v4", "serde"] }
+base64 = "0.22"
+bcrypt = "0.15"
+jsonwebtoken = "9"
 futures-util = "0.3"
 tokio-tungstenite = "0.24"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "env"] }
 rand = "0.8"
 toml = "0.8"
 rusqlite = { version = "0.32", features = ["bundled"] }
 tempfile = "3"
+rustls-pemfile = "2"
+tokio-rustls = "0.26"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"

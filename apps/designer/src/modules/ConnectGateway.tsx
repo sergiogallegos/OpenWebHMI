@@ -5,7 +5,7 @@ export type ConnectGatewayProps = {
   defaultUrl: string;
   connecting: boolean;
   error: string | null;
-  onConnect: (url: string) => void;
+  onConnect: (url: string, username: string, password: string) => void;
 };
 
 /** Gateway URL picker for the anonymous Phase 2 designer connection. */
@@ -16,6 +16,8 @@ export function ConnectGateway({
   onConnect,
 }: ConnectGatewayProps) {
   const [url, setUrl] = useState(defaultUrl);
+  const [username, setUsername] = useState("admin");
+  const [password, setPassword] = useState("");
 
   return (
     <main style={styles.page}>
@@ -23,7 +25,7 @@ export function ConnectGateway({
         style={styles.form}
         onSubmit={(event) => {
           event.preventDefault();
-          onConnect(url);
+          onConnect(url, username, password);
         }}
       >
         <h1 style={styles.title}>OpenWebHMI Designer</h1>
@@ -33,6 +35,27 @@ export function ConnectGateway({
             aria-label="Gateway URL"
             value={url}
             onChange={(event) => setUrl(event.currentTarget.value)}
+            style={styles.input}
+          />
+        </label>
+        <label style={styles.label}>
+          Username
+          <input
+            aria-label="Username"
+            value={username}
+            onChange={(event) => setUsername(event.currentTarget.value)}
+            autoComplete="username"
+            style={styles.input}
+          />
+        </label>
+        <label style={styles.label}>
+          Password
+          <input
+            aria-label="Password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.currentTarget.value)}
+            autoComplete="current-password"
             style={styles.input}
           />
         </label>

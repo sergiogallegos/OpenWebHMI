@@ -23,6 +23,7 @@ export type ProjectChange = Extract<
 >;
 
 export type GatewayError = Extract<ServerMessage, { kind: "error" }>;
+export type AuthResult = Extract<ServerMessage, { kind: "auth.result" }>;
 
 export type ConnectionState =
   | "idle"
@@ -66,7 +67,11 @@ export class GatewayClient {
   private currentState: ConnectionState = "idle";
 
   constructor(
-    private readonly opts: { url: string; webSocketImpl?: WebSocketCtor },
+    private readonly opts: {
+      url: string;
+      webSocketImpl?: WebSocketCtor;
+      tokenProvider?: () => string | null;
+    },
   ) {}
 
   get state(): ConnectionState {
@@ -83,7 +88,7 @@ export class GatewayClient {
     );
 
     const WebSocketImpl = this.opts.webSocketImpl ?? WebSocket;
-    const ws = new WebSocketImpl(this.opts.url);
+    const ws = new WebSocketImpl(withToken(this.opts.url, this.opts.tokenProvider?.() ?? null));
     this.ws = ws;
 
     ws.onopen = () => {
@@ -236,6 +241,34 @@ export class GatewayClient {
 
   ping() {
     this.send({ kind: "ping" });
+  }
+
+  login(username: string, password: string): Promise<AuthResult> {
+    const WebSocketImpl = this.opts.webSocketImpl ?? WebSocket;
+    return new Promise((resolve, reject) => {
+      const ws = new WebSocketImpl(this.opts.url);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ kind: "auth.login", username, password }));
+      };
+      ws.onerror = () => reject(new Error("failed to connect to gateway"));
+      ws.onclose = () => reject(new Error("gateway closed before login completed"));
+      ws.onmessage = (event: MessageEvent<string>) => {
+        try {
+          const parsed: unknown = JSON.parse(event.data);
+          if (isServerMessage(parsed) && parsed.kind === "auth.result") {
+            ws.onclose = null;
+            ws.close();
+            resolve(parsed);
+          } else if (isServerMessage(parsed) && parsed.kind === "error") {
+            ws.onclose = null;
+            ws.close();
+            reject(new Error(`${parsed.code}: ${parsed.message}`));
+          }
+        } catch (error) {
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
+    });
   }
 
   private send(message: ClientMessage) {
@@ -401,4 +434,13 @@ function splitViewKey(key: string): [string, string] {
 function withJitter(delayMs: number): number {
   const jitter = delayMs * 0.25 * (Math.random() * 2 - 1);
   return Math.max(0, Math.round(Math.min(delayMs + jitter, MAX_BACKOFF_MS)));
+}
+
+function withToken(url: string, token: string | null): string {
+  if (!token) {
+    return url;
+  }
+  const parsed = new URL(url);
+  parsed.searchParams.set("token", token);
+  return parsed.toString();
 }

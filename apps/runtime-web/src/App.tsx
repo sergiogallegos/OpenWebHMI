@@ -7,6 +7,7 @@ import {
   GatewayClient,
   type ConnectionState,
 } from "./gatewayClient";
+import { Login } from "./modules/Login";
 import { useTagBindings } from "./useTagBindings";
 import { useViewSubscription } from "./useViewSubscription";
 
@@ -17,10 +18,14 @@ const INITIAL_VIEW =
   params.get("view") ?? import.meta.env.VITE_INITIAL_VIEW ?? "home";
 
 export function App() {
+  const [sessionToken, setSessionToken] = useState(() =>
+    window.localStorage.getItem("openwebhmi.sessionToken"),
+  );
   const clientRef = useRef<GatewayClient | null>(null);
   if (clientRef.current === null) {
     clientRef.current = new GatewayClient({
       url: import.meta.env.VITE_GATEWAY_URL ?? "ws://localhost:8080",
+      tokenProvider: () => window.localStorage.getItem("openwebhmi.sessionToken"),
     });
   }
   const client = clientRef.current;
@@ -28,13 +33,24 @@ export function App() {
     useState<ConnectionState>("connecting");
 
   useEffect(() => {
+    if (!sessionToken) {
+      return;
+    }
     const offState = client.onStateChange(setConnectionState);
+    const offError = client.onError((error) => {
+      if (error.code === "auth.required") {
+        window.localStorage.removeItem("openwebhmi.sessionToken");
+        setSessionToken(null);
+        client.disconnect();
+      }
+    });
     client.connect();
     return () => {
       offState();
+      offError();
       client.disconnect();
     };
-  }, [client]);
+  }, [client, sessionToken]);
 
   const { view, version, error } = useViewSubscription(
     client,
@@ -43,6 +59,18 @@ export function App() {
   );
   const tagPaths = useMemo(() => (view ? collectTagPaths(view) : []), [view]);
   const { boundValues, writeTag } = useTagBindings(client, tagPaths);
+
+  if (!sessionToken) {
+    return (
+      <Login
+        client={client}
+        onAuthenticated={(token) => {
+          window.localStorage.setItem("openwebhmi.sessionToken", token);
+          setSessionToken(token);
+        }}
+      />
+    );
+  }
 
   return (
     <main style={styles.page}>

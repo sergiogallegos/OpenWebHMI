@@ -38,6 +38,7 @@ export type ComponentNode = {
 export type View = {
   id: string;
   title: string;
+  allowedRoles?: string[] | null;
   root: ComponentNode;
   schema_version: number;
 };
@@ -48,8 +49,16 @@ export type HistoryPoint = {
   quality: Quality;
 };
 
+export type AuthUser = {
+  id: string;
+  username: string;
+  roles: string[];
+};
+
 /** Messages accepted by the gateway from a runtime or designer client. */
 export type ClientMessage =
+  | { kind: "auth.login"; username: string; password: string }
+  | { kind: "auth.logout" }
   | { kind: "tag.subscribe"; paths: string[] }
   | { kind: "tag.unsubscribe"; paths: string[] }
   | { kind: "tag.write"; path: string; value: TagValue }
@@ -74,10 +83,25 @@ export type ClientMessage =
       body: unknown;
     }
   | { kind: "view.open"; project_id: string; view_id: string }
-  | { kind: "view.close"; project_id: string; view_id: string };
+  | { kind: "view.close"; project_id: string; view_id: string }
+  | { kind: "user.list" }
+  | {
+      kind: "user.upsert";
+      username: string;
+      password?: string | null;
+      roles: string[];
+    }
+  | { kind: "user.delete"; user_id: string };
 
 /** Messages emitted by the gateway to runtime or designer clients. */
 export type ServerMessage =
+  | {
+      kind: "auth.result";
+      session_token?: string | null;
+      user_id?: string | null;
+      roles: string[];
+      error?: string | null;
+    }
   | {
       kind: "tag.update";
       path: string;
@@ -113,7 +137,8 @@ export type ServerMessage =
       view_id: string;
       version: number;
       view: View;
-    };
+    }
+  | { kind: "user.list"; users: AuthUser[] };
 
 /** Return true when `value` is a valid OpenWebHMI tag value envelope. */
 export function isTagValue(value: unknown): value is TagValue {
@@ -151,6 +176,13 @@ export function isClientMessage(value: unknown): value is ClientMessage {
   }
 
   switch (value.kind) {
+    case "auth.login":
+      return (
+        typeof value.username === "string" &&
+        typeof value.password === "string"
+      );
+    case "auth.logout":
+      return true;
     case "tag.subscribe":
     case "tag.unsubscribe":
       return isStringArray(value.paths);
@@ -190,6 +222,18 @@ export function isClientMessage(value: unknown): value is ClientMessage {
         typeof value.project_id === "string" &&
         typeof value.view_id === "string"
       );
+    case "user.list":
+      return true;
+    case "user.upsert":
+      return (
+        typeof value.username === "string" &&
+        isStringArray(value.roles) &&
+        ("password" in value
+          ? value.password === null || typeof value.password === "string"
+          : true)
+      );
+    case "user.delete":
+      return typeof value.user_id === "string";
     default:
       return false;
   }
@@ -202,6 +246,20 @@ export function isServerMessage(value: unknown): value is ServerMessage {
   }
 
   switch (value.kind) {
+    case "auth.result":
+      return (
+        isStringArray(value.roles) &&
+        ("session_token" in value
+          ? value.session_token === null ||
+            typeof value.session_token === "string"
+          : true) &&
+        ("user_id" in value
+          ? value.user_id === null || typeof value.user_id === "string"
+          : true) &&
+        ("error" in value
+          ? value.error === null || typeof value.error === "string"
+          : true)
+      );
     case "tag.update":
       return (
         typeof value.path === "string" &&
@@ -250,9 +308,20 @@ export function isServerMessage(value: unknown): value is ServerMessage {
         Number.isFinite(value.version) &&
         isView(value.view)
       );
+    case "user.list":
+      return Array.isArray(value.users) && value.users.every(isAuthUser);
     default:
       return false;
   }
+}
+
+function isAuthUser(value: unknown): value is AuthUser {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.username === "string" &&
+    isStringArray(value.roles)
+  );
 }
 
 function isHistoryPoint(value: unknown): value is HistoryPoint {
@@ -270,6 +339,9 @@ export function isView(value: unknown): value is View {
     isRecord(value) &&
     typeof value.id === "string" &&
     typeof value.title === "string" &&
+    ("allowedRoles" in value
+      ? value.allowedRoles === null || isStringArray(value.allowedRoles)
+      : true) &&
     typeof value.schema_version === "number" &&
     isComponentNode(value.root)
   );
