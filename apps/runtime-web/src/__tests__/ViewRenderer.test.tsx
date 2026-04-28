@@ -11,10 +11,13 @@ describe("ViewRenderer", () => {
     render(
       <ViewRenderer
         view={viewWithDisplay("Pressure")}
+        projectId="phase1-demo"
         boundValues={{
           "rockwell-1/Pressure": realValue(42.25, "good"),
         }}
         onWriteTag={vi.fn()}
+        onSubscribeAlarms={vi.fn()}
+        onAckAlarm={vi.fn()}
       />,
     );
 
@@ -30,20 +33,26 @@ describe("ViewRenderer", () => {
     const { rerender } = render(
       <ViewRenderer
         view={viewWithDisplay("Pressure")}
+        projectId="phase1-demo"
         boundValues={{
           "rockwell-1/Pressure": realValue(41, "good"),
         }}
         onWriteTag={vi.fn()}
+        onSubscribeAlarms={vi.fn()}
+        onAckAlarm={vi.fn()}
       />,
     );
 
     rerender(
       <ViewRenderer
         view={viewWithDisplay("Line pressure")}
+        projectId="phase1-demo"
         boundValues={{
           "rockwell-1/Pressure": realValue(43, "good"),
         }}
         onWriteTag={vi.fn()}
+        onSubscribeAlarms={vi.fn()}
+        onAckAlarm={vi.fn()}
       />,
     );
 
@@ -56,8 +65,11 @@ describe("ViewRenderer", () => {
     render(
       <ViewRenderer
         view={viewWithDisplay("Pressure")}
+        projectId="phase1-demo"
         boundValues={{}}
         onWriteTag={vi.fn()}
+        onSubscribeAlarms={vi.fn()}
+        onAckAlarm={vi.fn()}
       />,
     );
 
@@ -68,10 +80,13 @@ describe("ViewRenderer", () => {
     render(
       <ViewRenderer
         view={viewWithDisplay("Pressure")}
+        projectId="phase1-demo"
         boundValues={{
           "rockwell-1/Pressure": realValue(12, "bad"),
         }}
         onWriteTag={vi.fn()}
+        onSubscribeAlarms={vi.fn()}
+        onAckAlarm={vi.fn()}
       />,
     );
 

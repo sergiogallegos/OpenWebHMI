@@ -9,7 +9,6 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
-| CODEX-R | `AlarmTable` component + designer alarm config | codex | open (Q merged → unblocked) | 2026-04-28 claude | [tasks/CODEX-R-alarm-ui.md](tasks/CODEX-R-alarm-ui.md) |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-T-scripting-host.md](tasks/CODEX-T-scripting-host.md) |
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (blocked-by T) | 2026-04-27 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
 
@@ -17,12 +16,11 @@
 
 ```
 CODEX-P  (Trend component)       ← unblocked
-CODEX-R  (AlarmTable + UI)       ← unblocked (Q merged)
 CODEX-T  (scripting host)        ← no blockers
 CODEX-U  (script editor)         blocked-by T
 ```
 
-**Three can start in parallel: P, R, T.** Backend trio O+Q+S is complete — historian + alarms + auth all in. CODEX-R now plumbs the alarm UI on top of CODEX-Q, and should use the verified session's username as `who` on ack (per the CODEX-Q review note).
+**Two can start in parallel: P, T.** Backend trio O+Q+S complete; alarm operator surface (CODEX-R) merged. The demo HMI now raises + displays + acks the `pressure-high` alarm end-to-end.
 
 ## Phase 2 — Designer MVP
 
@@ -57,6 +55,7 @@ CODEX-U  (script editor)         blocked-by T
 | CODEX-O | `crates/historian` — tag time-series storage + read API | codex | `9db711e` | 3 |
 | CODEX-S | `crates/auth` — local users + roles + JWT sessions + per-view ACLs | codex | `7eff30a` | 3 |
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | `ff56780` | 3 |
+| CODEX-R | `AlarmTable` component + designer alarm config | codex | _pending merge_ | 3 |
 
 ## Conventions
 

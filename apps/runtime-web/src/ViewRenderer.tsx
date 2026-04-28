@@ -1,4 +1,5 @@
 import { componentRegistry, type BoundValue } from "@openwebhmi/component-library";
+import type { AlarmEvent, AlarmSubscribeOptions } from "@openwebhmi/component-library";
 import type {
   BindingSource,
   ComponentNode,
@@ -8,18 +9,32 @@ import type {
 
 type ViewRendererProps = {
   view: View;
+  projectId: string;
   boundValues: Record<string, BoundValue | undefined>;
   onWriteTag: (path: string, value: TagValue) => void;
+  onSubscribeAlarms: (
+    options: AlarmSubscribeOptions,
+    callback: (event: AlarmEvent) => void,
+  ) => () => void;
+  onAckAlarm: (alarmId: string, note?: string | null) => void;
 };
 
 export function ViewRenderer({
   view,
+  projectId,
   boundValues,
   onWriteTag,
+  onSubscribeAlarms,
+  onAckAlarm,
 }: ViewRendererProps) {
   return (
     <section aria-label={view.title} style={styles.surface}>
-      {renderNode(view.root, boundValues, onWriteTag)}
+      {renderNode(view.root, boundValues, {
+        projectId,
+        onWriteTag,
+        onSubscribeAlarms,
+        onAckAlarm,
+      })}
     </section>
   );
 }
@@ -39,7 +54,15 @@ export function collectTagPaths(view: View): string[] {
 function renderNode(
   node: ComponentNode,
   boundValues: Record<string, BoundValue | undefined>,
-  onWriteTag: (path: string, value: TagValue) => void,
+  runtime: {
+    projectId: string;
+    onWriteTag: (path: string, value: TagValue) => void;
+    onSubscribeAlarms: (
+      options: AlarmSubscribeOptions,
+      callback: (event: AlarmEvent) => void,
+    ) => () => void;
+    onAckAlarm: (alarmId: string, note?: string | null) => void;
+  },
 ) {
   const definition = componentRegistry[node.kind];
   if (!definition) {
@@ -56,7 +79,7 @@ function renderNode(
   };
   const bindings = bindingsForNode(node, boundValues);
   const children = node.children.map((child) =>
-    renderNode(child, boundValues, onWriteTag),
+    renderNode(child, boundValues, runtime),
   );
 
   return (
@@ -64,7 +87,7 @@ function renderNode(
       key={node.id}
       props={props}
       bindings={bindings}
-      context={{ mode: "runtime", onWriteTag }}
+      context={{ mode: "runtime", ...runtime }}
     >
       {children}
     </definition.Render>

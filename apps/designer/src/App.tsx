@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { View } from "@openwebhmi/protocol";
+import { AlarmConfig } from "./modules/AlarmConfig";
 import { ConnectGateway } from "./modules/ConnectGateway";
 import { PreviewPane } from "./modules/PreviewPane";
 import { ProjectExplorer } from "./modules/ProjectExplorer";
@@ -9,6 +10,7 @@ import { UserAdmin } from "./modules/UserAdmin";
 import { ViewEditor } from "./modules/ViewEditor";
 import {
   DesignerClient,
+  type DesignerAlarm,
   type DesignerProject,
   type DesignerProjectChange,
 } from "./lib/designerClient";
@@ -30,6 +32,7 @@ export function App() {
   const [gatewayUrl, setGatewayUrl] = useState(DEFAULT_GATEWAY_URL);
   const [project, setProject] = useState<DesignerProject | null>(null);
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null);
+  const [selectedModule, setSelectedModule] = useState<"views" | "alarms">("views");
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -73,7 +76,7 @@ export function App() {
   const handleProjectChange = useCallback((change: DesignerProjectChange) => {
     if (
       change.project_id === DEFAULT_PROJECT_ID &&
-      change.artifact.kind === "view"
+      (change.artifact.kind === "view" || change.artifact.kind === "alarms")
     ) {
       setPreviewReload((current) => current + 1);
       setWarning(
@@ -114,6 +117,38 @@ export function App() {
     [project],
   );
 
+  const saveAlarms = useCallback(
+    async (nextAlarms: DesignerAlarm[]) => {
+      const client = clientRef.current;
+      if (!client || !project) {
+        return;
+      }
+      setSaveState("saving");
+      setProject({
+        ...project,
+        alarms: nextAlarms,
+      });
+      try {
+        const version = await client.saveAlarms(project.id, nextAlarms);
+        setProject((current) =>
+          current
+            ? {
+                ...current,
+                version,
+                alarms: nextAlarms,
+              }
+            : current,
+        );
+        setSaveState("saved");
+        setPreviewReload((current) => current + 1);
+      } catch (error) {
+        setSaveState("error");
+        setWarning(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [project],
+  );
+
   const addView = async () => {
     if (!project) {
       return;
@@ -129,6 +164,7 @@ export function App() {
       root: createComponent("Container", "root"),
     };
     setProject({ ...project, views: [...project.views, view] });
+    setSelectedModule("views");
     setSelectedViewId(id);
     setSelectedComponentId(view.root.id);
     await saveView(view);
@@ -162,11 +198,14 @@ export function App() {
       <ProjectExplorer
         project={project}
         selectedViewId={selectedViewId}
+        selectedModule={selectedModule}
         onOpenView={(viewId) => {
           const view = project.views.find((item) => item.id === viewId);
+          setSelectedModule("views");
           setSelectedViewId(viewId);
           setSelectedComponentId(view?.root.id ?? null);
         }}
+        onOpenAlarms={() => setSelectedModule("alarms")}
         onAddView={addView}
         onRenameView={renameView}
       />
@@ -196,34 +235,43 @@ export function App() {
             </button>
           </div>
         ) : null}
-        <div style={styles.editorGrid}>
-          {selectedView ? (
-            <ViewEditor
-              view={selectedView}
-              selectedComponentId={selectedComponentId}
-              onSelectComponent={setSelectedComponentId}
-              onChange={(view) => {
-                setSaveState("unsaved");
-                void saveView(view);
-              }}
+        <div style={selectedModule === "alarms" ? styles.moduleGrid : styles.editorGrid}>
+          {selectedModule === "alarms" ? (
+            <AlarmConfig
+              alarms={project.alarms}
+              tags={project.tags}
+              saving={saveState === "saving"}
+              onSave={saveAlarms}
             />
+          ) : selectedView ? (
+            <>
+              <ViewEditor
+                view={selectedView}
+                selectedComponentId={selectedComponentId}
+                onSelectComponent={setSelectedComponentId}
+                onChange={(view) => {
+                  setSaveState("unsaved");
+                  void saveView(view);
+                }}
+              />
+              <PropertyPanel
+                view={selectedView}
+                selectedComponentId={selectedComponentId}
+                selectedTag={selectedTag}
+                tagPaths={tagPaths}
+                onChange={(view) => {
+                  const selectedStillExists = selectedComponentId
+                    ? findNode(view, selectedComponentId)
+                    : null;
+                  setSelectedComponentId(selectedStillExists?.id ?? view.root.id);
+                  setSaveState("unsaved");
+                  void saveView(view);
+                }}
+              />
+            </>
           ) : (
             <div style={styles.empty}>Open or add a view.</div>
           )}
-          <PropertyPanel
-            view={selectedView}
-            selectedComponentId={selectedComponentId}
-            selectedTag={selectedTag}
-            tagPaths={tagPaths}
-            onChange={(view) => {
-              const selectedStillExists = selectedComponentId
-                ? findNode(view, selectedComponentId)
-                : null;
-              setSelectedComponentId(selectedStillExists?.id ?? view.root.id);
-              setSaveState("unsaved");
-              void saveView(view);
-            }}
-          />
         </div>
         <PreviewPane
           runtimeUrl={DEFAULT_RUNTIME_URL}
@@ -310,6 +358,10 @@ const styles = {
     minHeight: 0,
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) 320px",
+  },
+  moduleGrid: {
+    minHeight: 0,
+    display: "grid",
   },
   empty: {
     padding: 24,

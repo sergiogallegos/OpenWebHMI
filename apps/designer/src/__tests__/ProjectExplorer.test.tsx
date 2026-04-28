@@ -10,6 +10,7 @@ describe("ProjectExplorer", () => {
   it("renders a project tree and fires view actions", async () => {
     const user = userEvent.setup();
     const onOpenView = vi.fn();
+    const onOpenAlarms = vi.fn();
     const onAddView = vi.fn();
     const onRenameView = vi.fn();
 
@@ -17,7 +18,9 @@ describe("ProjectExplorer", () => {
       <ProjectExplorer
         project={project}
         selectedViewId="home"
+        selectedModule="views"
         onOpenView={onOpenView}
+        onOpenAlarms={onOpenAlarms}
         onAddView={onAddView}
         onRenameView={onRenameView}
       />,
@@ -28,10 +31,12 @@ describe("ProjectExplorer", () => {
     expect(screen.getByText("rockwell-1/Pressure")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "home" }));
+    await user.click(screen.getByRole("button", { name: "Alarms" }));
     await user.click(screen.getByRole("button", { name: "Add View" }));
     await user.click(screen.getByRole("button", { name: "Rename home" }));
 
     expect(onOpenView).toHaveBeenCalledWith("home");
+    expect(onOpenAlarms).toHaveBeenCalledOnce();
     expect(onAddView).toHaveBeenCalledOnce();
     expect(onRenameView).toHaveBeenCalledWith("home");
   });
@@ -44,6 +49,7 @@ const project: DesignerProject = {
   version: 1,
   drivers: [{ id: "rockwell-1", type: "rockwell" }],
   tags: [{ path: "rockwell-1/Pressure", driver: "rockwell-1", address: "Pressure" }],
+  alarms: [],
   views: [
     {
       id: "home",

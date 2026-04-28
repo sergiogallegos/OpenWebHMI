@@ -98,8 +98,13 @@ export function App() {
       ) : view ? (
         <ViewRenderer
           view={view}
+          projectId={PROJECT_ID}
           boundValues={boundValues}
           onWriteTag={writeTag}
+          onSubscribeAlarms={(options, callback) =>
+            client.subscribeAlarms(options, callback)
+          }
+          onAckAlarm={(alarmId, note) => client.ackAlarm(alarmId, note)}
         />
       ) : (
         <section role="status" style={styles.loading}>

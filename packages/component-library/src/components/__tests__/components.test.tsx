@@ -34,8 +34,9 @@ afterEach(() => {
 });
 
 describe("componentRegistry", () => {
-  it("exports all six v1 components by kind", () => {
+  it("exports the registered components by kind", () => {
     expect(Object.keys(componentRegistry).sort()).toEqual([
+      "AlarmTable",
       "Container",
       "Image",
       "Indicator",

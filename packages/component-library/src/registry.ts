@@ -1,4 +1,5 @@
 import type { ComponentDefinition } from "./types";
+import { AlarmTable } from "./components/AlarmTable";
 import { Container } from "./components/Container";
 import { Image } from "./components/Image";
 import { Indicator } from "./components/Indicator";
@@ -13,6 +14,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
   [Indicator.kind]: Indicator,
   [Image.kind]: Image,
   [Container.kind]: Container,
+  [AlarmTable.kind]: AlarmTable,
 };
 
 export const components = [
@@ -22,4 +24,5 @@ export const components = [
   Indicator,
   Image,
   Container,
+  AlarmTable,
 ] as const;

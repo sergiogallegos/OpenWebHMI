@@ -21,6 +21,12 @@ export type ProjectChange = Extract<
   ServerMessage,
   { kind: "project.changed" }
 >;
+export type AlarmEvent = Extract<ServerMessage, { kind: "alarm.event" }>;
+export type AlarmSubscribeOptions = {
+  projectId: string;
+  priorityMin?: number | null;
+  priorityMax?: number | null;
+};
 
 export type GatewayError = Extract<ServerMessage, { kind: "error" }>;
 export type AuthResult = Extract<ServerMessage, { kind: "auth.result" }>;
@@ -35,6 +41,7 @@ export type ConnectionState =
 type TagCallback = (update: TagUpdate) => void;
 type ViewCallback = (definition: ViewDefinition) => void;
 type ProjectChangeCallback = (change: ProjectChange) => void;
+type AlarmCallback = (event: AlarmEvent) => void;
 type ErrorCallback = (error: GatewayError) => void;
 type StateCallback = (state: ConnectionState) => void;
 type WebSocketCtor = new (url: string) => WebSocketLike;
@@ -61,6 +68,7 @@ export class GatewayClient {
   private readonly callbacks = new Map<string, Set<TagCallback>>();
   private readonly viewCallbacks = new Map<string, Set<ViewCallback>>();
   private readonly projectCallbacks = new Map<string, Set<ProjectChangeCallback>>();
+  private readonly alarmCallbacks = new Map<string, AlarmSubscription>();
   private readonly errorCallbacks = new Set<ErrorCallback>();
   private readonly stateCallbacks = new Set<StateCallback>();
   private readonly lastTagUpdates = new Map<string, TagUpdate>();
@@ -231,6 +239,49 @@ export class GatewayClient {
     this.send({ kind: "tag.write", path, value });
   }
 
+  subscribeAlarms(
+    options: AlarmSubscribeOptions,
+    callback: AlarmCallback,
+  ): () => void {
+    const key = alarmKey(options);
+    const subscription =
+      this.alarmCallbacks.get(key) ?? {
+        options: normalizedAlarmOptions(options),
+        callbacks: new Set<AlarmCallback>(),
+      };
+    const wasEmpty = subscription.callbacks.size === 0;
+    subscription.callbacks.add(callback);
+    this.alarmCallbacks.set(key, subscription);
+
+    if (wasEmpty) {
+      this.send(alarmSubscribeMessage(subscription.options));
+    }
+
+    return () => this.unsubscribeAlarms(options, callback);
+  }
+
+  unsubscribeAlarms(options: AlarmSubscribeOptions, callback?: AlarmCallback) {
+    const key = alarmKey(options);
+    const subscription = this.alarmCallbacks.get(key);
+    if (!subscription) {
+      return;
+    }
+
+    if (callback) {
+      subscription.callbacks.delete(callback);
+    } else {
+      subscription.callbacks.clear();
+    }
+
+    if (subscription.callbacks.size === 0) {
+      this.alarmCallbacks.delete(key);
+    }
+  }
+
+  ackAlarm(alarmId: string, note?: string | null) {
+    this.send({ kind: "alarm.ack", alarm_id: alarmId, note: note ?? null });
+  }
+
   disconnect() {
     this.manuallyClosed = true;
     this.clearReconnectTimer();
@@ -304,6 +355,9 @@ export class GatewayClient {
       case "project.changed":
         this.dispatchProjectChange(parsed);
         break;
+      case "alarm.event":
+        this.dispatchAlarmEvent(parsed);
+        break;
       case "error":
         for (const callback of this.errorCallbacks) {
           callback(parsed);
@@ -356,6 +410,17 @@ export class GatewayClient {
     }
   }
 
+  private dispatchAlarmEvent(event: AlarmEvent) {
+    for (const subscription of this.alarmCallbacks.values()) {
+      if (!alarmMatches(event, subscription.options)) {
+        continue;
+      }
+      for (const callback of subscription.callbacks) {
+        callback(event);
+      }
+    }
+  }
+
   private resubscribeAll() {
     const paths = [...this.callbacks.keys()];
     if (paths.length > 0) {
@@ -369,6 +434,10 @@ export class GatewayClient {
     for (const key of this.viewCallbacks.keys()) {
       const [projectId, viewId] = splitViewKey(key);
       this.requestView(projectId, viewId);
+    }
+
+    for (const subscription of this.alarmCallbacks.values()) {
+      this.send(alarmSubscribeMessage(subscription.options));
     }
   }
 
@@ -422,6 +491,17 @@ export class GatewayClient {
   }
 }
 
+type NormalizedAlarmSubscribeOptions = {
+  projectId: string;
+  priorityMin: number;
+  priorityMax: number;
+};
+
+type AlarmSubscription = {
+  options: NormalizedAlarmSubscribeOptions;
+  callbacks: Set<AlarmCallback>;
+};
+
 function viewKey(projectId: string, viewId: string): string {
   return JSON.stringify([projectId, viewId]);
 }
@@ -434,6 +514,44 @@ function splitViewKey(key: string): [string, string] {
 function withJitter(delayMs: number): number {
   const jitter = delayMs * 0.25 * (Math.random() * 2 - 1);
   return Math.max(0, Math.round(Math.min(delayMs + jitter, MAX_BACKOFF_MS)));
+}
+
+function normalizedAlarmOptions(
+  options: AlarmSubscribeOptions,
+): NormalizedAlarmSubscribeOptions {
+  return {
+    projectId: options.projectId,
+    priorityMin: options.priorityMin ?? 1,
+    priorityMax: options.priorityMax ?? 5,
+  };
+}
+
+function alarmKey(options: AlarmSubscribeOptions): string {
+  const normalized = normalizedAlarmOptions(options);
+  return JSON.stringify([
+    normalized.projectId,
+    normalized.priorityMin,
+    normalized.priorityMax,
+  ]);
+}
+
+function alarmSubscribeMessage(options: NormalizedAlarmSubscribeOptions): ClientMessage {
+  return {
+    kind: "alarm.subscribe",
+    project_id: options.projectId,
+    priority_min: options.priorityMin,
+    priority_max: options.priorityMax,
+  };
+}
+
+function alarmMatches(
+  event: AlarmEvent,
+  options: NormalizedAlarmSubscribeOptions,
+): boolean {
+  return (
+    event.priority >= options.priorityMin &&
+    event.priority <= options.priorityMax
+  );
 }
 
 function withToken(url: string, token: string | null): string {

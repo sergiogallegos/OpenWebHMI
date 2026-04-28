@@ -1,5 +1,5 @@
 import type React from "react";
-import type { Quality, TagValue } from "@openwebhmi/protocol";
+import type { Quality, ServerMessage, TagValue } from "@openwebhmi/protocol";
 
 export type PropSchemaField = {
   type: "string" | "number" | "boolean" | "color" | "select";
@@ -20,9 +20,23 @@ export type BoundValue = {
   ts: number;
 };
 
+export type AlarmEvent = Extract<ServerMessage, { kind: "alarm.event" }>;
+
+export type AlarmSubscribeOptions = {
+  projectId: string;
+  priorityMin?: number | null;
+  priorityMax?: number | null;
+};
+
 export type RuntimeContext = {
   mode: "runtime";
   onWriteTag: (path: string, value: TagValue) => void;
+  projectId?: string;
+  onSubscribeAlarms?: (
+    options: AlarmSubscribeOptions,
+    callback: (event: AlarmEvent) => void,
+  ) => () => void;
+  onAckAlarm?: (alarmId: string, note?: string | null) => void;
 };
 
 export type DesignerContext = {

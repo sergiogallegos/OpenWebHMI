@@ -4,6 +4,7 @@ import {
   type ChangeAction,
   type ClientMessage,
   type ServerMessage,
+  type TagValue,
   type View,
   type AuthUser,
 } from "@openwebhmi/protocol";
@@ -22,6 +23,24 @@ export type DesignerTag = {
   address: string;
 };
 
+export type DesignerAlarmCondition =
+  | { kind: "high_limit"; threshold: number }
+  | { kind: "low_limit"; threshold: number }
+  | { kind: "equals"; value: TagValue["value"] }
+  | { kind: "deviation"; setpoint: number; tolerance: number }
+  | { kind: "digital"; active_when: boolean };
+
+export type DesignerAlarm = {
+  id: string;
+  label: string;
+  priority: number;
+  tag_path: string;
+  condition: DesignerAlarmCondition;
+  message: string;
+  enabled: boolean;
+  require_ack: boolean;
+};
+
 /** Project snapshot loaded from the gateway. */
 export type DesignerProject = {
   id: string;
@@ -30,6 +49,7 @@ export type DesignerProject = {
   version: number;
   drivers: DesignerDriver[];
   tags: DesignerTag[];
+  alarms: DesignerAlarm[];
   views: View[];
 };
 
@@ -160,6 +180,24 @@ export class DesignerClient {
       project_id: projectId,
       artifact: { kind: "view", id: view.id },
       body: view,
+    });
+    return request;
+  }
+
+  /** Save the project alarm definition artifact. */
+  saveAlarms(projectId: string, alarms: DesignerAlarm[]): Promise<number> {
+    const requestId = `alarms-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    const request = new Promise<number>((resolve, reject) => {
+      this.pendingSaves.set(requestId, { resolve, reject });
+    });
+    this.send({
+      kind: "project.save_artifact",
+      request_id: requestId,
+      project_id: projectId,
+      artifact: { kind: "alarms" },
+      body: { alarms },
     });
     return request;
   }

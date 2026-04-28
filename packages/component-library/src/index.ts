@@ -7,8 +7,12 @@ export type {
   PropSchemaField,
   RenderProps,
   RuntimeContext,
+  AlarmEvent,
+  AlarmSubscribeOptions,
 } from "./types";
 export { componentRegistry, components } from "./registry";
+export type { AlarmTableProps } from "./components/AlarmTable";
+export { AlarmTable } from "./components/AlarmTable";
 export type { LabelProps } from "./components/Label";
 export { Label } from "./components/Label";
 export type { ValueDisplayProps } from "./components/ValueDisplay";

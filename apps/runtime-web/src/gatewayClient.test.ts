@@ -262,4 +262,64 @@ describe("GatewayClient", () => {
 
     client.disconnect();
   });
+
+  it("subscribes to alarms, routes events, resubscribes, and sends ack", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    MockWebSocket.instances = [];
+
+    const events: unknown[] = [];
+    const client = new GatewayClient({
+      url: "ws://127.0.0.1:8080",
+      webSocketImpl: MockWebSocket,
+    });
+
+    client.connect();
+    const first = MockWebSocket.instances[0]!;
+    first.open();
+
+    client.subscribeAlarms(
+      { projectId: "phase1-demo", priorityMin: 1, priorityMax: 2 },
+      (event) => events.push(event),
+    );
+    expect(first.sent.at(-1)).toBe(
+      '{"kind":"alarm.subscribe","project_id":"phase1-demo","priority_min":1,"priority_max":2}',
+    );
+
+    first.onmessage?.({
+      data: JSON.stringify({
+        kind: "alarm.event",
+        alarm_id: "pressure-high",
+        label: "High pressure",
+        priority: 2,
+        state: "active",
+        tag_path: "rockwell-1/Pressure",
+        value: { type: "real", value: 250 },
+        quality: "good",
+        activated_at_ms: 1,
+        transitioned_at_ms: 1,
+        who: null,
+        note: null,
+        message: "High pressure",
+      }),
+    } as MessageEvent<string>);
+    expect(events).toHaveLength(1);
+
+    client.ackAlarm("pressure-high", "seen");
+    expect(first.sent.at(-1)).toBe(
+      '{"kind":"alarm.ack","alarm_id":"pressure-high","note":"seen"}',
+    );
+
+    first.close();
+    await vi.advanceTimersByTimeAsync(250);
+    const second = MockWebSocket.instances[1]!;
+    second.open();
+    expect(second.sent).toContain(
+      '{"kind":"alarm.subscribe","project_id":"phase1-demo","priority_min":1,"priority_max":2}',
+    );
+
+    client.disconnect();
+    vi.mocked(Math.random).mockRestore();
+    vi.useRealTimers();
+  });
 });

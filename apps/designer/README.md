@@ -35,3 +35,5 @@ pnpm --filter @openwebhmi/designer tauri dev
 8. Confirm the runtime preview iframe shows the live pressure value.
 9. Edit the label text and confirm the runtime preview hot-reloads.
 10. Edit the `Setpoint` NumericInput in the preview and confirm the value loops through `tag.write`.
+11. Open `Alarms` in the project explorer and define `rockwell-1/Pressure > 200` with priority `2`.
+12. Add an `AlarmTable` component to the `home` view, force the simulator pressure high, confirm the table shows the active alarm, ack it, then clear the pressure and confirm the row clears.
