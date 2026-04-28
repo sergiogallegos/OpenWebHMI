@@ -199,6 +199,7 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 - State machine: `Clear → Active → Acked → Cleared` (Ignition convention). Optional `Shelved` state.
 - Subscribes to tag engine; transitions on edge.
 - Persists alarm history to SQLite.
+- v1 omits high/low hysteresis; a value oscillating around a threshold can flap until optional clear thresholds are added.
 - Notifications (email, webhook, SMS, MQTT publish) deferred to Phase 3+.
 
 ### 4.6 Historian (`crates/historian`)

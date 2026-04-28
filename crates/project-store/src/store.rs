@@ -11,7 +11,7 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 
-use crate::types::{Project, ProjectMetaFile, ProjectSummary, TagConfig, View};
+use crate::types::{AlarmConfig, Project, ProjectMetaFile, ProjectSummary, TagConfig, View};
 use crate::version::{ChangeAction, ProjectChange};
 
 const CHANGE_CAPACITY: usize = 1024;
@@ -108,6 +108,7 @@ impl ProjectStore {
 
         let mut tags = read_tags_file(project_dir.join("tags/tags.json"))?;
         tags.extend(meta.tags);
+        let alarms = read_alarms_file(project_dir.join("alarms/alarms.json"))?;
 
         let mut views = Vec::new();
         let views_dir = project_dir.join("views");
@@ -130,6 +131,7 @@ impl ProjectStore {
             version,
             drivers,
             tags,
+            alarms,
             views,
         };
         validate_project(&project)?;
@@ -301,6 +303,30 @@ pub fn validate_project(project: &Project) -> anyhow::Result<()> {
             bail!("tag path '{}' must start with '{}'", tag.path, prefix);
         }
     }
+    let tag_paths = project
+        .tags
+        .iter()
+        .map(|tag| tag.path.as_str())
+        .collect::<HashSet<_>>();
+    let mut alarm_ids = HashSet::new();
+    for alarm in &project.alarms {
+        if alarm.id.trim().is_empty() {
+            bail!("alarm id cannot be empty");
+        }
+        if !alarm_ids.insert(alarm.id.clone()) {
+            bail!("duplicate alarm id '{}'", alarm.id);
+        }
+        if !tag_paths.contains(alarm.tag_path.as_str()) {
+            bail!(
+                "alarm '{}' references unknown tag '{}'",
+                alarm.id,
+                alarm.tag_path
+            );
+        }
+        if !(1..=5).contains(&alarm.priority) {
+            bail!("alarm '{}' priority must be between 1 and 5", alarm.id);
+        }
+    }
     Ok(())
 }
 
@@ -323,6 +349,22 @@ fn read_tags_file(path: PathBuf) -> anyhow::Result<Vec<TagConfig>> {
     Ok(serde_json::from_value(
         value
             .get("tags")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([])),
+    )?)
+}
+
+fn read_alarms_file(path: PathBuf) -> anyhow::Result<Vec<AlarmConfig>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let value = serde_json::from_str::<serde_json::Value>(&fs::read_to_string(path)?)?;
+    if value.is_array() {
+        return Ok(serde_json::from_value(value)?);
+    }
+    Ok(serde_json::from_value(
+        value
+            .get("alarms")
             .cloned()
             .unwrap_or_else(|| serde_json::json!([])),
     )?)

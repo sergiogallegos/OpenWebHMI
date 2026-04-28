@@ -49,12 +49,31 @@ fn save_list_load_and_read_artifacts() {
             serde_json::to_value(sample_view()).unwrap(),
         )
         .unwrap();
+    store
+        .save_artifact(
+            "demo",
+            ArtifactKind::Alarms,
+            json!([
+                {
+                    "id": "pressure-high",
+                    "label": "High pressure",
+                    "priority": 2,
+                    "tag_path": "rockwell-1/Pressure",
+                    "condition": { "kind": "high_limit", "threshold": 200.0 },
+                    "message": "Pressure high: {value}",
+                    "enabled": true,
+                    "require_ack": true
+                }
+            ]),
+        )
+        .unwrap();
 
     assert_eq!(store.list().unwrap()[0].id, "demo");
     let project = store.load("demo").unwrap();
-    assert_eq!(project.version, 3);
+    assert_eq!(project.version, 4);
     assert_eq!(project.tags.len(), 1);
     assert_eq!(project.tags[0].history.as_ref().unwrap().rate_ms, Some(500));
+    assert_eq!(project.alarms[0].id, "pressure-high");
     assert_eq!(project.views[0].id, "home");
     assert!(store
         .read_artifact("demo", ArtifactKind::View { id: "home".into() })

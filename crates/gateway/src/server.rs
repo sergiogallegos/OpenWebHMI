@@ -7,10 +7,11 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use anyhow::Context;
 use futures_util::{SinkExt, StreamExt};
+use openwebhmi_alarm_engine::{AlarmEngineHandle, AlarmEvent};
 use openwebhmi_auth::{Permission, Role, SessionManager, UserPatch, UserStore, VerifiedSession};
 use openwebhmi_historian::{Aggregation, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
-use openwebhmi_protocol::{ArtifactKind, AuthUser, ClientMessage, ServerMessage};
+use openwebhmi_protocol::{AlarmState, ArtifactKind, AuthUser, ClientMessage, ServerMessage};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpListener;
@@ -26,6 +27,7 @@ use crate::project::{DriverHandle, DriverHandles, WriteCommand, WriteEnqueueErro
 type OutboundTx = mpsc::Sender<ServerMessage>;
 const OUTBOUND_CAPACITY: usize = 256;
 static DEFAULT_HISTORIAN: OnceLock<HistorianStore> = OnceLock::new();
+static DEFAULT_ALARM_ENGINE: OnceLock<Arc<Mutex<AlarmEngineHandle>>> = OnceLock::new();
 
 /// Authentication state shared by websocket connections.
 #[derive(Clone)]
@@ -44,6 +46,11 @@ impl AuthContext {
 /// Set the process-wide historian used by websocket `history.read` handlers.
 pub fn set_default_historian(historian: HistorianStore) {
     let _ = DEFAULT_HISTORIAN.set(historian);
+}
+
+/// Set the process-wide alarm engine used by websocket alarm handlers.
+pub fn set_default_alarm_engine(engine: Arc<Mutex<AlarmEngineHandle>>) {
+    let _ = DEFAULT_ALARM_ENGINE.set(engine);
 }
 
 /// Bind `addr` and serve WebSocket clients forever.
@@ -243,6 +250,7 @@ where
     let mut current_view_allowed_roles: Option<Vec<String>> = None;
     let mut subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
     let mut project_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
+    let mut alarm_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
 
     while let Some(item) = incoming.next().await {
         let message = match item {
@@ -345,6 +353,78 @@ where
                         error: None,
                     },
                 );
+            }
+            ClientMessage::AlarmSubscribe {
+                project_id,
+                priority_min,
+                priority_max,
+            } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadTags,
+                ) {
+                    continue;
+                }
+                let Some(engine) = DEFAULT_ALARM_ENGINE.get() else {
+                    send_error(
+                        &out_tx,
+                        "alarm.unavailable",
+                        "alarm engine is not enabled".into(),
+                    );
+                    continue;
+                };
+                if alarm_subscriptions.contains_key(&project_id) {
+                    continue;
+                }
+                let rx = match engine.lock() {
+                    Ok(engine) => engine.subscribe_events(),
+                    Err(_) => {
+                        send_error(
+                            &out_tx,
+                            "alarm.unavailable",
+                            "alarm engine lock poisoned".into(),
+                        );
+                        continue;
+                    }
+                };
+                let handle = spawn_alarm_forwarder(
+                    project_id.clone(),
+                    rx,
+                    priority_min.unwrap_or(1),
+                    priority_max.unwrap_or(5),
+                    out_tx.clone(),
+                );
+                alarm_subscriptions.insert(project_id, handle);
+            }
+            ClientMessage::AlarmAck { alarm_id, note } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::WriteTags,
+                ) {
+                    continue;
+                }
+                let Some(engine) = DEFAULT_ALARM_ENGINE.get() else {
+                    send_error(
+                        &out_tx,
+                        "alarm.unavailable",
+                        "alarm engine is not enabled".into(),
+                    );
+                    continue;
+                };
+                match engine.lock() {
+                    Ok(engine) => {
+                        let who = session
+                            .as_ref()
+                            .map(|session| session.username.as_str())
+                            .unwrap_or("anonymous");
+                        engine.ack(&alarm_id, who, note);
+                    }
+                    Err(_) => send_error(&out_tx, "alarm.ack", "alarm engine lock poisoned".into()),
+                }
             }
             ClientMessage::TagSubscribe { paths } => {
                 if !authorize(
@@ -653,6 +733,9 @@ where
     for (_, handle) in project_subscriptions {
         handle.abort();
     }
+    for (_, handle) in alarm_subscriptions {
+        handle.abort();
+    }
     drop(out_tx);
     writer.abort();
     info!(%peer_addr, "connection cleanup complete");
@@ -858,6 +941,51 @@ fn spawn_forwarder(path: String, store: TagStore, out_tx: OutboundTx) -> JoinHan
             }
         }
     })
+}
+
+fn spawn_alarm_forwarder(
+    project_id: String,
+    mut rx: tokio::sync::broadcast::Receiver<AlarmEvent>,
+    priority_min: u8,
+    priority_max: u8,
+    out_tx: OutboundTx,
+) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            match rx.recv().await {
+                Ok(event) if event.priority >= priority_min && event.priority <= priority_max => {
+                    try_send_message(&out_tx, alarm_event_to_message(event));
+                }
+                Ok(_) => {}
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                    warn!(%project_id, skipped, "alarm subscriber lagged");
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    })
+}
+
+fn alarm_event_to_message(event: AlarmEvent) -> ServerMessage {
+    ServerMessage::AlarmEvent {
+        alarm_id: event.alarm_id,
+        label: event.label,
+        priority: event.priority,
+        state: match event.state {
+            openwebhmi_alarm_engine::AlarmState::Clear => AlarmState::Clear,
+            openwebhmi_alarm_engine::AlarmState::Active => AlarmState::Active,
+            openwebhmi_alarm_engine::AlarmState::Acked => AlarmState::Acked,
+            openwebhmi_alarm_engine::AlarmState::Cleared => AlarmState::Cleared,
+        },
+        tag_path: event.tag_path,
+        value: event.value,
+        quality: event.quality,
+        activated_at_ms: event.activated_at_ms,
+        transitioned_at_ms: event.transitioned_at_ms,
+        who: event.who,
+        note: event.note,
+        message: event.message,
+    }
 }
 
 fn try_send_message(out_tx: &OutboundTx, message: ServerMessage) {

@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use clap::Parser;
+use openwebhmi_alarm_engine::{spawn_alarm_engine, AlarmJournal};
 use openwebhmi_auth::{SessionManager, UserStore};
 use openwebhmi_gateway::{project, server, sim_provider};
 use openwebhmi_historian::{spawn_recorder, HistorianStore};
@@ -70,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
     let driver_handles = if let Some(path) = args.project.as_ref() {
         let project = project::load(path)?;
         spawn_history_recorder(store.clone(), project_store.clone(), &project)?;
+        spawn_alarm_runtime(store.clone(), project_store.clone(), &project)?;
         project::spawn_project(project, store.clone())?
     } else {
         project::DriverHandles::new()
@@ -84,6 +86,69 @@ async fn main() -> anyhow::Result<()> {
             Ok(())
         }
     }
+}
+
+fn spawn_alarm_runtime(
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+    project: &openwebhmi_project_store::Project,
+) -> anyhow::Result<()> {
+    let journal = AlarmJournal::open("openwebhmi-alarms.sqlite")?;
+    let engine = spawn_alarm_engine(store, journal, project::alarm_definitions(project)?);
+    let Some(project_store) = project_store else {
+        let engine = Arc::new(std::sync::Mutex::new(engine));
+        server::set_default_alarm_engine(engine.clone());
+        tokio::spawn(async move {
+            std::future::pending::<()>().await;
+            if let Ok(engine) = Arc::try_unwrap(engine) {
+                if let Ok(engine) = engine.into_inner() {
+                    engine.abort();
+                }
+            }
+        });
+        return Ok(());
+    };
+
+    let project_id = project.id.clone();
+    let engine = Arc::new(std::sync::Mutex::new(engine));
+    server::set_default_alarm_engine(engine.clone());
+    tokio::spawn(async move {
+        let mut changes = project_store.subscribe_changes(Some(&project_id));
+        loop {
+            match changes.recv().await {
+                Ok(change)
+                    if change.project_id == project_id
+                        && matches!(change.artifact, ArtifactKind::Alarms) =>
+                {
+                    match project_store.load(&project_id) {
+                        Ok(project) => match project::alarm_definitions(&project) {
+                            Ok(definitions) => {
+                                if let Ok(mut engine) = engine.lock() {
+                                    engine.update_definitions(definitions);
+                                }
+                            }
+                            Err(err) => warn!(
+                                project_id = %project_id,
+                                error = %err,
+                                "failed to reload alarm definitions"
+                            ),
+                        },
+                        Err(err) => warn!(
+                            project_id = %project_id,
+                            error = %err,
+                            "failed to reload project for alarm definitions"
+                        ),
+                    }
+                }
+                Ok(_) => {}
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                    warn!(project_id = %project_id, skipped, "alarm project change subscriber lagged");
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => return,
+            }
+        }
+    });
+    Ok(())
 }
 
 fn spawn_history_recorder(

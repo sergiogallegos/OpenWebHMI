@@ -55,10 +55,19 @@ export type AuthUser = {
   roles: string[];
 };
 
+export type AlarmState = "clear" | "active" | "acked" | "cleared";
+
 /** Messages accepted by the gateway from a runtime or designer client. */
 export type ClientMessage =
   | { kind: "auth.login"; username: string; password: string }
   | { kind: "auth.logout" }
+  | {
+      kind: "alarm.subscribe";
+      project_id: string;
+      priority_min?: number | null;
+      priority_max?: number | null;
+    }
+  | { kind: "alarm.ack"; alarm_id: string; note?: string | null }
   | { kind: "tag.subscribe"; paths: string[] }
   | { kind: "tag.unsubscribe"; paths: string[] }
   | { kind: "tag.write"; path: string; value: TagValue }
@@ -101,6 +110,21 @@ export type ServerMessage =
       user_id?: string | null;
       roles: string[];
       error?: string | null;
+    }
+  | {
+      kind: "alarm.event";
+      alarm_id: string;
+      label: string;
+      priority: number;
+      state: AlarmState;
+      tag_path: string;
+      value: TagValue;
+      quality: Quality;
+      activated_at_ms?: number | null;
+      transitioned_at_ms: number;
+      who?: string | null;
+      note?: string | null;
+      message: string;
     }
   | {
       kind: "tag.update";
@@ -183,6 +207,19 @@ export function isClientMessage(value: unknown): value is ClientMessage {
       );
     case "auth.logout":
       return true;
+    case "alarm.subscribe":
+      return (
+        typeof value.project_id === "string" &&
+        optionalFiniteNumber(value, "priority_min") &&
+        optionalFiniteNumber(value, "priority_max")
+      );
+    case "alarm.ack":
+      return (
+        typeof value.alarm_id === "string" &&
+        ("note" in value
+          ? value.note === null || typeof value.note === "string"
+          : true)
+      );
     case "tag.subscribe":
     case "tag.unsubscribe":
       return isStringArray(value.paths);
@@ -260,6 +297,27 @@ export function isServerMessage(value: unknown): value is ServerMessage {
           ? value.error === null || typeof value.error === "string"
           : true)
       );
+    case "alarm.event":
+      return (
+        typeof value.alarm_id === "string" &&
+        typeof value.label === "string" &&
+        typeof value.priority === "number" &&
+        Number.isFinite(value.priority) &&
+        isAlarmState(value.state) &&
+        typeof value.tag_path === "string" &&
+        isTagValue(value.value) &&
+        isQuality(value.quality) &&
+        optionalFiniteNumber(value, "activated_at_ms") &&
+        typeof value.transitioned_at_ms === "number" &&
+        Number.isFinite(value.transitioned_at_ms) &&
+        ("who" in value
+          ? value.who === null || typeof value.who === "string"
+          : true) &&
+        ("note" in value
+          ? value.note === null || typeof value.note === "string"
+          : true) &&
+        typeof value.message === "string"
+      );
     case "tag.update":
       return (
         typeof value.path === "string" &&
@@ -322,6 +380,25 @@ function isAuthUser(value: unknown): value is AuthUser {
     typeof value.username === "string" &&
     isStringArray(value.roles)
   );
+}
+
+function isAlarmState(value: unknown): value is AlarmState {
+  return (
+    value === "clear" ||
+    value === "active" ||
+    value === "acked" ||
+    value === "cleared"
+  );
+}
+
+function optionalFiniteNumber(
+  value: Record<string, unknown>,
+  key: string,
+): boolean {
+  return key in value
+    ? value[key] === null ||
+        (typeof value[key] === "number" && Number.isFinite(value[key]))
+    : true;
 }
 
 function isHistoryPoint(value: unknown): value is HistoryPoint {

@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/alarm-engine",
     "crates/driver-api",
     "crates/driver-rockwell",
     "crates/gateway",

@@ -2498,6 +2498,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
+name = "openwebhmi-alarm-engine"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "openwebhmi-protocol",
+ "openwebhmi-tag-engine",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "openwebhmi-auth"
 version = "0.0.1"
 dependencies = [
@@ -2564,6 +2579,7 @@ dependencies = [
  "anyhow",
  "clap",
  "futures-util",
+ "openwebhmi-alarm-engine",
  "openwebhmi-auth",
  "openwebhmi-driver-api",
  "openwebhmi-driver-rockwell",

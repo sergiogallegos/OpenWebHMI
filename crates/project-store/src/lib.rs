@@ -11,7 +11,7 @@ pub mod version;
 
 pub use store::{ArtifactKind, ProjectStore};
 pub use types::{
-    Binding, BindingSource, Component, DriverConfig, HistoryConfig, Project, ProjectSummary,
-    TagConfig, View,
+    AlarmConditionConfig, AlarmConfig, Binding, BindingSource, Component, DriverConfig,
+    HistoryConfig, Project, ProjectSummary, TagConfig, View,
 };
 pub use version::{ChangeAction, ProjectChange};

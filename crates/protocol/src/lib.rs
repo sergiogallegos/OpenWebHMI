@@ -24,6 +24,20 @@ pub struct AuthUser {
     pub roles: Vec<String>,
 }
 
+/// Alarm state in the wire protocol.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AlarmState {
+    /// Clear.
+    Clear,
+    /// Active and unacknowledged.
+    Active,
+    /// Active and acknowledged.
+    Acked,
+    /// Cleared after an active/acked transition.
+    Cleared,
+}
+
 /// A historical tag sample returned by `history.result`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HistoryPoint {
@@ -81,6 +95,27 @@ pub enum ClientMessage {
     /// End the current client-side session.
     #[serde(rename = "auth.logout")]
     AuthLogout,
+    /// Subscribe to alarm events.
+    #[serde(rename = "alarm.subscribe")]
+    AlarmSubscribe {
+        /// Project id.
+        project_id: String,
+        /// Minimum priority, inclusive.
+        #[serde(default)]
+        priority_min: Option<u8>,
+        /// Maximum priority, inclusive.
+        #[serde(default)]
+        priority_max: Option<u8>,
+    },
+    /// Acknowledge an alarm.
+    #[serde(rename = "alarm.ack")]
+    AlarmAck {
+        /// Alarm id.
+        alarm_id: String,
+        /// Optional note.
+        #[serde(default)]
+        note: Option<String>,
+    },
     /// Subscribe to live updates for one or more tag paths.
     #[serde(rename = "tag.subscribe")]
     TagSubscribe {
@@ -210,6 +245,36 @@ pub enum ServerMessage {
         roles: Vec<String>,
         /// Error message, or `None` on success.
         error: Option<String>,
+    },
+    /// Alarm transition event.
+    #[serde(rename = "alarm.event")]
+    AlarmEvent {
+        /// Alarm id.
+        alarm_id: String,
+        /// Label.
+        label: String,
+        /// Priority.
+        priority: u8,
+        /// State.
+        state: AlarmState,
+        /// Tag path.
+        tag_path: String,
+        /// Current value.
+        value: TagValue,
+        /// Current quality.
+        quality: Quality,
+        /// Activation timestamp.
+        activated_at_ms: Option<u64>,
+        /// Transition timestamp.
+        transitioned_at_ms: u64,
+        /// Actor.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        who: Option<String>,
+        /// Optional note.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        note: Option<String>,
+        /// Rendered message.
+        message: String,
     },
     /// A tag's value has changed (or its first value is being delivered after subscribe).
     #[serde(rename = "tag.update")]
@@ -358,6 +423,37 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&result).unwrap(),
             r#"{"kind":"auth.result","session_token":"jwt","user_id":"u1","roles":["Administrator"],"error":null}"#
+        );
+    }
+
+    #[test]
+    fn alarm_ack_and_event_wire_form_is_stable() {
+        let ack = ClientMessage::AlarmAck {
+            alarm_id: "pressure-high".into(),
+            note: Some("checked".into()),
+        };
+        assert_eq!(
+            serde_json::to_string(&ack).unwrap(),
+            r#"{"kind":"alarm.ack","alarm_id":"pressure-high","note":"checked"}"#
+        );
+
+        let event = ServerMessage::AlarmEvent {
+            alarm_id: "pressure-high".into(),
+            label: "High pressure".into(),
+            priority: 2,
+            state: AlarmState::Active,
+            tag_path: "rockwell-1/Pressure".into(),
+            value: TagValue::Real(250.0),
+            quality: Quality::Good,
+            activated_at_ms: Some(10),
+            transitioned_at_ms: 10,
+            who: None,
+            note: None,
+            message: "Pressure high: 250".into(),
+        };
+        assert_eq!(
+            serde_json::to_string(&event).unwrap(),
+            r#"{"kind":"alarm.event","alarm_id":"pressure-high","label":"High pressure","priority":2,"state":"active","tag_path":"rockwell-1/Pressure","value":{"type":"real","value":250.0},"quality":"good","activated_at_ms":10,"transitioned_at_ms":10,"message":"Pressure high: 250"}"#
         );
     }
 

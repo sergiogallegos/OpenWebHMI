@@ -6,10 +6,13 @@ use std::time::Duration;
 
 use anyhow::Context;
 use futures_util::StreamExt;
+use openwebhmi_alarm_engine::{AlarmCondition, AlarmDefinition};
 use openwebhmi_driver_api::{Driver, TagAddress};
 use openwebhmi_driver_rockwell::{RockwellConfig, RockwellDriver};
 use openwebhmi_historian::HistoryTagConfig;
-use openwebhmi_project_store::{DriverConfig, Project, ProjectStore, TagConfig};
+use openwebhmi_project_store::{
+    AlarmConditionConfig, DriverConfig, Project, ProjectStore, TagConfig,
+};
 use openwebhmi_protocol::{Quality, TagValue};
 use openwebhmi_tag_engine::TagStore;
 use tokio::sync::mpsc;
@@ -107,6 +110,50 @@ pub fn history_configs(project: &Project) -> Vec<HistoryTagConfig> {
             })
         })
         .collect()
+}
+
+/// Extract alarm definitions from project alarms.
+pub fn alarm_definitions(project: &Project) -> anyhow::Result<Vec<AlarmDefinition>> {
+    project
+        .alarms
+        .iter()
+        .map(|alarm| {
+            Ok(AlarmDefinition {
+                id: alarm.id.clone(),
+                label: alarm.label.clone(),
+                priority: alarm.priority,
+                tag_path: alarm.tag_path.clone(),
+                condition: alarm_condition(&alarm.condition)?,
+                message: alarm.message.clone(),
+                enabled: alarm.enabled,
+                require_ack: alarm.require_ack,
+            })
+        })
+        .collect()
+}
+
+fn alarm_condition(condition: &AlarmConditionConfig) -> anyhow::Result<AlarmCondition> {
+    Ok(match condition {
+        AlarmConditionConfig::HighLimit { threshold } => AlarmCondition::HighLimit {
+            threshold: *threshold,
+        },
+        AlarmConditionConfig::LowLimit { threshold } => AlarmCondition::LowLimit {
+            threshold: *threshold,
+        },
+        AlarmConditionConfig::Equals { value } => AlarmCondition::Equals {
+            value: serde_json::from_value(value.clone())?,
+        },
+        AlarmConditionConfig::Deviation {
+            setpoint,
+            tolerance,
+        } => AlarmCondition::Deviation {
+            setpoint: *setpoint,
+            tolerance: *tolerance,
+        },
+        AlarmConditionConfig::Digital { active_when } => AlarmCondition::Digital {
+            active_when: *active_when,
+        },
+    })
 }
 
 fn group_tags_by_driver(project: &Project) -> HashMap<String, Vec<TagConfig>> {
@@ -272,6 +319,7 @@ mod tests {
                 address: "Pressure".to_string(),
                 history: None,
             }],
+            alarms: Vec::new(),
             views: Vec::new(),
         };
 

@@ -1,0 +1,15 @@
+[
+  {
+    "id": "pressure-high",
+    "label": "High pressure",
+    "priority": 2,
+    "tag_path": "rockwell-1/Pressure",
+    "condition": {
+      "kind": "high_limit",
+      "threshold": 200.0
+    },
+    "message": "Pressure high: {value} psi",
+    "enabled": true,
+    "require_ack": true
+  }
+]

@@ -1,7 +1,9 @@
 use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
+use openwebhmi_alarm_engine::{spawn_alarm_engine, AlarmCondition, AlarmDefinition, AlarmJournal};
 use openwebhmi_auth::{Role, SessionManager, UserStore};
 use openwebhmi_gateway::{server, sim_provider};
 use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagValue};
@@ -146,6 +148,60 @@ async fn websocket_gateway_requires_auth_and_accepts_valid_session() {
     )
     .await;
     assert_valid_sin_update(next_message(&mut authorized, Duration::from_millis(2_500)).await);
+
+    server.abort();
+}
+
+#[tokio::test]
+async fn websocket_gateway_forwards_alarm_events_with_priority_filter() {
+    let store = TagStore::new();
+    let journal = AlarmJournal::memory().unwrap();
+    let engine = spawn_alarm_engine(
+        store.clone(),
+        journal,
+        vec![AlarmDefinition {
+            id: "pressure-high".into(),
+            label: "High pressure".into(),
+            priority: 2,
+            tag_path: "rockwell-1/Pressure".into(),
+            condition: AlarmCondition::HighLimit { threshold: 200.0 },
+            message: "Pressure high: {value}".into(),
+            enabled: true,
+            require_ack: true,
+        }],
+    );
+    server::set_default_alarm_engine(Arc::new(Mutex::new(engine)));
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr: SocketAddr = listener.local_addr().unwrap();
+    let server = tokio::spawn(server::serve(listener, store.clone()));
+
+    let (mut ws, _) = connect_async(format!("ws://{addr}")).await.unwrap();
+    send_client(
+        &mut ws,
+        ClientMessage::AlarmSubscribe {
+            project_id: "phase1-demo".into(),
+            priority_min: Some(1),
+            priority_max: Some(2),
+        },
+    )
+    .await;
+    sleep(Duration::from_millis(10)).await;
+    store.publish("rockwell-1/Pressure", TagValue::Real(250.0), Quality::Good);
+
+    match next_message(&mut ws, Duration::from_millis(500)).await {
+        ServerMessage::AlarmEvent {
+            alarm_id,
+            priority,
+            state,
+            ..
+        } => {
+            assert_eq!(alarm_id, "pressure-high");
+            assert_eq!(priority, 2);
+            assert_eq!(state, openwebhmi_protocol::AlarmState::Active);
+        }
+        other => panic!("expected alarm.event, got {other:?}"),
+    }
 
     server.abort();
 }

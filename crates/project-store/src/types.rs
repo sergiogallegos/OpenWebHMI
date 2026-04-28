@@ -17,6 +17,9 @@ pub struct Project {
     pub drivers: Vec<DriverConfig>,
     /// Driver-backed tags.
     pub tags: Vec<TagConfig>,
+    /// Alarm definitions.
+    #[serde(default)]
+    pub alarms: Vec<AlarmConfig>,
     /// View definitions.
     pub views: Vec<View>,
 }
@@ -68,6 +71,60 @@ pub struct HistoryConfig {
     /// Numeric deadband; non-numeric values ignore it.
     #[serde(default)]
     pub deadband: Option<f64>,
+}
+
+/// Project alarm definition.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AlarmConfig {
+    /// Stable alarm id.
+    pub id: String,
+    /// Human-readable label.
+    pub label: String,
+    /// Priority, where `1` is highest and `5` is lowest.
+    pub priority: u8,
+    /// Tag path this alarm evaluates.
+    pub tag_path: String,
+    /// Activation condition.
+    pub condition: AlarmConditionConfig,
+    /// Message template.
+    pub message: String,
+    /// Whether this alarm is enabled.
+    pub enabled: bool,
+    /// Whether an operator acknowledgement is required before clear.
+    pub require_ack: bool,
+}
+
+/// Project alarm condition.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum AlarmConditionConfig {
+    /// Activates when numeric value is greater than `threshold`.
+    HighLimit {
+        /// High threshold.
+        threshold: f64,
+    },
+    /// Activates when numeric value is less than `threshold`.
+    LowLimit {
+        /// Low threshold.
+        threshold: f64,
+    },
+    /// Activates when value equals configured value.
+    Equals {
+        /// Expected value.
+        value: serde_json::Value,
+    },
+    /// Activates when numeric value differs from setpoint by more than tolerance.
+    Deviation {
+        /// Expected setpoint.
+        setpoint: f64,
+        /// Maximum allowed absolute deviation.
+        tolerance: f64,
+    },
+    /// Activates when boolean value equals `active_when`.
+    Digital {
+        /// Active boolean value.
+        active_when: bool,
+    },
 }
 
 /// HMI view definition.

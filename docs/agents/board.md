@@ -9,7 +9,7 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open | 2026-04-27 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
-| CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-Q-alarm-engine.md](tasks/CODEX-Q-alarm-engine.md) |
+| CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | submitted | 2026-04-28 12:38 codex | [tasks/CODEX-Q-alarm-engine.md](tasks/CODEX-Q-alarm-engine.md) |
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | open (blocked-by Q) | 2026-04-27 claude | [tasks/CODEX-R-alarm-ui.md](tasks/CODEX-R-alarm-ui.md) |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-T-scripting-host.md](tasks/CODEX-T-scripting-host.md) |
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (blocked-by T) | 2026-04-27 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |

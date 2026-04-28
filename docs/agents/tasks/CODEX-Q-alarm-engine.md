@@ -3,9 +3,9 @@ id: CODEX-Q
 title: crates/alarm-engine — definitions, state machine, journal
 owner: codex
 phase: 3
-status: open
+status: submitted
 created: 2026-04-27
-last-update: 2026-04-27 claude
+last-update: 2026-04-28 12:38 codex
 ---
 
 # CODEX-Q — `crates/alarm-engine`
@@ -124,6 +124,15 @@ ServerMessage::AlarmEvent {
 ## Codex log
 
 *(codex — append working notes here)*
+
+### 2026-04-27 20:07  codex
+Started. Taking CODEX-Q because it unblocks CODEX-R and completes the backend SCADA trio with historian and auth. Reading alarm brief, architecture alarm notes, project-store artifact shape, tag-engine snapshots, and gateway websocket routing before editing.
+
+### 2026-04-28 12:36  codex
+Submitted. Added `crates/alarm-engine` with typed definitions, condition evaluation, SQLite journal persistence, state-machine tests, and tag subscription runtime. Extended project-store with `alarms/alarms.json`, protocol Rust/TS with `alarm.subscribe`, `alarm.ack`, and `alarm.event`, gateway alarm runtime/hot-reload/event forwarding, and the Phase 1 demo `pressure-high` alarm. Verification: `cargo test -p openwebhmi-alarm-engine`; `cargo test --workspace --all-features --locked`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo fmt --all -- --check`; `pnpm -r typecheck`; `pnpm -r test`; `pnpm --filter @openwebhmi/protocol build`.
+
+### 2026-04-28 12:38  codex
+Submitted update. Tightened alarm hot-reload so same-path definition changes restart the affected tag worker, then added a regression test that lowers a threshold on an existing path and observes the new alarm behavior.
 
 ## Claude review
 
