@@ -81,7 +81,7 @@ The CPython 3 scripting layer is the headline differentiator: `numpy`, `pandas`,
 | [`AGENTS.md`](AGENTS.md) | Rules for AI agents (and humans) maintaining the wiki and decision record |
 | [`docs/agents/`](docs/agents/) | Cross-LLM collaboration protocol — Claude designs/reviews, Codex develops/debugs, all hand-offs durable in markdown |
 | [`wiki/`](wiki/) | Synthesized engineering knowledge — vendor quirks, validation results, decision rationale |
-| [`apps/website/`](apps/website/) | Public marketing + docs site (Astro). Lands at `openwebhmi.dev` once the domain is registered |
+| [`apps/website/`](apps/website/) | Public marketing + docs site (Astro). Hosted at [`openwebhmi.com`](https://openwebhmi.com) (DNS via Cloudflare) |
 
 ## Roadmap headline
 
