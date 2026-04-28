@@ -113,8 +113,8 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
         index; all links go to the canonical source on GitHub.
       </p>
       <p class="subtle">
-        A standalone docs site (search, versioned API reference, embedded
-        live runtime) is a Phase 4 deliverable. For now: the markdown.
+        A standalone docs site with search and versioned API reference comes
+        later. For now, the markdown is the product record.
       </p>
     </header>
 
@@ -208,5 +208,28 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
     color: var(--text-subtle);
     font-weight: 400;
     font-size: 0.85em;
+  }
+
+  @media (max-width: 640px) {
+    .docs {
+      padding: 40px 0;
+    }
+
+    .docs-header {
+      margin-bottom: 36px;
+    }
+
+    .docs-section {
+      margin-top: 36px;
+    }
+
+    .doc-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .doc-grid a {
+      padding: 16px;
+    }
   }
 </style>

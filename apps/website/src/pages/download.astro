@@ -4,16 +4,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 <BaseLayout
   title="Download"
-  description="OpenWebHMI is pre-alpha. Build from source today; pre-built installers for the gateway and designer ship in Phase 4."
+  description="OpenWebHMI is pre-alpha. Build from source today; pre-built installers for the gateway and designer ship later."
 >
   <div class="container download">
     <header class="download-header">
       <span class="badge warn">Pre-alpha · no installers yet</span>
       <h1>Download</h1>
       <p class="lede muted">
-        Pre-built installers for the gateway and the Tauri designer ship in
-        Phase 4 (1.0 release). Today, you build from source — the workflow
-        below works on macOS, Linux, and Windows.
+        OpenWebHMI is still source-first. Pre-built gateway and designer
+        installers come later; today the supported path is building and
+        running the demo locally.
       </p>
     </header>
 
@@ -30,10 +30,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <a href="https://pnpm.io/installation" target="_blank" rel="noopener noreferrer">pnpm install instructions ↗</a>
         </li>
         <li>
-          <strong>Python 3.11+</strong> (Phase 3 onward; not needed for Phase 1).
+          <strong>Python 3.11+</strong> for the scripting host work in Phase 3.
         </li>
         <li>
-          <strong>Tauri prerequisites</strong> for the designer (Phase 2).
+          <strong>Tauri prerequisites</strong> for the desktop designer.
           <a href="https://tauri.app/start/prerequisites/" target="_blank" rel="noopener noreferrer">Tauri docs ↗</a>
         </li>
       </ul>
@@ -48,12 +48,12 @@ cargo build --workspace</code></pre>
     </section>
 
     <section class="download-section">
-      <h2>Run the Phase 1 demo</h2>
+      <h2>Run the current demo</h2>
       <p class="muted">
         Three terminals. After this, the runtime page shows a sin wave, a
         counter, and a Pressure value coming from the Rockwell-protocol
-        simulator — all updating live. Killing the simulator flips the value
-        to a Bad-quality state; restarting it recovers automatically.
+        simulator, all updating live. Killing the simulator flips the value
+        to Bad quality; restarting it recovers automatically.
       </p>
 
       <h3>1 · Start the EtherNet/IP simulator</h3>
@@ -150,5 +150,23 @@ cargo build --workspace</code></pre>
   .download-section.warning h2 {
     margin-top: 0;
     color: var(--warn);
+  }
+
+  @media (max-width: 640px) {
+    .download {
+      padding: 40px 0;
+    }
+
+    .download-header {
+      margin-bottom: 36px;
+    }
+
+    .lede {
+      font-size: 1.05rem;
+    }
+
+    .download-section {
+      margin-top: 32px;
+    }
   }
 </style>

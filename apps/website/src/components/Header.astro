@@ -19,22 +19,32 @@ function isActive(href: string): boolean {
       <Logo size={28} />
       <span>OpenWebHMI</span>
     </a>
-    <nav>
-      {links.map((link) => (
-        <a class={isActive(link.href) ? "active" : ""} href={link.href}>
-          {link.label}
+    <details class="nav-menu">
+      <summary aria-label="Open navigation">
+        <span class="sr-only">Menu</span>
+        <span class="menu-icon" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </summary>
+      <nav aria-label="Primary navigation">
+        {links.map((link) => (
+          <a class={isActive(link.href) ? "active" : ""} href={link.href}>
+            {link.label}
+          </a>
+        ))}
+        <a
+          class="github"
+          href="https://github.com/sergiogallegos/OpenWebHMI"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="OpenWebHMI on GitHub"
+        >
+          GitHub ↗
         </a>
-      ))}
-      <a
-        class="github"
-        href="https://github.com/sergiogallegos/OpenWebHMI"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="OpenWebHMI on GitHub"
-      >
-        GitHub ↗
-      </a>
-    </nav>
+      </nav>
+    </details>
   </div>
 </header>
 
@@ -59,6 +69,7 @@ function isActive(href: string): boolean {
     align-items: center;
     justify-content: space-between;
     height: 64px;
+    gap: 16px;
   }
 
   .brand {
@@ -69,10 +80,19 @@ function isActive(href: string): boolean {
     font-size: 1.05rem;
     color: var(--text);
     letter-spacing: -0.01em;
+    flex: 0 0 auto;
   }
 
   .brand:hover {
     text-decoration: none;
+  }
+
+  .nav-menu {
+    position: relative;
+  }
+
+  summary {
+    display: none;
   }
 
   nav {
@@ -104,5 +124,85 @@ function isActive(href: string): boolean {
     margin-left: 8px;
     color: var(--text);
     border: 1px solid var(--border-strong);
+  }
+
+  @media (max-width: 720px) {
+    .nav {
+      min-height: 60px;
+      height: auto;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .brand {
+      gap: 8px;
+      font-size: 1rem;
+    }
+
+    summary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary:hover {
+      background: var(--surface-alt);
+    }
+
+    .menu-icon {
+      display: grid;
+      gap: 4px;
+      width: 18px;
+    }
+
+    .menu-icon span {
+      display: block;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    nav {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: min(280px, calc(100vw - 32px));
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .nav-menu[open] nav {
+      display: flex;
+    }
+
+    nav a {
+      padding: 11px 12px;
+      font-size: 1rem;
+    }
+
+    nav a.github {
+      margin-left: 0;
+      margin-top: 4px;
+      text-align: center;
+    }
   }
 </style>

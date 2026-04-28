@@ -38,8 +38,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section>
       <h2>How it's built</h2>
       <p>
-        Two AI agents collaborate on the codebase under explicit role
-        separation, with all hand-offs in durable markdown:
+        The project is built with explicit human direction and AI-assisted
+        implementation. The workflow is public, reviewable, and durable:
       </p>
       <ul class="role-list">
         <li>
@@ -50,8 +50,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           refactoring.
         </li>
         <li>
-          <strong>The maintainer</strong> — routes messages between agents,
-          steers product direction, runs hardware validation.
+          <strong>The maintainer</strong> — steers product direction, accepts
+          work, and runs hardware validation.
         </li>
       </ul>
       <p>
@@ -129,8 +129,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <h2>Status</h2>
       <p>
         <strong>Pre-alpha.</strong> The architecture, roadmap, and feature
-        scope are committed. Code is being written. Don't deploy this
-        anywhere that matters yet. Real-hardware validation against a
+        scope are committed, and the implementation is progressing quickly.
+        Don't deploy this anywhere that matters yet. Real-hardware validation against a
         physical Rockwell PLC is a hard gate before 1.0.
       </p>
     </section>
@@ -183,5 +183,33 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   section.warning h2 {
     margin-top: 0;
     color: var(--warn);
+  }
+
+  @media (max-width: 640px) {
+    .about {
+      padding: 40px 0;
+    }
+
+    header {
+      margin-bottom: 36px;
+    }
+
+    section {
+      margin-top: 36px;
+    }
+
+    .lede {
+      font-size: 1.05rem;
+    }
+
+    .role-list li {
+      padding: 12px 14px;
+    }
+
+    section.warning {
+      margin-top: 44px;
+      padding: 18px;
+      border-radius: var(--radius);
+    }
   }
 </style>
