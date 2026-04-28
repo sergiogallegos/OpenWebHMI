@@ -13,11 +13,15 @@ The "Set up your application" form Cloudflare shows after **Connect to Git**:
 | Field | Value |
 |---|---|
 | Project name | `openwebhmi` (or leave the auto-suggested `OpenWebHMI` — Cloudflare lowercases it) |
-| Build command | `pnpm install --frozen-lockfile && pnpm --filter @openwebhmi/website build` |
+| Build command | `pnpm --filter @openwebhmi/website build` |
 | Deploy command | `npx wrangler deploy --config apps/website/wrangler.toml` |
 | Builds for non-production branches | ✅ keep checked (gives preview URLs on every PR) |
 
-> **Note**: There is no separate "Build output directory" or "Root directory" field in the Workers flow — the wrangler config in the repo handles output paths. Just paste the two commands and let `wrangler.toml` do the rest.
+> **Note 1**: Cloudflare Workers Builds runs `pnpm install --frozen-lockfile` **automatically** before your build command (it auto-detects pnpm from `package.json`'s `packageManager` field). Don't prepend `pnpm install` to your build command — it'll just install twice and may also break command parsing.
+>
+> **Note 2**: Paste the build command on a **single line** — no line breaks. The dashboard's text input visually wraps long lines, but pasting from a multi-line copy can preserve real `\n` characters and the shell will execute each line as a separate command, breaking the build.
+>
+> **Note 3**: There is no separate "Build output directory" or "Root directory" field in the Workers flow — the wrangler config in the repo handles output paths.
 
 ## Step-by-step setup (one-time)
 
@@ -34,7 +38,7 @@ The "Set up your application" form Cloudflare shows after **Connect to Git**:
 Use the table above. Specifically:
 
 - **Project name**: `openwebhmi`. This becomes your `*.workers.dev` subdomain (`openwebhmi.<account>.workers.dev`) before the custom domain takes over.
-- **Build command**: `pnpm install --frozen-lockfile && pnpm --filter @openwebhmi/website build`. Two stages: install the workspace, then run Astro's build for the `@openwebhmi/website` package only.
+- **Build command**: `pnpm --filter @openwebhmi/website build`. Single line — no `pnpm install` prefix (Cloudflare runs install for us automatically). Astro's `build` script runs `astro check && astro build`.
 - **Deploy command**: `npx wrangler deploy --config apps/website/wrangler.toml`. Wrangler reads the config from that path; `[assets].directory = "./dist"` resolves to `apps/website/dist`.
 - **Builds for non-production branches**: leave checked. PRs get preview deploys at unique URLs.
 
@@ -74,7 +78,8 @@ After setup, every push to `main` triggers a production deploy. Every PR trigger
 
 ## Gotchas
 
-- **Don't omit `--frozen-lockfile`** in the install step. Without it, pnpm may quietly mutate `pnpm-lock.yaml` mid-build and the deploy state diverges from `main`.
+- **Don't add `pnpm install` to your build command.** Cloudflare Workers Builds runs `pnpm install --frozen-lockfile` *before* your build command automatically (it detects pnpm from the `packageManager` field in `package.json`). Adding it again wastes ~15s and risks command-parsing problems if the install half eats a newline.
+- **Build command MUST be on a single line in the dashboard.** The form field's visual wrapping is cosmetic; pasting text with real `\n` characters splits your command into multiple shell invocations. Symptom: errors like `/bin/sh: 3: @openwebhmi/website: not found` or `Unknown option: 'recursive'`. Fix: re-type the command without any line breaks.
 - **Don't `cd apps/website` in the build command.** The `--filter` flag selects the workspace member; `cd` works on local CI but Cloudflare resets between command segments in some variants. The `--filter` form is portable.
 - **Wrangler resolves `[assets].directory` relative to the wrangler.toml file**, not the cwd. So `directory = "./dist"` correctly means `apps/website/dist`.
 - **`compatibility_date`** must be set in `wrangler.toml`. If you bump it later, test in a preview branch first.
