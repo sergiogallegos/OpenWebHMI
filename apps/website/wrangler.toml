@@ -1,0 +1,22 @@
+# Cloudflare Workers (with static assets) deploy config for the OpenWebHMI website.
+#
+# Why Workers instead of classic Pages: Cloudflare unified the product in late
+# 2024 and routes new projects through this flow. Static-only sites are
+# supported by [assets] without needing a Worker script — there's no `main`
+# binding because we don't run any edge code today.
+#
+# How this is deployed:
+#   - Cloudflare Workers Builds runs the build command (which produces dist/),
+#     then runs the deploy command which is `npx wrangler deploy --config
+#     apps/website/wrangler.toml`.
+#   - The `directory` below is resolved relative to THIS file, so dist/ at the
+#     same level as wrangler.toml is correct.
+#
+# See apps/website/DEPLOY.md for the full dashboard walkthrough.
+
+name = "openwebhmi"
+compatibility_date = "2024-09-23"
+
+[assets]
+directory = "./dist"
+not_found_handling = "404-page"

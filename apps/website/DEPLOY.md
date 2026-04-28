@@ -1,114 +1,99 @@
-# Deploying `apps/website` to Cloudflare Pages
+# Deploying `apps/website` to Cloudflare (Workers + static assets)
 
-The OpenWebHMI website deploys via **Cloudflare Pages**: free static hosting, auto-detects the pnpm monorepo, deploys on every push to `main`, opens preview URLs on every PR. DNS for `openwebhmi.com` is in the same Cloudflare account, so the custom-domain hookup is one click.
+The OpenWebHMI website deploys via **Cloudflare Workers with static assets** (the unified flow that replaced standalone Pages in late 2024). Free static hosting at the edge, auto-deploys on every push to `main`, preview URLs on every PR. DNS for `openwebhmi.com` lives in the same Cloudflare account, so the custom-domain hookup is one click.
 
-No GitHub Actions deploy workflow is needed — Cloudflare Pages does the build + deploy itself. Type errors are gated by the existing CI (`.github/workflows/ci.yml`'s `node` job runs `pnpm -r typecheck` and `pnpm -r build`).
+No GitHub Actions deploy workflow is needed — Cloudflare Workers Builds does the build + deploy itself. Type errors are gated by the existing CI (`.github/workflows/ci.yml`'s `node` job runs `pnpm -r typecheck` and `pnpm -r build`).
+
+The deploy is configured by [`apps/website/wrangler.toml`](wrangler.toml). It declares no Worker script — only `[assets]` — so the deploy is pure static content.
 
 ## Build settings to copy into the dashboard
 
+The "Set up your application" form Cloudflare shows after **Connect to Git**:
+
 | Field | Value |
 |---|---|
-| Project name | `openwebhmi` (or `openwebhmi-website`) |
-| Production branch | `main` |
-| Framework preset | **Astro** (auto-detected) |
-| Build command | `pnpm --filter @openwebhmi/website build` |
-| Build output directory | `apps/website/dist` |
-| Root directory | *(leave blank — must run from repo root)* |
-| Environment variable | `NODE_VERSION` = `20` |
+| Project name | `openwebhmi` (or leave the auto-suggested `OpenWebHMI` — Cloudflare lowercases it) |
+| Build command | `pnpm install --frozen-lockfile && pnpm --filter @openwebhmi/website build` |
+| Deploy command | `npx wrangler deploy --config apps/website/wrangler.toml` |
+| Builds for non-production branches | ✅ keep checked (gives preview URLs on every PR) |
 
-> **Critical**: Root directory must be **blank** (= repo root). pnpm needs the workspace root to install. If you set Root directory = `apps/website`, install will fail with "no pnpm-workspace.yaml found".
+> **Note**: There is no separate "Build output directory" or "Root directory" field in the Workers flow — the wrangler config in the repo handles output paths. Just paste the two commands and let `wrangler.toml` do the rest.
 
 ## Step-by-step setup (one-time)
 
-### 1. Create the Pages project
+### 1. Connect the GitHub repo
 
 1. Sign in to <https://dash.cloudflare.com>.
 2. Sidebar → **Workers & Pages**.
-3. Click **Create** → **Pages** tab → **Connect to Git**.
-4. **Authorize Cloudflare** for your GitHub account when prompted. Grant access to **`sergiogallegos/OpenWebHMI`** (you can grant access to a single repo rather than all repos).
-5. Select the repository → **Begin setup**.
+3. Click **Create** → choose **Connect to a Git repository** (or **Import a repository** in some account variants).
+4. Authorize Cloudflare for your GitHub account when prompted. Single-repo access is fine; pick **`sergiogallegos/OpenWebHMI`**.
+5. Select the repo → **Begin setup** (or **Set up application**).
 
-### 2. Configure build
+### 2. Fill in the build form
 
-Fill in the form using the table above. Specifically:
+Use the table above. Specifically:
 
-- **Project name**: `openwebhmi` — this becomes your `*.pages.dev` subdomain (`openwebhmi.pages.dev`) before the custom domain takes over.
-- **Production branch**: `main`.
-- **Framework preset**: select **Astro**. Cloudflare may auto-detect from `astro.config.mjs`; if not, pick it manually so the right Node version + cache strategy applies.
-- **Build command**: `pnpm --filter @openwebhmi/website build`. This invokes `astro check && astro build` (per the website's `package.json`).
-- **Build output directory**: `apps/website/dist`. Astro's default output. Don't add a leading `/`.
-- **Root directory**: leave **blank**. Cloudflare runs `pnpm install` from this directory; the install needs to see `pnpm-workspace.yaml` at the repo root.
+- **Project name**: `openwebhmi`. This becomes your `*.workers.dev` subdomain (`openwebhmi.<account>.workers.dev`) before the custom domain takes over.
+- **Build command**: `pnpm install --frozen-lockfile && pnpm --filter @openwebhmi/website build`. Two stages: install the workspace, then run Astro's build for the `@openwebhmi/website` package only.
+- **Deploy command**: `npx wrangler deploy --config apps/website/wrangler.toml`. Wrangler reads the config from that path; `[assets].directory = "./dist"` resolves to `apps/website/dist`.
+- **Builds for non-production branches**: leave checked. PRs get preview deploys at unique URLs.
 
-### 3. Environment variables
+You don't need to expand **Advanced settings** for v1.
 
-Click **Environment variables (advanced)** and add:
+### 3. Save and deploy
 
-| Name | Value | Scope |
-|---|---|---|
-| `NODE_VERSION` | `20` | Production + Preview |
+Click **Deploy**. The first build runs about 2–3 minutes:
+- ~90 s — `pnpm install --frozen-lockfile`
+- ~30 s — `astro check` (TypeScript check)
+- ~20 s — `astro build` (static output)
+- ~20 s — `wrangler deploy` upload
 
-Cloudflare reads `packageManager: pnpm@9.0.0` from `package.json` automatically — no `PNPM_VERSION` needed.
+Once green, Cloudflare gives you a temporary URL like `https://openwebhmi.<account>.workers.dev`. Open it; verify the landing page renders.
 
-### 4. Save and deploy
+### 4. Wire up the custom domain `openwebhmi.com`
 
-Click **Save and Deploy**. The first build takes about 2–3 minutes:
-- ~90s: pnpm install
-- ~30s: `astro check` (TypeScript)
-- ~20s: `astro build` (static output)
-
-Once green, Cloudflare gives you a temporary URL like `https://openwebhmi.pages.dev`. Verify it loads.
-
-### 5. Wire up the custom domain `openwebhmi.com`
-
-1. In the project page, click **Custom domains** → **Set up a custom domain**.
-2. Enter `openwebhmi.com` → **Continue**.
-3. Cloudflare detects you own the domain (it's in the same account) and proposes adding a `CNAME` record pointing to the Pages project. Click **Activate**.
+1. From the project page, **Settings** → **Triggers** → **Custom domains** → **Add Custom Domain**.
+   *(Some Cloudflare account variants surface this as "Domains & Routes". Same destination.)*
+2. Enter `openwebhmi.com` → **Add Custom Domain**.
+3. Cloudflare detects you own the domain (it's already in your account) and proposes adding a `CNAME` record pointing to the Worker. Click **Activate**.
 4. Cloudflare creates the DNS record and issues a Let's Encrypt cert. Typical: 30 seconds to 5 minutes.
-5. **Add `www` as a redirect**: back in **Custom domains**, add `www.openwebhmi.com`. Cloudflare offers to redirect `www.openwebhmi.com → openwebhmi.com` automatically; accept it.
+5. Add `www.openwebhmi.com` the same way and accept Cloudflare's offered redirect to the apex.
 
-### 6. Verify
+### 5. Verify
 
 - `https://openwebhmi.com` loads the landing page.
-- `https://openwebhmi.com/docs`, `/download`, `/about` render.
-- `https://openwebhmi.com/favicon.svg` returns the blue mark.
+- `/docs`, `/download`, `/about` render.
+- `/favicon.svg` returns the blue mark.
+- `/some-nonexistent-path` falls through to the `404` page (because `wrangler.toml` sets `not_found_handling = "404-page"`).
 - Browser shows valid TLS (Let's Encrypt cert issued by Cloudflare).
-- Open DevTools → Network → reload → look for `cf-cache-status: HIT` on the second request. (First request will be `MISS`; subsequent are `HIT`.)
+- DevTools → Network → reload → `cf-cache-status: HIT` on the second request.
 
 ## Auto-deploy behavior
 
-After setup, every push to `main` triggers a production deploy. Every PR triggers a preview deploy with a unique URL like `https://<branch-hash>.openwebhmi.pages.dev` — Cloudflare comments the URL on the PR.
+After setup, every push to `main` triggers a production deploy. Every PR triggers a preview deploy with a unique URL — Cloudflare comments the URL on the PR.
 
 ## Gotchas
 
-- **Don't `cd apps/website` in the build command.** Cloudflare runs the command from the install directory; pnpm's `--filter` selects the workspace member.
-- **pnpm version**: Cloudflare reads `packageManager: pnpm@9.0.0` from `package.json` automatically. Don't pin a different version in environment variables.
-- **`astro check` failures fail the build**, which is intentional. If a deploy fails on a type error, fix it locally with `pnpm --filter @openwebhmi/website typecheck` and push the fix.
-- **Don't enable Cloudflare's "Always Use HTTPS" toggle for the apex domain before the TLS cert issues** — there's a brief window where the redirect targets HTTPS but the cert isn't yet valid. Wait until the Custom Domains panel shows "Active".
-- **File limit**: free tier allows 20,000 files per deploy. We're at ~50 — irrelevant for years.
+- **Don't omit `--frozen-lockfile`** in the install step. Without it, pnpm may quietly mutate `pnpm-lock.yaml` mid-build and the deploy state diverges from `main`.
+- **Don't `cd apps/website` in the build command.** The `--filter` flag selects the workspace member; `cd` works on local CI but Cloudflare resets between command segments in some variants. The `--filter` form is portable.
+- **Wrangler resolves `[assets].directory` relative to the wrangler.toml file**, not the cwd. So `directory = "./dist"` correctly means `apps/website/dist`.
+- **`compatibility_date`** must be set in `wrangler.toml`. If you bump it later, test in a preview branch first.
+- **404 routing**: `not_found_handling = "404-page"` makes Cloudflare serve `/404/index.html` (Astro's directory format) on missing routes. If you change `astro.config.mjs` to `format: "file"`, also verify `/404.html` exists in dist.
+- **TLS cert window**: don't enable Cloudflare's "Always Use HTTPS" toggle for the apex domain before the TLS cert issues — there's a brief window where the redirect targets HTTPS but the cert isn't yet valid. Wait until the Custom Domains panel shows "Active" with a valid cert.
+- **File limit**: free tier allows 20,000 files per deploy. We have ~50 — irrelevant for years.
 - **Build time limit**: 25 minutes free, 30 paid. Our build is 3 minutes — safe.
-- **If install fails with `Cannot find lockfile`**: confirm Root directory is empty in the build settings. Cloudflare runs install from that directory; the workspace root has the lockfile.
-- **Node 20 vs 22**: `NODE_VERSION=20` is the LTS at time of writing and matches our CI. Bump to 22 only after the GitHub Actions CI bumps too.
 
-## Promoting a preview to production
+## Rollback
 
-Cloudflare auto-promotes the latest `main` commit. To roll back to a previous build: project page → **Deployments** → click the older build → **Manage deployment** → **Rollback to this deployment**. Instant.
-
-## Disabling deploys temporarily
-
-If you need to push a doc-only fix that shouldn't trigger a redeploy: Cloudflare Pages doesn't have per-commit skip flags. The simplest path is to land the change on a feature branch, accept the preview URL only, and only fast-forward `main` when you're ready for production.
+Project page → **Deployments** → click an older successful build → **Rollback to this deployment**. Instant.
 
 ## Future subdomains (Phase 4)
 
-The `docs.openwebhmi.com` (rustdoc) and `demo.openwebhmi.com` (hosted demo gateway) subdomains referenced in `docs.astro` and `download.astro` are Phase 4 deliverables. When we're ready:
+The `docs.openwebhmi.com` (rustdoc) and `demo.openwebhmi.com` (hosted demo gateway) subdomains referenced in `docs.astro` and `download.astro` are Phase 4 deliverables:
 
-- `docs.openwebhmi.com` → another Cloudflare Pages project pointing at a `cargo doc --workspace --no-deps` output, deployed by a `.github/workflows/rustdoc.yml` workflow that runs cargo doc and uploads the artifact.
+- `docs.openwebhmi.com` → another Workers project deploying `cargo doc --workspace --no-deps` output, built by a `.github/workflows/rustdoc.yml` workflow that runs cargo doc and uploads via Wrangler.
 - `demo.openwebhmi.com` → a Cloudflare Worker reverse-proxying to a hosted gateway (or a Cloudflare Tunnel back to a self-hosted gateway). Out of scope today.
 
-## Update workflow
+## Why this works without classic Pages
 
-When you change the website:
-1. Push to a feature branch → Cloudflare creates a preview deploy → comment on the PR.
-2. Open a PR → CI's `node` job runs typecheck + build (catches errors before the preview deploys).
-3. Merge to `main` → Cloudflare promotes to production at `openwebhmi.com` within ~3 minutes.
-
-No additional GitHub Actions configuration is needed for the website itself.
+Cloudflare's late-2024 product change merged Pages into Workers. Static sites that used to deploy via Pages now deploy via Workers + an `[assets]` binding. Behavior is identical for our use case (free, edge-cached, auto-TLS, preview URLs on PRs) — the only difference is one small `wrangler.toml` file in the repo instead of dashboard-only config.
