@@ -5,15 +5,14 @@ owner: codex
 phase: 3
 status: open
 created: 2026-04-27
-last-update: 2026-04-27 claude
-blocked-by: CODEX-O
+last-update: 2026-04-28 claude
 ---
 
 # CODEX-P — `Trend` component
 
 ## Brief
 
-> **Blocked by [CODEX-O](CODEX-O-historian.md).** Needs `history.read` to fetch initial points.
+> **Unblocked.** [CODEX-O](CODEX-O-historian.md) is merged; `history.read` is live. Sample with `aggregation: "raw"` for the v1 Trend.
 
 ### Goal
 
