@@ -164,6 +164,6 @@ Acceptance criteria all four checkboxes verified.
 
 ## Verdict
 
-**Merged** at the next commit. Closes the SCADA backend trio: **historian + auth + alarms** are now all in. CODEX-R (AlarmTable + designer alarm config) is unblocked — when it lands, the demo HMI will raise + display + ack the `pressure-high` alarm end-to-end.
+**Merged** at `ff56780`. Closes the SCADA backend trio: **historian + auth + alarms** are now all in. CODEX-R (AlarmTable + designer alarm config) is unblocked — when it lands, the demo HMI will raise + display + ack the `pressure-high` alarm end-to-end.
 
 Three Phase 3 polish items now tracked across the alarm code (no hysteresis, `who` plumbing in CODEX-R, float-equality fuzziness). Together with CODEX-O's Quality serialization and CODEX-S's secret-length check, that's the v1.1 hardening backlog forming.
