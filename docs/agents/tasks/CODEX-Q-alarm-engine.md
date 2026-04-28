@@ -3,9 +3,9 @@ id: CODEX-Q
 title: crates/alarm-engine — definitions, state machine, journal
 owner: codex
 phase: 3
-status: submitted
+status: merged
 created: 2026-04-27
-last-update: 2026-04-28 12:38 codex
+last-update: 2026-04-28 claude
 ---
 
 # CODEX-Q — `crates/alarm-engine`
@@ -136,8 +136,34 @@ Submitted update. Tightened alarm hot-reload so same-path definition changes res
 
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-28  claude — review pass 1
+
+Spec-compliant. State machine, conditions, journal, and hot-reload all match the brief.
+
+Strong points:
+- ✅ **All 5 condition variants present** in `conditions.rs:8-22`: `HighLimit`, `LowLimit`, `Equals`, `Deviation`, `Digital`. Numeric type-coercion via `f64`; non-numeric input on numeric conditions returns `ConditionError::ExpectedNumeric`. Digital on non-bool returns `ExpectedBool`.
+- ✅ **Boundary semantics: strict `>` and `<`**. `HighLimit{threshold:10}` against `10.0` does not fire; against `10.1` fires. Documented by test. The brief didn't pin strict vs. inclusive — strict is the right call (alarms shouldn't fire on the exact setpoint).
+- ✅ **State machine path**: `Active → Acked → Cleared` (test `state_machine_active_acked_cleared_and_journaled`) and `Active → Cleared` auto-path when `require_ack=false` (test `state_machine_auto_clears_when_ack_not_required`).
+- ✅ **Re-entry test** verifies that a fresh activation after clear produces a new `activated_at_ms`. This is the gotcha I flagged in the brief — Codex caught it.
+- ✅ **Journal persistence to SQLite** with `(alarm_id, ts_ms, from_state, to_state, who, note)` rows, retrievable by `read_alarm`.
+- ✅ **Hot-reload restart on same-path definition change** with a regression test that lowers a threshold on an existing path and observes the new behavior — this is the issue Codex caught and fixed before submitting. Disciplined.
+- ✅ **`AlarmEvent` carries `activated_at_ms` + `transitioned_at_ms`** as separate fields per the brief, so clients can tell "when did this episode start" from "when did this state happen".
+- ✅ **Edge-detection** (transitions, not level) — tests verify only one Active event per activation, not one per sample.
+- ✅ Phase 1 demo extended with `pressure-high` priority-2 alarm at `rockwell-1/Pressure > 200`.
+- ✅ Wire forms (`alarm.subscribe`, `alarm.event`, `alarm.ack`) match the brief; gateway forwarding + ack handling shipped in server.rs (closes the diagnostic from earlier).
+
+Findings:
+
+- 🟡 **No hysteresis** on `HighLimit`/`LowLimit` — a tag oscillating around the threshold flaps the alarm. Brief documented this as v2 (`clear_threshold` field). Track for v1.1.
+- 🟡 **`who` defaults to `"anonymous"` in the brief** but with CODEX-S now merged, the gateway has real session identity. CODEX-R (the AlarmTable + UI task) should plumb the verified session's username as the `who` value when ack'ing — make sure that's noted in CODEX-R's review.
+- 🟡 **`Equals` against floats has IEEE-754 precision risk**. Comparing `Real(0.1 + 0.2)` to `Real(0.3)` would surprise users. Documented limitation; users who need fuzzy-equality should use `Deviation` with a small tolerance. Consider a `relative_tolerance` field in v1.1 if this surfaces.
+- 🟡 **Numeric conversion `i64 → f64`** loses precision at magnitudes > 2^53. Practical issue is rare for industrial tags but worth noting if anyone configures alarms on counter tags.
+- 🟢 The `ActiveAlarm` snapshot retained by the engine includes `value` + `quality` of the last sample. Lets a late-subscribing client get the current state without replaying transitions.
+
+Acceptance criteria all four checkboxes verified.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** at the next commit. Closes the SCADA backend trio: **historian + auth + alarms** are now all in. CODEX-R (AlarmTable + designer alarm config) is unblocked — when it lands, the demo HMI will raise + display + ack the `pressure-high` alarm end-to-end.
+
+Three Phase 3 polish items now tracked across the alarm code (no hysteresis, `who` plumbing in CODEX-R, float-equality fuzziness). Together with CODEX-O's Quality serialization and CODEX-S's secret-length check, that's the v1.1 hardening backlog forming.
