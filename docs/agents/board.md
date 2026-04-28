@@ -57,7 +57,7 @@ CODEX-U  (script editor)         blocked-by T
 | CODEX-N | `tag.write` end-to-end — protocol message + gateway routing to driver | codex | `f40b780` | 2 |
 | CODEX-M | `apps/designer` — Tauri shell, project explorer, form-based view editor | codex | `bc5bd38` | 2 |
 | CODEX-O | `crates/historian` — tag time-series storage + read API | codex | `9db711e` | 3 |
-| CODEX-S | `crates/auth` — local users + roles + JWT sessions + per-view ACLs | codex | *(this commit)* | 3 |
+| CODEX-S | `crates/auth` — local users + roles + JWT sessions + per-view ACLs | codex | `7eff30a` | 3 |
 
 ## Conventions
 
