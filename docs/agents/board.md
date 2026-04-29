@@ -9,14 +9,16 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (unblocked) | 2026-04-28 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
+| CODEX-V | Route `system.tag.write` through per-driver write queue | codex | open (unblocked) | 2026-04-28 claude | [tasks/CODEX-V-script-tag-write-routing.md](tasks/CODEX-V-script-tag-write-routing.md) |
 
 ### Phase 3 dependency graph
 
 ```
-CODEX-U  (script editor)         ← unblocked (T merged)
+CODEX-V  (script-write routing)  ← unblocked — Phase 3 closeout follow-up to T
+CODEX-U  (script editor)         ← unblocked (T merged); independent of V
 ```
 
-**One unblocked task remains: U** — the last in Phase 3. Backend trio O+Q+S complete; alarm + trend frontend complete (R, P merged); scripting host (T) merged with the Phase 1 demo `derived-setpoint` script wired. CODEX-U closes Phase 3.
+**Two unblocked tasks: V (Phase 3 closeout) and U (last Phase 3 task).** V is a small focused fix for a brief error in T — without it, scripts only update the gateway cache and never write to the PLC, so the Phase 3 exit criterion ("a Python script that writes a derived setpoint") isn't meaningfully met. V and U are independent; can run in parallel or V first.
 
 ## Phase 2 — Designer MVP
 
