@@ -7,6 +7,7 @@ use anyhow::Context;
 use clap::Parser;
 use openwebhmi_alarm_engine::{spawn_alarm_engine, AlarmJournal};
 use openwebhmi_auth::{SessionManager, UserStore};
+use openwebhmi_gateway::script_writes::GatewayTagWriteSink;
 use openwebhmi_gateway::{project, server, sim_provider};
 use openwebhmi_historian::{spawn_recorder, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
@@ -74,8 +75,9 @@ async fn main() -> anyhow::Result<()> {
         let project = project::load(path)?;
         spawn_history_recorder(store.clone(), project_store.clone(), &project)?;
         spawn_alarm_runtime(store.clone(), project_store.clone(), &project)?;
-        _script_host = spawn_script_runtime(store.clone(), &project);
-        project::spawn_project(project, store.clone())?
+        let driver_handles = project::spawn_project(project.clone(), store.clone())?;
+        _script_host = spawn_script_runtime(store.clone(), &project, driver_handles.clone());
+        driver_handles
     } else {
         project::DriverHandles::new()
     };
@@ -94,6 +96,7 @@ async fn main() -> anyhow::Result<()> {
 fn spawn_script_runtime(
     store: TagStore,
     project: &openwebhmi_project_store::Project,
+    driver_handles: project::DriverHandles,
 ) -> Option<ScriptHost> {
     let scripts = project
         .scripts
@@ -110,8 +113,10 @@ fn spawn_script_runtime(
         count = scripts.len(),
         "starting project scripts"
     );
+    let write_sink = std::sync::Arc::new(GatewayTagWriteSink::new(driver_handles, store.clone()));
     Some(ScriptHost::spawn(
         store,
+        write_sink,
         scripts,
         ScriptHostOptions::default(),
     ))

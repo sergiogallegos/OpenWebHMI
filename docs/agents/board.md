@@ -9,16 +9,14 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (unblocked) | 2026-04-28 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
-| CODEX-V | Route `system.tag.write` through per-driver write queue | codex | open (unblocked) | 2026-04-28 claude | [tasks/CODEX-V-script-tag-write-routing.md](tasks/CODEX-V-script-tag-write-routing.md) |
 
 ### Phase 3 dependency graph
 
 ```
-CODEX-V  (script-write routing)  ← unblocked — Phase 3 closeout follow-up to T
-CODEX-U  (script editor)         ← unblocked (T merged); independent of V
+CODEX-U  (script editor)         ← unblocked (T merged); last open Phase 3 task
 ```
 
-**Two unblocked tasks: V (Phase 3 closeout) and U (last Phase 3 task).** V is a small focused fix for a brief error in T — without it, scripts only update the gateway cache and never write to the PLC, so the Phase 3 exit criterion ("a Python script that writes a derived setpoint") isn't meaningfully met. V and U are independent; can run in parallel or V first.
+**One unblocked task: U** — the last in Phase 3. CODEX-V (script-write routing fix) merged, so the demo HMI's `derived-setpoint` script now actually writes to the simulator's PLC and persists across poll cycles. Phase 3 exit criterion is meaningfully met for everything except the script editor.
 
 ## Phase 2 — Designer MVP
 
@@ -56,6 +54,7 @@ CODEX-U  (script editor)         ← unblocked (T merged); independent of V
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | `29be0e9` | 3 |
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | `151afdb` | 3 |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | `f8b74a9` | 3 |
+| CODEX-V | Route `system.tag.write` through per-driver write queue | codex | _pending merge_ | 3 |
 
 ## Conventions
 

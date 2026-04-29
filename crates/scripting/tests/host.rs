@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use openwebhmi_project_store::{ScriptConfig, ScriptTriggerConfig};
 use openwebhmi_protocol::{Quality, TagValue};
-use openwebhmi_scripting::{ScriptEvent, ScriptHost, ScriptHostOptions, ScriptStatus};
+use openwebhmi_scripting::{
+    MemorySink, ScriptEvent, ScriptHost, ScriptHostOptions, ScriptStatus, TagWriteError,
+    TagWriteSink,
+};
 use openwebhmi_tag_engine::TagStore;
 use tempfile::TempDir;
 use tokio::time::{sleep, timeout, Instant};
@@ -73,6 +76,7 @@ def pressure_changed(tag):
     let store = TagStore::new();
     let host = ScriptHost::spawn(
         store.clone(),
+        std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
         ScriptHostOptions::default(),
     );
@@ -112,6 +116,7 @@ def pressure_changed(tag):
     let store = TagStore::new();
     let host = ScriptHost::spawn(
         store.clone(),
+        std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
         ScriptHostOptions::default(),
     );
@@ -148,6 +153,7 @@ def pressure_changed(tag):
     let store = TagStore::new();
     let host = ScriptHost::spawn(
         store.clone(),
+        std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, Some(100))],
         ScriptHostOptions {
             handler_timeout: Duration::from_millis(100),
@@ -192,6 +198,7 @@ def pressure_changed(tag):
     let store = TagStore::new();
     let host = ScriptHost::spawn(
         store.clone(),
+        std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
         ScriptHostOptions::default(),
     );
@@ -242,6 +249,7 @@ def pressure_changed(tag):
     let store = TagStore::new();
     let host = ScriptHost::spawn(
         store.clone(),
+        std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
         ScriptHostOptions::default(),
     );
@@ -250,5 +258,118 @@ def pressure_changed(tag):
 
     store.publish("rockwell-1/Pressure", TagValue::Real(5.0), Quality::Good);
     wait_tag(&store, "rockwell-1/Setpoint", TagValue::Int(4)).await;
+    host.shutdown().await;
+}
+
+#[derive(Default)]
+struct RecordingSink {
+    writes: std::sync::Mutex<Vec<(String, TagValue)>>,
+}
+
+impl RecordingSink {
+    fn writes(&self) -> Vec<(String, TagValue)> {
+        self.writes.lock().unwrap().clone()
+    }
+}
+
+impl TagWriteSink for RecordingSink {
+    fn enqueue(&self, path: &str, value: TagValue) -> Result<(), TagWriteError> {
+        self.writes.lock().unwrap().push((path.to_string(), value));
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn tag_write_routes_to_driver_sink() {
+    let dir = TempDir::new().unwrap();
+    let script = write_script(
+        &dir,
+        "route.py",
+        r#"
+import system
+
+@system.on_tag_change("rockwell-1/Pressure")
+def pressure_changed(tag):
+    system.tag.write("rockwell-1/Setpoint", 60.0)
+"#,
+    );
+    let store = TagStore::new();
+    let sink = std::sync::Arc::new(RecordingSink::default());
+    let host = ScriptHost::spawn(
+        store.clone(),
+        sink.clone(),
+        vec![script_config(script, None)],
+        ScriptHostOptions::default(),
+    );
+    let mut events = host.subscribe_events();
+    wait_ready(&mut events).await;
+
+    store.publish("rockwell-1/Pressure", TagValue::Real(120.0), Quality::Good);
+    timeout(Duration::from_secs(5), async {
+        loop {
+            if sink.writes() == vec![("rockwell-1/Setpoint".to_string(), TagValue::Real(60.0))] {
+                return;
+            }
+            sleep(Duration::from_millis(25)).await;
+        }
+    })
+    .await
+    .expect("script write should reach sink");
+    assert!(
+        store.get("rockwell-1/Setpoint").is_none(),
+        "recording sink must not publish to cache"
+    );
+    host.shutdown().await;
+}
+
+struct BusySink {
+    memory: MemorySink,
+}
+
+impl TagWriteSink for BusySink {
+    fn enqueue(&self, path: &str, value: TagValue) -> Result<(), TagWriteError> {
+        if path == "rockwell-1/Setpoint" {
+            return Err(TagWriteError::Busy(path.to_string()));
+        }
+        self.memory.enqueue(path, value)
+    }
+}
+
+#[tokio::test]
+async fn tag_write_busy_propagates_error_to_python() {
+    let dir = TempDir::new().unwrap();
+    let script = write_script(
+        &dir,
+        "busy.py",
+        r#"
+import system
+
+@system.on_tag_change("rockwell-1/Pressure")
+def pressure_changed(tag):
+    try:
+        system.tag.write("rockwell-1/Setpoint", 60.0)
+    except RuntimeError as err:
+        system.tag.write("mem/write_error", str(err))
+"#,
+    );
+    let store = TagStore::new();
+    let host = ScriptHost::spawn(
+        store.clone(),
+        std::sync::Arc::new(BusySink {
+            memory: MemorySink::new(store.clone()),
+        }),
+        vec![script_config(script, None)],
+        ScriptHostOptions::default(),
+    );
+    let mut events = host.subscribe_events();
+    wait_ready(&mut events).await;
+
+    store.publish("rockwell-1/Pressure", TagValue::Real(120.0), Quality::Good);
+    wait_tag(
+        &store,
+        "mem/write_error",
+        TagValue::String("driver write queue full for 'rockwell-1/Setpoint'".to_string()),
+    )
+    .await;
     host.shutdown().await;
 }

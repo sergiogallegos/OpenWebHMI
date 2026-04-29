@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 
 use openwebhmi_project_store::ScriptConfig;
@@ -12,6 +13,7 @@ use tracing::{info, warn};
 
 use crate::triggers::TriggerRegistration;
 use crate::worker::WorkerProc;
+use crate::TagWriteSink;
 
 const INITIAL_BACKOFF: Duration = Duration::from_millis(250);
 const MAX_BACKOFF: Duration = Duration::from_secs(8);
@@ -100,6 +102,7 @@ impl ScriptHost {
     /// Spawn a script host for the supplied project script configs.
     pub fn spawn(
         store: TagStore,
+        write_sink: Arc<dyn TagWriteSink>,
         scripts: Vec<ScriptConfig>,
         options: ScriptHostOptions,
     ) -> ScriptHost {
@@ -108,7 +111,7 @@ impl ScriptHost {
         let task_events = events.clone();
         let task_control = control.clone();
         let task = tokio::spawn(async move {
-            run_host(store, scripts, options, control_rx, task_events).await;
+            run_host(store, write_sink, scripts, options, control_rx, task_events).await;
         });
         ScriptHost {
             control: task_control,
@@ -158,6 +161,7 @@ impl ScriptHostHandle {
 
 async fn run_host(
     store: TagStore,
+    write_sink: Arc<dyn TagWriteSink>,
     scripts: Vec<ScriptConfig>,
     options: ScriptHostOptions,
     mut control: mpsc::Receiver<ControlMessage>,
@@ -169,6 +173,7 @@ async fn run_host(
         worker_controls.insert(script.id.clone(), tx);
         tokio::spawn(run_script_supervisor(
             store.clone(),
+            write_sink.clone(),
             script,
             options.clone(),
             events.clone(),
@@ -223,6 +228,7 @@ enum WorkerControl {
 
 async fn run_script_supervisor(
     store: TagStore,
+    write_sink: Arc<dyn TagWriteSink>,
     script: ScriptConfig,
     options: ScriptHostOptions,
     events: broadcast::Sender<ScriptEvent>,
@@ -256,17 +262,15 @@ async fn run_script_supervisor(
                     status: ScriptStatus::Ready,
                 });
                 backoff = INITIAL_BACKOFF;
-                if let Err(err) = run_ready_worker(
-                    &store,
-                    &script,
-                    &tag_paths,
+                let runtime = ReadyWorkerRuntime {
+                    store: &store,
+                    write_sink: write_sink.clone(),
+                    script_id: &script.id,
+                    tag_paths: &tag_paths,
                     timeout,
-                    &events,
-                    &mut worker,
-                    &mut control,
-                )
-                .await
-                {
+                    events: &events,
+                };
+                if let Err(err) = run_ready_worker(runtime, &mut worker, &mut control).await {
                     warn!(script_id = %script.id, error = %err, "script worker restarting");
                 } else {
                     let _ = events.send(ScriptEvent::Status {
@@ -288,19 +292,29 @@ async fn run_script_supervisor(
     }
 }
 
-async fn run_ready_worker(
-    store: &TagStore,
-    script: &ScriptConfig,
-    tag_paths: &[String],
+struct ReadyWorkerRuntime<'a> {
+    store: &'a TagStore,
+    write_sink: Arc<dyn TagWriteSink>,
+    script_id: &'a str,
+    tag_paths: &'a [String],
     timeout: Duration,
-    events: &broadcast::Sender<ScriptEvent>,
+    events: &'a broadcast::Sender<ScriptEvent>,
+}
+
+async fn run_ready_worker(
+    runtime: ReadyWorkerRuntime<'_>,
     worker: &mut WorkerProc,
     control: &mut mpsc::Receiver<WorkerControl>,
 ) -> anyhow::Result<()> {
-    let _reader = worker.start_reader(store.clone(), events.clone())?;
-    let mut receivers = tag_paths
+    let _reader = worker.start_reader(
+        runtime.store.clone(),
+        runtime.write_sink,
+        runtime.events.clone(),
+    )?;
+    let mut receivers = runtime
+        .tag_paths
         .iter()
-        .map(|path| (path.clone(), store.subscribe(path)))
+        .map(|path| (path.clone(), runtime.store.subscribe(path)))
         .collect::<Vec<_>>();
 
     loop {
@@ -325,10 +339,10 @@ async fn run_ready_worker(
             }
             result = recv_any(&mut receivers) => {
                 let snapshot = result?;
-                if let Err(err) = worker.invoke_tag_change(snapshot, timeout).await {
-                    warn!(script_id = %script.id, error = %err, "script handler failed");
-                    let _ = events.send(ScriptEvent::Error {
-                        script_id: script.id.clone(),
+                if let Err(err) = worker.invoke_tag_change(snapshot, runtime.timeout).await {
+                    warn!(script_id = %runtime.script_id, error = %err, "script handler failed");
+                    let _ = runtime.events.send(ScriptEvent::Error {
+                        script_id: runtime.script_id.to_string(),
                         message: err.to_string(),
                     });
                     let _ = worker.kill().await;

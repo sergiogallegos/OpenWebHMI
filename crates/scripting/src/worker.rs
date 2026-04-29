@@ -9,7 +9,6 @@ use std::sync::{
 };
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use openwebhmi_protocol::Quality;
 use openwebhmi_tag_engine::TagStore;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
@@ -20,6 +19,7 @@ use crate::host::ScriptEvent;
 use crate::rpc::{
     HostFrame, RpcMethod, TagChangeArgs, TagReadArgs, TagWriteArgs, UtilLogArgs, WorkerFrame,
 };
+use crate::sink::TagWriteSink;
 
 type TriggerCompletion = oneshot::Sender<Result<(), String>>;
 type PendingTriggers = Arc<Mutex<HashMap<String, TriggerCompletion>>>;
@@ -96,6 +96,7 @@ impl WorkerProc {
     pub fn start_reader(
         &mut self,
         store: TagStore,
+        write_sink: Arc<dyn TagWriteSink>,
         events: broadcast::Sender<ScriptEvent>,
     ) -> anyhow::Result<tokio::task::JoinHandle<()>> {
         let Some(mut reader) = self.reader.take() else {
@@ -116,7 +117,15 @@ impl WorkerProc {
                 match frame {
                     WorkerFrame::Ready { .. } => {}
                     WorkerFrame::Rpc { id, method, args } => {
-                        let response = handle_rpc(&script_id, &store, &events, method, args).await;
+                        let response = handle_rpc(
+                            &script_id,
+                            &store,
+                            write_sink.as_ref(),
+                            &events,
+                            method,
+                            args,
+                        )
+                        .await;
                         let frame = match response {
                             Ok(result) => HostFrame::RpcResult { id, result },
                             Err(error) => HostFrame::RpcError { id, error },
@@ -211,6 +220,7 @@ impl WorkerProc {
 async fn handle_rpc(
     script_id: &str,
     store: &TagStore,
+    write_sink: &dyn TagWriteSink,
     events: &broadcast::Sender<ScriptEvent>,
     method: RpcMethod,
     args: serde_json::Value,
@@ -236,8 +246,18 @@ async fn handle_rpc(
                 value = ?args.value,
                 "script tag write"
             );
-            store.publish(&args.path, args.value, Quality::Good);
-            Ok(serde_json::Value::Null)
+            match write_sink.enqueue(&args.path, args.value) {
+                Ok(()) => Ok(serde_json::Value::Null),
+                Err(err) => {
+                    warn!(
+                        script_id,
+                        path = %args.path,
+                        error = %err,
+                        "script tag write rejected"
+                    );
+                    Err(err.to_string())
+                }
+            }
         }
         RpcMethod::UtilNow => Ok(serde_json::json!(now_ms())),
         RpcMethod::UtilLog => {

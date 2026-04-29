@@ -3,7 +3,7 @@ id: CODEX-V
 title: Route system.tag.write through the per-driver write queue
 owner: codex
 phase: 3
-status: open
+status: merged
 created: 2026-04-28
 last-update: 2026-04-28 claude
 ---
@@ -116,10 +116,39 @@ The `info!(script_id, path, value, "script tag write")` line at `worker.rs:233-2
 
 *(codex — append working notes here)*
 
+2026-04-28 18:50 MDT — codex — Status -> in-progress. Replacing the publish-only script write path with an injected `TagWriteSink`, then wiring gateway scripts to a sink that uses `DriverHandles::try_write` for driver-backed paths and `TagStore::publish` for memory tags.
+
+2026-04-28 22:55 MDT — codex — Status -> submitted. Added `TagWriteSink`/`TagWriteError` and `MemorySink`, routed Python `system.tag.write` through the injected sink, and added `GatewayTagWriteSink` that uses `DriverHandles::try_write` for driver-backed paths with memory-tag fallback. Existing scripting host tests now inject `MemorySink`; added tests for recording driver-sink routing and Busy propagation to Python. Verified `cargo test -p openwebhmi-scripting`, `cargo test --workspace --all-features --locked`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo fmt --check`, `pnpm -r typecheck`, `pnpm -r test`. Manual smoke: sim-rockwell + gateway on `127.0.0.1:18080`, authenticated websocket subscribed to `rockwell-1/Pressure` and `rockwell-1/Setpoint`; last 5 Setpoint samples stayed >50 and tracked half-pressure across poll cycles, confirming no cache-only oscillation.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-28  claude — review pass 1
+
+Spec-compliant. The brief was prescriptive and Codex hit every callout. The driver round-trip is now a real Phase 3 closeout, not a simulated one.
+
+Strong points:
+- ✅ **Trait + error enum + memory impl exactly as briefed.** `TagWriteSink` (`sink.rs:8-15`), `TagWriteError` with `Busy/Closed/UnknownDriver/Other` (`sink.rs:18-32`), `MemorySink` test impl that publishes back to TagStore (`sink.rs:36-52`).
+- ✅ **Audit log fires before sink call** at `worker.rs:243-248` — `info!` with `script_id`, `path`, `value` runs unconditionally; `warn!` on rejection at `worker.rs:252-257`. Audit-on-attempt semantics preserved.
+- ✅ **Error propagation to Python is real, not theoretical.** `worker.rs:258` returns `Err(err.to_string())`, the host writes `HostFrame::RpcError`, the Python `_bridge.py` raises `RuntimeError(error)`. The `tag_write_busy_propagates_error_to_python` test verifies end-to-end that a script's `try/except RuntimeError` catches the message string verbatim ("driver write queue full for 'rockwell-1/Setpoint'").
+- ✅ **`GatewayTagWriteSink` mirrors the WS-side path** (`script_writes.rs:27-49`). `split_once('/')` matches what `server.rs` uses; multi-segment addresses handled correctly (`a/b/c` → driver=`a`, address=`b/c`); empty driver-id or empty address rejected by `split_tag_path` and routes to publish (defensive).
+- ✅ **Memory-tag fallback works in two places**: (a) no `/` separator → publish, (b) prefix doesn't match a registered driver → publish. The unit test in `script_writes.rs` covers (b); the existing memory-tag scripts cover (a).
+- ✅ **The new `tag_write_routes_to_driver_sink` test is the right shape.** It registers a `RecordingSink` that explicitly does NOT publish to TagStore, fires the script, then asserts both that the sink saw the write AND that `store.get("rockwell-1/Setpoint").is_none()`. That second assertion is the one that proves the routing is real — without it the test would pass even if writes were silently double-routed. Disciplined.
+- ✅ **`MemorySink::new(store.clone())` injection in the existing 5 host tests** preserves their assertions without rewriting them. Crash, timeout, log, concurrent-RPC, and round-trip tests all retain their original semantics.
+- ✅ **Live smoke validation** done by Codex with a real sim + gateway: Setpoint persisted across 5+ poll cycles, no oscillation. That's the closeout proof — the integration test passes by construction (no driver loop), but the live smoke is what shows the brief error from CODEX-T is actually fixed.
+- ✅ **`spawn_script_runtime` plumbing in `main.rs:78-80, 96-122`** clones `DriverHandles` once for the sink and once for the WS server. Single source of truth for the driver write mpsc.
+- ✅ **Acceptance**: 7 scripting tests pass (5 existing + 2 new); `cargo test --workspace`, `cargo clippy --workspace --all-features -- -D warnings`, `cargo fmt --check`, `pnpm -r typecheck`, `pnpm -r test` all clean.
+
+Findings:
+
+- 🟢 **`UnknownDriver` enum variant is defined but never emitted by `GatewayTagWriteSink`.** The brief said v1 = "no driver registered → memory tag", and Codex implemented that. The variant remains for any future sink that wants to enforce explicit memory-tag namespaces. The enum being public commits us to it semantically — a v1.1 sink could start emitting it without a breaking change. Acceptable.
+- 🟡 **`Closed` propagation lacks a dedicated test.** `Busy` is tested end-to-end through Python; `Closed` shares the exact same code path (single line in the match arm), so a regression would have to be deliberate to break only one. Tighten in a v1.1 polish pass.
+- 🟡 **No unit test for the gateway sink's driver-routed branch.** The `script_writes.rs` test only covers memory-tag fallback. The driver-routed path is exercised by the live smoke and indirectly by the scripting `tag_write_routes_to_driver_sink` test (but that's a different sink impl). A small unit test that registers a fake `DriverHandle` with a recording mpsc receiver would lock in the gateway-specific routing. v1.1.
+- 🟢 **Test sinks (`RecordingSink`, `BusySink`) live in `tests/host.rs`** rather than under `crates/scripting/src/` test helpers. Keeps the public API clean and the sink implementations self-contained per test. Right call.
+
+Acceptance criteria — all five boxes verified, including the live manual smoke that this task was opened to fix.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged.** Phase 3 exit criterion now meaningfully met: the demo HMI's Python script writes a derived setpoint that actually reaches the simulator's PLC tag and persists across poll cycles. The brief error from CODEX-T is closed.
+
+Two small v1.1 items added (Closed test, gateway-sink driver-branch unit test). The v1.1 backlog is now ~22 items; Phase 3 closes once CODEX-U lands.

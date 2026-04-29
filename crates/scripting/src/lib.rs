@@ -11,6 +11,8 @@
 pub mod host;
 /// JSON frame types for the host/worker channel.
 pub mod rpc;
+/// Tag write sink abstraction.
+pub mod sink;
 /// Script trigger types.
 pub mod triggers;
 /// Worker subprocess wrapper.
@@ -19,4 +21,5 @@ pub mod worker;
 pub use host::{
     ScriptEvent, ScriptHost, ScriptHostHandle, ScriptHostOptions, ScriptStatus, DEFAULT_TIMEOUT,
 };
+pub use sink::{MemorySink, TagWriteError, TagWriteSink};
 pub use triggers::TriggerRegistration;
