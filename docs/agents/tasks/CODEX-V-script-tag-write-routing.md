@@ -149,6 +149,6 @@ Acceptance criteria — all five boxes verified, including the live manual smoke
 
 ## Verdict
 
-**Merged.** Phase 3 exit criterion now meaningfully met: the demo HMI's Python script writes a derived setpoint that actually reaches the simulator's PLC tag and persists across poll cycles. The brief error from CODEX-T is closed.
+**Merged at `9db307e`.** Phase 3 exit criterion now meaningfully met: the demo HMI's Python script writes a derived setpoint that actually reaches the simulator's PLC tag and persists across poll cycles. The brief error from CODEX-T is closed.
 
 Two small v1.1 items added (Closed test, gateway-sink driver-branch unit test). The v1.1 backlog is now ~22 items; Phase 3 closes once CODEX-U lands.

@@ -54,7 +54,7 @@ CODEX-U  (script editor)         ← unblocked (T merged); last open Phase 3 tas
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | `29be0e9` | 3 |
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | `151afdb` | 3 |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | `f8b74a9` | 3 |
-| CODEX-V | Route `system.tag.write` through per-driver write queue | codex | _pending merge_ | 3 |
+| CODEX-V | Route `system.tag.write` through per-driver write queue | codex | `9db307e` | 3 |
 
 ## Conventions
 
