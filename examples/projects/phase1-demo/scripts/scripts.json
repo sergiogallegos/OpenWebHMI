@@ -1,0 +1,13 @@
+[
+  {
+    "id": "derived-setpoint",
+    "path": "scripts/derived_setpoint.py",
+    "enabled": true,
+    "triggers": [
+      {
+        "kind": "on_tag_change",
+        "path": "rockwell-1/Pressure"
+      }
+    ]
+  }
+]

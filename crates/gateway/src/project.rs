@@ -320,6 +320,7 @@ mod tests {
                 history: None,
             }],
             alarms: Vec::new(),
+            scripts: Vec::new(),
             views: Vec::new(),
         };
 

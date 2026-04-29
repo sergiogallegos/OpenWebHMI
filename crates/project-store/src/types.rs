@@ -20,6 +20,9 @@ pub struct Project {
     /// Alarm definitions.
     #[serde(default)]
     pub alarms: Vec<AlarmConfig>,
+    /// Python script definitions.
+    #[serde(default)]
+    pub scripts: Vec<ScriptConfig>,
     /// View definitions.
     pub views: Vec<View>,
 }
@@ -127,6 +130,51 @@ pub enum AlarmConditionConfig {
     },
 }
 
+/// Project script definition.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ScriptConfig {
+    /// Stable script id.
+    pub id: String,
+    /// Path to the Python source file. Relative paths are resolved from the
+    /// project directory when the project is loaded.
+    pub path: String,
+    /// Whether this script is active.
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+    /// Trigger registrations for this script.
+    #[serde(default)]
+    pub triggers: Vec<ScriptTriggerConfig>,
+    /// Optional per-handler timeout override in milliseconds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub handler_timeout_ms: Option<u64>,
+}
+
+/// Script trigger configuration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum ScriptTriggerConfig {
+    /// Fire when a tag changes.
+    OnTagChange {
+        /// Subscribed tag path.
+        path: String,
+    },
+    /// Placeholder for timer triggers.
+    OnTimer {
+        /// Interval in milliseconds.
+        every_ms: u64,
+    },
+    /// Placeholder for alarm triggers.
+    OnAlarm {
+        /// Alarm id.
+        alarm_id: String,
+    },
+    /// Placeholder for designer/runtime button-click triggers.
+    OnButtonClick {
+        /// Button component id.
+        component_id: String,
+    },
+}
+
 /// HMI view definition.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct View {
@@ -204,6 +252,10 @@ pub(crate) struct ProjectMetaFile {
     pub(crate) drivers: Vec<DriverConfigToml>,
     #[serde(default)]
     pub(crate) tags: Vec<TagConfig>,
+}
+
+fn default_enabled() -> bool {
+    true
 }
 
 #[derive(Debug, Deserialize)]

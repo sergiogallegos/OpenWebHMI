@@ -11,6 +11,7 @@ use openwebhmi_gateway::{project, server, sim_provider};
 use openwebhmi_historian::{spawn_recorder, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
 use openwebhmi_protocol::ArtifactKind;
+use openwebhmi_scripting::{ScriptHost, ScriptHostOptions};
 use openwebhmi_tag_engine::TagStore;
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::TlsAcceptor;
@@ -68,10 +69,12 @@ async fn main() -> anyhow::Result<()> {
         None => None,
     };
 
+    let mut _script_host = None;
     let driver_handles = if let Some(path) = args.project.as_ref() {
         let project = project::load(path)?;
         spawn_history_recorder(store.clone(), project_store.clone(), &project)?;
         spawn_alarm_runtime(store.clone(), project_store.clone(), &project)?;
+        _script_host = spawn_script_runtime(store.clone(), &project);
         project::spawn_project(project, store.clone())?
     } else {
         project::DriverHandles::new()
@@ -86,6 +89,32 @@ async fn main() -> anyhow::Result<()> {
             Ok(())
         }
     }
+}
+
+fn spawn_script_runtime(
+    store: TagStore,
+    project: &openwebhmi_project_store::Project,
+) -> Option<ScriptHost> {
+    let scripts = project
+        .scripts
+        .iter()
+        .filter(|script| script.enabled)
+        .cloned()
+        .collect::<Vec<_>>();
+    if scripts.is_empty() {
+        return None;
+    }
+
+    info!(
+        project_id = %project.id,
+        count = scripts.len(),
+        "starting project scripts"
+    );
+    Some(ScriptHost::spawn(
+        store,
+        scripts,
+        ScriptHostOptions::default(),
+    ))
 }
 
 fn spawn_alarm_runtime(

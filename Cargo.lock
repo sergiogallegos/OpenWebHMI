@@ -2586,6 +2586,7 @@ dependencies = [
  "openwebhmi-historian",
  "openwebhmi-project-store",
  "openwebhmi-protocol",
+ "openwebhmi-scripting",
  "openwebhmi-tag-engine",
  "rustls-pemfile",
  "serde",
@@ -2637,6 +2638,24 @@ dependencies = [
  "openwebhmi-project-store",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "openwebhmi-scripting"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "openwebhmi-project-store",
+ "openwebhmi-protocol",
+ "openwebhmi-tag-engine",
+ "rand 0.8.6",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

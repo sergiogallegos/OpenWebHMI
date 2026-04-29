@@ -100,7 +100,14 @@ export type ClientMessage =
       password?: string | null;
       roles: string[];
     }
-  | { kind: "user.delete"; user_id: string };
+  | { kind: "user.delete"; user_id: string }
+  | {
+      kind: "script.run";
+      request_id?: string | null;
+      script_id: string;
+      trigger: string;
+      args?: unknown;
+    };
 
 /** Messages emitted by the gateway to runtime or designer clients. */
 export type ServerMessage =
@@ -162,7 +169,19 @@ export type ServerMessage =
       version: number;
       view: View;
     }
-  | { kind: "user.list"; users: AuthUser[] };
+  | { kind: "user.list"; users: AuthUser[] }
+  | {
+      kind: "script.result";
+      request_id?: string | null;
+      script_id: string;
+      result: unknown;
+    }
+  | {
+      kind: "script.error";
+      request_id?: string | null;
+      script_id: string;
+      message: string;
+    };
 
 /** Return true when `value` is a valid OpenWebHMI tag value envelope. */
 export function isTagValue(value: unknown): value is TagValue {
@@ -271,6 +290,14 @@ export function isClientMessage(value: unknown): value is ClientMessage {
       );
     case "user.delete":
       return typeof value.user_id === "string";
+    case "script.run":
+      return (
+        typeof value.script_id === "string" &&
+        typeof value.trigger === "string" &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
     default:
       return false;
   }
@@ -368,6 +395,22 @@ export function isServerMessage(value: unknown): value is ServerMessage {
       );
     case "user.list":
       return Array.isArray(value.users) && value.users.every(isAuthUser);
+    case "script.result":
+      return (
+        typeof value.script_id === "string" &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true) &&
+        "result" in value
+      );
+    case "script.error":
+      return (
+        typeof value.script_id === "string" &&
+        typeof value.message === "string" &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
     default:
       return false;
   }

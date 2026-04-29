@@ -8,6 +8,7 @@ Form-based Phase 2 designer for authoring view JSON through the gateway. This is
 - pnpm 9+
 - Rust stable from `rust-toolchain.toml`
 - Tauri v2 platform prerequisites for your OS: <https://v2.tauri.app/start/prerequisites/>
+- Python 3.11+ on `PATH` for project scripts (`OPENWEBHMI_PYTHON` can point at a specific interpreter). `numpy` and `pandas` are recommended optional packages for future scripting work.
 
 ## Run
 
@@ -39,3 +40,4 @@ pnpm --filter @openwebhmi/designer tauri dev
 12. Add an `AlarmTable` component to the `home` view, force the simulator pressure high, confirm the table shows the active alarm, ack it, then clear the pressure and confirm the row clears.
 13. Add a `Trend` component with `windowSeconds=60` and `tagPaths` set to `rockwell-1/Pressure, rockwell-1/Counter`.
 14. Confirm the runtime preview shows two SVG trend lines and appends live samples as the simulator updates.
+15. Confirm the bundled `derived-setpoint` script writes `rockwell-1/Setpoint` to half of `rockwell-1/Pressure` whenever pressure is above `100`.

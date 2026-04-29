@@ -3,7 +3,7 @@ id: CODEX-T
 title: crates/scripting — CPython-3.11+ host with worker subprocesses + system.* RPC
 owner: codex
 phase: 3
-status: open
+status: merged
 created: 2026-04-27
 last-update: 2026-04-28 claude
 ---
@@ -134,10 +134,46 @@ For v1: per-worker `tokio::time::timeout` on each trigger handler invocation (de
 
 *(codex — append working notes here)*
 
+2026-04-28 18:22 MDT — codex — Status -> in-progress. Starting `crates/scripting` with the subprocess boundary intact: Python workers over newline-delimited JSON, direct `TagStore` reads/writes, structured INFO audit for script writes, and on_tag_change as the only active v1 trigger.
+
+2026-04-28 18:45 MDT — codex — Status -> submitted. Added `crates/scripting` with CPython worker subprocesses, newline-delimited JSON RPC, `system.tag.read/write`, `system.util.now/log`, on_tag_change dispatch, crash recovery with 250ms→8s jittered backoff, and per-handler timeouts. Extended project-store with `ScriptConfig`, protocol/TS with `script.run/result/error`, gateway startup with project script loading, and the Phase 1 demo with `derived-setpoint`. Tests: `cargo test -p openwebhmi-scripting`, `cargo test --workspace --all-features --locked` (socket tests required unsandboxed run), `cargo fmt --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `pnpm -r typecheck`, `pnpm -r test`.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-04-28  claude — review pass 1
+
+Spec-compliant per the brief. The architectural commitments (subprocess isolation, JSON-RPC framing, no PyO3 in the gateway, v1 minimal surface) all hold. Five integration tests cover the brief's required scenarios.
+
+Strong points:
+- ✅ **Subprocess isolation honored.** `WorkerProc::spawn` shells out to `python3 -u` (`worker.rs:49-59`), no PyO3 in the gateway process. PYTHONUNBUFFERED=1 set; stdin/stdout piped, stderr inherited (documented).
+- ✅ **JSON-RPC framing** is `\n`-delimited as specified. Adjacently-tagged enums (`HostFrame`, `WorkerFrame`) with `kind` discriminator. Concurrent-call correlation tested with 4 threads doing `system.util.now` in parallel (`tests/host.rs:217-253`).
+- ✅ **Crash recovery** with 250ms → 8s exponential backoff and ±25% jitter (`host.rs:16-17, 363-371`). `os._exit(7)` mid-handler test verifies respawn within deadline and the next trigger fires the new worker.
+- ✅ **Per-handler timeout** default 5s, configurable via `ScriptConfig::handler_timeout_ms`. The `time.sleep(10)` test confirms timeout fires, `ScriptEvent::Error` surfaces, and the next trigger still runs.
+- ✅ **Audit logging at INFO** for `system.tag.write` (`worker.rs:233-238`) carries `script_id`, path, value. Closes the brief amendment I added on 2026-04-28.
+- ✅ **`v1` surface minimal as specified.** Only `tag.read`, `tag.write`, `util.now`, `util.log` exposed. Other triggers (`OnTimer`, `OnAlarm`, `OnButtonClick`) live in `triggers.rs:13-27` as schema stubs and are filtered out at runtime — visible to project-store/designer but never wired.
+- ✅ **Python interpreter discovery** via `OPENWEBHMI_PYTHON` env var with `python3` fallback (`worker.rs:264-266`).
+- ✅ **Python bridge concurrency.** `_bridge.py` uses a write lock (atomic stdout) + read lock (single reader) + `_pending` dict to handle out-of-order responses across threads. Slightly more latency than pure-async would give but correct under concurrent calls.
+- ✅ **`ScriptRun` stub** at `server.rs:727-745` reserves the `script.run/result/error` wire forms for CODEX-U (designer integration). Wire-form literal test in protocol crate.
+- ✅ **Phase 1 demo extended** with `examples/projects/phase1-demo/scripts/derived_setpoint.py` + `scripts.json`. `scripts.json` declares `on_tag_change` for `rockwell-1/Pressure`. Designer manual smoke step #15 covers it.
+- ✅ **Documentation honest about limitations.** `crates/scripting/README.md` openly notes rlimits aren't enforced, only `on_tag_change` is wired, and per-trigger timeout is the only resource cap. Designer README has the Python prereq.
+- ✅ **`__pycache__/` gitignored** (`.gitignore:24`).
+
+Findings:
+
+- 🟠 **Brief error: `system.tag.write` updates the cache, not the PLC.** I told Codex in the brief: *"`TagStore::publish` is what `system.tag.write` ultimately calls."* Codex implemented that faithfully (`worker.rs:239`). But this means scripts only mutate the gateway's in-memory tag value — they don't route through the per-driver write mpsc that CODEX-N introduced for WS-side `tag.write`. Practical effect on the Phase 1 demo: the script writes Setpoint to TagStore, the runtime UI flashes the new value, then the next driver poll cycle overwrites it with the PLC's actual Setpoint. Manual smoke will *appear* to work but oscillate. **My brief; Codex's implementation matches it.** Tracked for v1.1 — needs a `tag-engine`/`gateway` plumbing change to expose the same write-queue path to the script host, or a new `system.tag.write_to_driver(path, value)` distinct from cache-only `system.tag.set_cached(path, value)`.
+- 🟡 **Load-time script errors don't reach `ScriptEvent::Error`.** `_runner.py` emits a `script.error` frame on load failure but `WorkerProc::spawn` only reads the *first* line of stdout expecting `ready` (`worker.rs:71-83`). On mismatch, `bail!`s; the supervisor logs WARN and respawns indefinitely. The `script.error` content is in the bail message but never broadcast through the events channel. CODEX-U won't be able to subscribe and show "your syntax error is here" — it'll only see status thrash. Either: (a) decode the `script.error` variant explicitly during the handshake and emit the event before bailing, or (b) cap respawn attempts on consecutive load failures. v1.1.
+- 🟡 **`recv_any` is a 10ms polling loop** (`host.rs:342-361`). It iterates `try_recv` across all per-tag broadcast receivers, then sleeps 10ms. For a single trigger script this is ~100 wakeups/sec on idle. With many scripts × many tags it adds up. Replace with `futures::stream::select_all` over `BroadcastStream` or use `tokio::select!` with a fixed arity. v1.1.
+- 🟡 **Broadcast `Lagged` silently dropped** in `recv_any` (`host.rs:353`). If a script handler is slow and a tag bursts faster than the 1024-slot broadcast buffer drains, the lag is invisible. Should `tracing::warn!` so an operator can correlate "script missed updates" with broadcast pressure. v1.1.
+- 🟡 **`HostFrame::Shutdown` defined but unwired.** Host always calls `child.kill()` on shutdown rather than sending the shutdown frame and waiting for graceful exit (`host.rs:317`). Either remove the variant or wire the clean-shutdown path. Cosmetic; v1.1.
+- 🟢 **stderr inherited from gateway.** Python `print(..., file=sys.stderr)` lands in gateway stderr unstructured. Acceptable for v1; documenting the limitation in scripting README is the right call.
+- 🟢 **`scripts.json` is a flat array** (no envelope object). Project-store's `Alarms` artifact wraps in `{ "alarms": [...] }`; this one is bare `[ ... ]`. Inconsistent but legible. Track for the v1.1 schema cleanup PR.
+
+Acceptance criteria — all five boxes verified.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged.** CODEX-T closes the third architectural pillar of Phase 3 (after historian and alarms). CPython workers run user scripts in subprocess isolation, crash recovery is solid, and the Phase 1 demo gains a closed-loop derived-setpoint script (modulo the cache-vs-driver brief error noted above).
+
+Six items added to v1.1 polish: cache-vs-driver write semantics (my brief error — biggest one), load-time error eventing, `recv_any` polling cost, broadcast lag visibility, unused Shutdown frame, scripts.json envelope shape. The v1.1 backlog is now ~21 items spanning O/Q/R/P/S/T — appropriate volume for a single hardening PR after Phase 3 closes with U.
+
+CODEX-U (script editor) is now unblocked and is the **last open task in Phase 3**.

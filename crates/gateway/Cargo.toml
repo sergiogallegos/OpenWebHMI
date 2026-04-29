@@ -30,6 +30,7 @@ openwebhmi-auth = { path = "../auth" }
 openwebhmi-alarm-engine = { path = "../alarm-engine" }
 openwebhmi-project-store = { path = "../project-store" }
 openwebhmi-protocol = { path = "../protocol" }
+openwebhmi-scripting = { path = "../scripting" }
 openwebhmi-tag-engine = { path = "../tag-engine" }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -11,7 +11,10 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 
-use crate::types::{AlarmConfig, Project, ProjectMetaFile, ProjectSummary, TagConfig, View};
+use crate::types::{
+    AlarmConfig, Project, ProjectMetaFile, ProjectSummary, ScriptConfig, ScriptTriggerConfig,
+    TagConfig, View,
+};
 use crate::version::{ChangeAction, ProjectChange};
 
 const CHANGE_CAPACITY: usize = 1024;
@@ -109,6 +112,7 @@ impl ProjectStore {
         let mut tags = read_tags_file(project_dir.join("tags/tags.json"))?;
         tags.extend(meta.tags);
         let alarms = read_alarms_file(project_dir.join("alarms/alarms.json"))?;
+        let scripts = read_scripts_file(project_dir.join("scripts/scripts.json"), &project_dir)?;
 
         let mut views = Vec::new();
         let views_dir = project_dir.join("views");
@@ -132,6 +136,7 @@ impl ProjectStore {
             drivers,
             tags,
             alarms,
+            scripts,
             views,
         };
         validate_project(&project)?;
@@ -327,6 +332,25 @@ pub fn validate_project(project: &Project) -> anyhow::Result<()> {
             bail!("alarm '{}' priority must be between 1 and 5", alarm.id);
         }
     }
+    let mut script_ids = HashSet::new();
+    for script in &project.scripts {
+        if script.id.trim().is_empty() {
+            bail!("script id cannot be empty");
+        }
+        if !script_ids.insert(script.id.clone()) {
+            bail!("duplicate script id '{}'", script.id);
+        }
+        if script.path.trim().is_empty() {
+            bail!("script '{}' path cannot be empty", script.id);
+        }
+        for trigger in &script.triggers {
+            if let ScriptTriggerConfig::OnTagChange { path } = trigger {
+                if !tag_paths.contains(path.as_str()) {
+                    bail!("script '{}' references unknown tag '{}'", script.id, path);
+                }
+            }
+        }
+    }
     Ok(())
 }
 
@@ -368,6 +392,29 @@ fn read_alarms_file(path: PathBuf) -> anyhow::Result<Vec<AlarmConfig>> {
             .cloned()
             .unwrap_or_else(|| serde_json::json!([])),
     )?)
+}
+
+fn read_scripts_file(path: PathBuf, project_dir: &Path) -> anyhow::Result<Vec<ScriptConfig>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let value = serde_json::from_str::<serde_json::Value>(&fs::read_to_string(path)?)?;
+    let scripts_value = if value.is_array() {
+        value
+    } else {
+        value
+            .get("scripts")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([]))
+    };
+    let mut scripts = serde_json::from_value::<Vec<ScriptConfig>>(scripts_value)?;
+    for script in &mut scripts {
+        let script_path = Path::new(&script.path);
+        if script_path.is_relative() {
+            script.path = project_dir.join(script_path).to_string_lossy().into_owned();
+        }
+    }
+    Ok(scripts)
 }
 
 fn serde_json_to_toml(body: &serde_json::Value) -> anyhow::Result<String> {

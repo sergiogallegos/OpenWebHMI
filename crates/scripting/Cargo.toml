@@ -1,0 +1,25 @@
+[package]
+name = "openwebhmi-scripting"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "OpenWebHMI CPython worker-subprocess scripting host."
+
+[dependencies]
+anyhow = { workspace = true }
+openwebhmi-project-store = { path = "../project-store" }
+openwebhmi-protocol = { path = "../protocol" }
+openwebhmi-tag-engine = { path = "../tag-engine" }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tracing-subscriber = { workspace = true }

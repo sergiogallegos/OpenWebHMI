@@ -228,6 +228,20 @@ pub enum ClientMessage {
         /// User id.
         user_id: String,
     },
+    /// Run a script entry point from the designer.
+    #[serde(rename = "script.run")]
+    ScriptRun {
+        /// Optional request id echoed in the result.
+        #[serde(default)]
+        request_id: Option<String>,
+        /// Script id.
+        script_id: String,
+        /// Trigger or entry point name.
+        trigger: String,
+        /// JSON arguments.
+        #[serde(default)]
+        args: serde_json::Value,
+    },
 }
 
 /// Messages from the gateway to a client.
@@ -356,6 +370,26 @@ pub enum ServerMessage {
     UserList {
         /// Users visible to administrators.
         users: Vec<AuthUser>,
+    },
+    /// Script run completed.
+    #[serde(rename = "script.result")]
+    ScriptResult {
+        /// Optional request id from the run request.
+        request_id: Option<String>,
+        /// Script id.
+        script_id: String,
+        /// Result payload.
+        result: serde_json::Value,
+    },
+    /// Script run failed.
+    #[serde(rename = "script.error")]
+    ScriptError {
+        /// Optional request id from the run request.
+        request_id: Option<String>,
+        /// Script id.
+        script_id: String,
+        /// Error message.
+        message: String,
     },
 }
 
@@ -597,6 +631,40 @@ mod tests {
         let json = serde_json::to_string(&definition).unwrap();
         let back = serde_json::from_str::<ServerMessage>(&json).unwrap();
         assert_eq!(back, definition);
+    }
+
+    #[test]
+    fn script_lifecycle_wire_form_is_stable() {
+        let run = ClientMessage::ScriptRun {
+            request_id: Some("r1".into()),
+            script_id: "derived-setpoint".into(),
+            trigger: "on_tag_change".into(),
+            args: serde_json::json!({"tag_path":"rockwell-1/Pressure"}),
+        };
+        assert_eq!(
+            serde_json::to_string(&run).unwrap(),
+            r#"{"kind":"script.run","request_id":"r1","script_id":"derived-setpoint","trigger":"on_tag_change","args":{"tag_path":"rockwell-1/Pressure"}}"#
+        );
+
+        let result = ServerMessage::ScriptResult {
+            request_id: Some("r1".into()),
+            script_id: "derived-setpoint".into(),
+            result: serde_json::json!(null),
+        };
+        assert_eq!(
+            serde_json::to_string(&result).unwrap(),
+            r#"{"kind":"script.result","request_id":"r1","script_id":"derived-setpoint","result":null}"#
+        );
+
+        let error = ServerMessage::ScriptError {
+            request_id: Some("r1".into()),
+            script_id: "derived-setpoint".into(),
+            message: "boom".into(),
+        };
+        assert_eq!(
+            serde_json::to_string(&error).unwrap(),
+            r#"{"kind":"script.error","request_id":"r1","script_id":"derived-setpoint","message":"boom"}"#
+        );
     }
 
     fn sample_view() -> View {

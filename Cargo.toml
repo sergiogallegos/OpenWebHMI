@@ -9,16 +9,14 @@ members = [
     "crates/auth",
     "crates/project-store",
     "crates/protocol",
+    "crates/scripting",
     "crates/tag-engine",
     "apps/designer/src-tauri",
     "examples/sim-rockwell",
 ]
 
 # Future members (added as each crate is implemented per docs/roadmap.md):
-#   "crates/alarm-engine"     # Phase 3
-#   "crates/historian"        # Phase 3
-#   "crates/scripting"        # Phase 3 — PyO3 host
-#   "crates/auth"             # Phase 3
+#   "crates/scripting"        # Phase 3 — script editor UI follows in CODEX-U
 
 [workspace.package]
 edition = "2021"
@@ -49,5 +47,6 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 tempfile = "3"
 rustls-pemfile = "2"
 tokio-rustls = "0.26"
+pyo3 = "0.22"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"

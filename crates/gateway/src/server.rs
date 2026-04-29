@@ -724,6 +724,28 @@ where
                     Err(err) => send_error(&out_tx, "user.delete", err.to_string()),
                 }
             }
+            ClientMessage::ScriptRun {
+                request_id,
+                script_id,
+                ..
+            } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::AuthorProject,
+                ) {
+                    continue;
+                }
+                try_send_message(
+                    &out_tx,
+                    ServerMessage::ScriptError {
+                        request_id,
+                        script_id,
+                        message: "script.run is reserved for CODEX-U designer integration".into(),
+                    },
+                );
+            }
         }
     }
 
