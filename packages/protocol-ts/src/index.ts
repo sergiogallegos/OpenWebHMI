@@ -13,7 +13,8 @@ export type ArtifactRef =
   | { kind: "view"; id: string }
   | { kind: "tags" }
   | { kind: "alarms" }
-  | { kind: "script"; id: string };
+  | { kind: "script"; id: string }
+  | { kind: "script_source"; id: string };
 
 export type ChangeAction = "created" | "updated" | "deleted";
 
@@ -68,6 +69,8 @@ export type ClientMessage =
       priority_max?: number | null;
     }
   | { kind: "alarm.ack"; alarm_id: string; note?: string | null }
+  | { kind: "script.subscribe"; project_id: string }
+  | { kind: "script.unsubscribe"; project_id: string }
   | { kind: "tag.subscribe"; paths: string[] }
   | { kind: "tag.unsubscribe"; paths: string[] }
   | { kind: "tag.write"; path: string; value: TagValue }
@@ -90,6 +93,18 @@ export type ClientMessage =
       project_id: string;
       artifact: ArtifactRef;
       body: unknown;
+    }
+  | {
+      kind: "project.read_artifact";
+      request_id?: string | null;
+      project_id: string;
+      artifact: ArtifactRef;
+    }
+  | {
+      kind: "project.delete_artifact";
+      request_id?: string | null;
+      project_id: string;
+      artifact: ArtifactRef;
     }
   | { kind: "view.open"; project_id: string; view_id: string }
   | { kind: "view.close"; project_id: string; view_id: string }
@@ -163,6 +178,19 @@ export type ServerMessage =
       version: number;
     }
   | {
+      kind: "project.artifact";
+      request_id?: string | null;
+      project_id: string;
+      artifact: ArtifactRef;
+      body: unknown;
+    }
+  | {
+      kind: "project.delete_result";
+      request_id?: string | null;
+      project_id: string;
+      artifact: ArtifactRef;
+    }
+  | {
       kind: "view.definition";
       project_id: string;
       view_id: string;
@@ -181,6 +209,14 @@ export type ServerMessage =
       request_id?: string | null;
       script_id: string;
       message: string;
+    }
+  | {
+      kind: "script.event";
+      project_id: string;
+      script_id: string;
+      event_kind: "status" | "log" | "error" | string;
+      status?: string | null;
+      message?: string | null;
     };
 
 /** Return true when `value` is a valid OpenWebHMI tag value envelope. */
@@ -239,6 +275,9 @@ export function isClientMessage(value: unknown): value is ClientMessage {
           ? value.note === null || typeof value.note === "string"
           : true)
       );
+    case "script.subscribe":
+    case "script.unsubscribe":
+      return typeof value.project_id === "string";
     case "tag.subscribe":
     case "tag.unsubscribe":
       return isStringArray(value.paths);
@@ -265,6 +304,15 @@ export function isClientMessage(value: unknown): value is ClientMessage {
           : true)
       );
     case "project.save_artifact":
+      return (
+        typeof value.project_id === "string" &&
+        isArtifactRef(value.artifact) &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
+    case "project.read_artifact":
+    case "project.delete_artifact":
       return (
         typeof value.project_id === "string" &&
         isArtifactRef(value.artifact) &&
@@ -385,6 +433,23 @@ export function isServerMessage(value: unknown): value is ServerMessage {
           ? value.request_id === null || typeof value.request_id === "string"
           : true)
       );
+    case "project.artifact":
+      return (
+        typeof value.project_id === "string" &&
+        isArtifactRef(value.artifact) &&
+        "body" in value &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
+    case "project.delete_result":
+      return (
+        typeof value.project_id === "string" &&
+        isArtifactRef(value.artifact) &&
+        ("request_id" in value
+          ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
     case "view.definition":
       return (
         typeof value.project_id === "string" &&
@@ -409,6 +474,18 @@ export function isServerMessage(value: unknown): value is ServerMessage {
         typeof value.message === "string" &&
         ("request_id" in value
           ? value.request_id === null || typeof value.request_id === "string"
+          : true)
+      );
+    case "script.event":
+      return (
+        typeof value.project_id === "string" &&
+        typeof value.script_id === "string" &&
+        typeof value.event_kind === "string" &&
+        ("status" in value
+          ? value.status === null || typeof value.status === "string"
+          : true) &&
+        ("message" in value
+          ? value.message === null || typeof value.message === "string"
           : true)
       );
     default:
@@ -515,6 +592,7 @@ function isArtifactRef(value: unknown): value is ArtifactRef {
       return true;
     case "view":
     case "script":
+    case "script_source":
       return typeof value.id === "string";
     default:
       return false;

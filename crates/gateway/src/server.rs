@@ -12,6 +12,7 @@ use openwebhmi_auth::{Permission, Role, SessionManager, UserPatch, UserStore, Ve
 use openwebhmi_historian::{Aggregation, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
 use openwebhmi_protocol::{AlarmState, ArtifactKind, AuthUser, ClientMessage, ServerMessage};
+use openwebhmi_scripting::{ScriptEvent, ScriptHost, ScriptStatus};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpListener;
@@ -28,6 +29,7 @@ type OutboundTx = mpsc::Sender<ServerMessage>;
 const OUTBOUND_CAPACITY: usize = 256;
 static DEFAULT_HISTORIAN: OnceLock<HistorianStore> = OnceLock::new();
 static DEFAULT_ALARM_ENGINE: OnceLock<Arc<Mutex<AlarmEngineHandle>>> = OnceLock::new();
+static DEFAULT_SCRIPT_HOST: OnceLock<Arc<ScriptHost>> = OnceLock::new();
 
 /// Authentication state shared by websocket connections.
 #[derive(Clone)]
@@ -51,6 +53,11 @@ pub fn set_default_historian(historian: HistorianStore) {
 /// Set the process-wide alarm engine used by websocket alarm handlers.
 pub fn set_default_alarm_engine(engine: Arc<Mutex<AlarmEngineHandle>>) {
     let _ = DEFAULT_ALARM_ENGINE.set(engine);
+}
+
+/// Set the process-wide script host used by websocket script-event handlers.
+pub fn set_default_script_host(host: Arc<ScriptHost>) {
+    let _ = DEFAULT_SCRIPT_HOST.set(host);
 }
 
 /// Bind `addr` and serve WebSocket clients forever.
@@ -251,6 +258,7 @@ where
     let mut subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
     let mut project_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
     let mut alarm_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
+    let mut script_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
 
     while let Some(item) = incoming.next().await {
         let message = match item {
@@ -424,6 +432,46 @@ where
                         engine.ack(&alarm_id, who, note);
                     }
                     Err(_) => send_error(&out_tx, "alarm.ack", "alarm engine lock poisoned".into()),
+                }
+            }
+            ClientMessage::ScriptSubscribe { project_id } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::AuthorProject,
+                ) {
+                    continue;
+                }
+                let Some(host) = DEFAULT_SCRIPT_HOST.get() else {
+                    send_error(
+                        &out_tx,
+                        "script.unavailable",
+                        "script host is not enabled".into(),
+                    );
+                    continue;
+                };
+                if script_subscriptions.contains_key(&project_id) {
+                    continue;
+                }
+                let handle = spawn_script_event_forwarder(
+                    project_id.clone(),
+                    host.subscribe_events(),
+                    out_tx.clone(),
+                );
+                script_subscriptions.insert(project_id, handle);
+            }
+            ClientMessage::ScriptUnsubscribe { project_id } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::AuthorProject,
+                ) {
+                    continue;
+                }
+                if let Some(handle) = script_subscriptions.remove(&project_id) {
+                    handle.abort();
                 }
             }
             ClientMessage::TagSubscribe { paths } => {
@@ -620,6 +668,65 @@ where
                     Err(err) => send_error(&out_tx, "project.save_artifact", err.to_string()),
                 }
             }
+            ClientMessage::ProjectReadArtifact {
+                request_id,
+                project_id,
+                artifact,
+            } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::ReadViews,
+                ) {
+                    continue;
+                }
+                let Some(project_store) = project_store.as_ref() else {
+                    send_unavailable(&out_tx);
+                    continue;
+                };
+                match project_store.read_artifact(&project_id, artifact.clone()) {
+                    Ok(body) => try_send_message(
+                        &out_tx,
+                        ServerMessage::ProjectArtifact {
+                            request_id,
+                            project_id,
+                            artifact,
+                            body: body.unwrap_or(serde_json::Value::Null),
+                        },
+                    ),
+                    Err(err) => send_error(&out_tx, "project.read_artifact", err.to_string()),
+                }
+            }
+            ClientMessage::ProjectDeleteArtifact {
+                request_id,
+                project_id,
+                artifact,
+            } => {
+                if !authorize(
+                    &out_tx,
+                    auth.as_ref(),
+                    session.as_ref(),
+                    Permission::AuthorProject,
+                ) {
+                    continue;
+                }
+                let Some(project_store) = project_store.as_ref() else {
+                    send_unavailable(&out_tx);
+                    continue;
+                };
+                match project_store.delete_artifact(&project_id, artifact.clone()) {
+                    Ok(()) => try_send_message(
+                        &out_tx,
+                        ServerMessage::ProjectDeleteResult {
+                            request_id,
+                            project_id,
+                            artifact,
+                        },
+                    ),
+                    Err(err) => send_error(&out_tx, "project.delete_artifact", err.to_string()),
+                }
+            }
             ClientMessage::ViewOpen {
                 project_id,
                 view_id,
@@ -756,6 +863,9 @@ where
         handle.abort();
     }
     for (_, handle) in alarm_subscriptions {
+        handle.abort();
+    }
+    for (_, handle) in script_subscriptions {
         handle.abort();
     }
     drop(out_tx);
@@ -986,6 +1096,82 @@ fn spawn_alarm_forwarder(
             }
         }
     })
+}
+
+fn spawn_script_event_forwarder(
+    project_id: String,
+    mut rx: tokio::sync::broadcast::Receiver<ScriptEvent>,
+    out_tx: OutboundTx,
+) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            match rx.recv().await {
+                Ok(event) if script_event_project_id(&event) == project_id => {
+                    try_send_message(&out_tx, script_event_to_message(event));
+                }
+                Ok(_) => {}
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                    warn!(%project_id, skipped, "script subscriber lagged");
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    })
+}
+
+fn script_event_project_id(event: &ScriptEvent) -> &str {
+    match event {
+        ScriptEvent::Status { project_id, .. }
+        | ScriptEvent::Log { project_id, .. }
+        | ScriptEvent::Error { project_id, .. } => project_id,
+    }
+}
+
+fn script_event_to_message(event: ScriptEvent) -> ServerMessage {
+    match event {
+        ScriptEvent::Status {
+            project_id,
+            script_id,
+            status,
+        } => ServerMessage::ScriptEvent {
+            project_id,
+            script_id,
+            event_kind: "status".to_string(),
+            status: Some(script_status_wire(status).to_string()),
+            message: None,
+        },
+        ScriptEvent::Log {
+            project_id,
+            script_id,
+            message,
+        } => ServerMessage::ScriptEvent {
+            project_id,
+            script_id,
+            event_kind: "log".to_string(),
+            status: None,
+            message: Some(message),
+        },
+        ScriptEvent::Error {
+            project_id,
+            script_id,
+            message,
+        } => ServerMessage::ScriptEvent {
+            project_id,
+            script_id,
+            event_kind: "error".to_string(),
+            status: None,
+            message: Some(message),
+        },
+    }
+}
+
+fn script_status_wire(status: ScriptStatus) -> &'static str {
+    match status {
+        ScriptStatus::Starting => "starting",
+        ScriptStatus::Ready => "ready",
+        ScriptStatus::Restarting => "restarting",
+        ScriptStatus::Stopped => "stopped",
+    }
 }
 
 fn alarm_event_to_message(event: AlarmEvent) -> ServerMessage {

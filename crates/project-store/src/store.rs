@@ -39,6 +39,11 @@ pub enum ArtifactKind {
         /// Script id.
         id: String,
     },
+    /// Raw Python source for a registered script.
+    ScriptSource {
+        /// Script id.
+        id: String,
+    },
 }
 
 /// Persistent project store.
@@ -150,15 +155,21 @@ impl ProjectStore {
         kind: ArtifactKind,
         body: serde_json::Value,
     ) -> anyhow::Result<u64> {
-        let path = self.artifact_path(project_id, &kind);
         ensure_layout(&self.project_dir(project_id))?;
+        let path = self.artifact_path(project_id, &kind)?;
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
 
         let existed = path.exists();
-        let bytes = match kind {
+        let bytes = match &kind {
             ArtifactKind::ProjectMeta => serde_json_to_toml(&body)?.into_bytes(),
+            ArtifactKind::ScriptSource { .. } => body
+                .get("source")
+                .and_then(serde_json::Value::as_str)
+                .ok_or_else(|| anyhow::anyhow!("ScriptSource body requires string field 'source'"))?
+                .as_bytes()
+                .to_vec(),
             _ => serde_json::to_vec_pretty(&body)?,
         };
         atomic_write(&path, &bytes)?;
@@ -183,7 +194,7 @@ impl ProjectStore {
         project_id: &str,
         kind: ArtifactKind,
     ) -> anyhow::Result<Option<serde_json::Value>> {
-        let path = self.artifact_path(project_id, &kind);
+        let path = self.artifact_path(project_id, &kind)?;
         if !path.exists() {
             return Ok(None);
         }
@@ -193,13 +204,14 @@ impl ProjectStore {
                 let value = text.parse::<toml::Value>()?;
                 Ok(Some(serde_json::to_value(value)?))
             }
+            ArtifactKind::ScriptSource { .. } => Ok(Some(serde_json::json!({ "source": text }))),
             _ => Ok(Some(serde_json::from_str(&text)?)),
         }
     }
 
     /// Delete a single artifact.
     pub fn delete_artifact(&self, project_id: &str, kind: ArtifactKind) -> anyhow::Result<()> {
-        let path = self.artifact_path(project_id, &kind);
+        let path = self.artifact_path(project_id, &kind)?;
         if path.exists() {
             fs::remove_file(&path)?;
             let version = self.bump_version(project_id)?;
@@ -221,15 +233,33 @@ impl ProjectStore {
         self.inner.changes.subscribe()
     }
 
-    fn artifact_path(&self, project_id: &str, kind: &ArtifactKind) -> PathBuf {
+    fn artifact_path(&self, project_id: &str, kind: &ArtifactKind) -> anyhow::Result<PathBuf> {
         let dir = self.project_dir(project_id);
-        match kind {
+        Ok(match kind {
             ArtifactKind::ProjectMeta => dir.join("project.toml"),
             ArtifactKind::View { id } => dir.join("views").join(format!("{id}.json")),
             ArtifactKind::Tags => dir.join("tags/tags.json"),
             ArtifactKind::Alarms => dir.join("alarms/alarms.json"),
             ArtifactKind::Script { id } => dir.join("scripts").join(format!("{id}.json")),
-        }
+            ArtifactKind::ScriptSource { id } => self.script_source_path(project_id, id)?,
+        })
+    }
+
+    fn script_source_path(&self, project_id: &str, script_id: &str) -> anyhow::Result<PathBuf> {
+        let project = self.load(project_id)?;
+        let script = project
+            .scripts
+            .iter()
+            .find(|script| script.id == script_id)
+            .ok_or_else(|| anyhow::anyhow!("script '{script_id}' is not registered"))?;
+        let path = Path::new(&script.path);
+        Ok(if path.is_absolute() {
+            path.to_path_buf()
+        } else if path.starts_with("scripts") {
+            self.project_dir(project_id).join(path)
+        } else {
+            self.project_dir(project_id).join("scripts").join(path)
+        })
     }
 
     fn project_dir(&self, project_id: &str) -> PathBuf {
@@ -395,23 +425,48 @@ fn read_alarms_file(path: PathBuf) -> anyhow::Result<Vec<AlarmConfig>> {
 }
 
 fn read_scripts_file(path: PathBuf, project_dir: &Path) -> anyhow::Result<Vec<ScriptConfig>> {
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let value = serde_json::from_str::<serde_json::Value>(&fs::read_to_string(path)?)?;
-    let scripts_value = if value.is_array() {
-        value
+    let mut scripts = if path.exists() {
+        let value = serde_json::from_str::<serde_json::Value>(&fs::read_to_string(path)?)?;
+        let scripts_value = if value.is_array() {
+            value
+        } else {
+            value
+                .get("scripts")
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!([]))
+        };
+        serde_json::from_value::<Vec<ScriptConfig>>(scripts_value)?
     } else {
-        value
-            .get("scripts")
-            .cloned()
-            .unwrap_or_else(|| serde_json::json!([]))
+        Vec::new()
     };
-    let mut scripts = serde_json::from_value::<Vec<ScriptConfig>>(scripts_value)?;
+    let scripts_dir = project_dir.join("scripts");
+    if scripts_dir.exists() {
+        for entry in fs::read_dir(&scripts_dir)? {
+            let path = entry?.path();
+            if path.file_name().and_then(|name| name.to_str()) == Some("scripts.json") {
+                continue;
+            }
+            if path.extension().and_then(|ext| ext.to_str()) == Some("json") {
+                let script = serde_json::from_str::<ScriptConfig>(&fs::read_to_string(&path)?)?;
+                if let Some(existing) = scripts.iter_mut().find(|item| item.id == script.id) {
+                    *existing = script;
+                } else {
+                    scripts.push(script);
+                }
+            }
+        }
+    }
+    scripts.sort_by(|a, b| a.id.cmp(&b.id));
     for script in &mut scripts {
         let script_path = Path::new(&script.path);
         if script_path.is_relative() {
-            script.path = project_dir.join(script_path).to_string_lossy().into_owned();
+            script.path = if script_path.starts_with("scripts") {
+                project_dir.join(script_path)
+            } else {
+                project_dir.join("scripts").join(script_path)
+            }
+            .to_string_lossy()
+            .into_owned();
         }
     }
     Ok(scripts)

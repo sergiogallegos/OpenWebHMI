@@ -6,8 +6,11 @@ use futures_util::{SinkExt, StreamExt};
 use openwebhmi_alarm_engine::{spawn_alarm_engine, AlarmCondition, AlarmDefinition, AlarmJournal};
 use openwebhmi_auth::{Role, SessionManager, UserStore};
 use openwebhmi_gateway::{server, sim_provider};
+use openwebhmi_project_store::{ScriptConfig, ScriptTriggerConfig};
 use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagValue};
+use openwebhmi_scripting::{MemorySink, ScriptEvent, ScriptHost, ScriptHostOptions, ScriptStatus};
 use openwebhmi_tag_engine::TagStore;
+use tempfile::TempDir;
 use tokio::net::TcpListener;
 use tokio::time::{sleep, timeout};
 use tokio_tungstenite::connect_async;
@@ -202,6 +205,99 @@ async fn websocket_gateway_forwards_alarm_events_with_priority_filter() {
         }
         other => panic!("expected alarm.event, got {other:?}"),
     }
+
+    server.abort();
+}
+
+#[tokio::test]
+async fn websocket_gateway_forwards_script_events_by_project() {
+    let dir = TempDir::new().unwrap();
+    let script_path = dir.path().join("logger.py");
+    std::fs::write(
+        &script_path,
+        r#"
+import system
+
+@system.on_tag_change("rockwell-1/Pressure")
+def pressure_changed(tag):
+    system.util.log("pressure changed")
+"#,
+    )
+    .unwrap();
+    let store = TagStore::new();
+    let host = Arc::new(ScriptHost::spawn(
+        "phase1-demo",
+        store.clone(),
+        Arc::new(MemorySink::new(store.clone())),
+        vec![ScriptConfig {
+            id: "logger".into(),
+            path: script_path.to_string_lossy().into_owned(),
+            enabled: true,
+            triggers: vec![ScriptTriggerConfig::OnTagChange {
+                path: "rockwell-1/Pressure".into(),
+            }],
+            handler_timeout_ms: None,
+        }],
+        ScriptHostOptions::default(),
+    ));
+    let mut host_events = host.subscribe_events();
+    server::set_default_script_host(host);
+    timeout(Duration::from_secs(5), async {
+        loop {
+            if let Ok(ScriptEvent::Status {
+                status: ScriptStatus::Ready,
+                ..
+            }) = host_events.recv().await
+            {
+                return;
+            }
+        }
+    })
+    .await
+    .expect("script worker should become ready");
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr: SocketAddr = listener.local_addr().unwrap();
+    let server = tokio::spawn(server::serve(listener, store.clone()));
+
+    let (mut ws, _) = connect_async(format!("ws://{addr}")).await.unwrap();
+    send_client(
+        &mut ws,
+        ClientMessage::ScriptSubscribe {
+            project_id: "other-project".into(),
+        },
+    )
+    .await;
+    send_client(
+        &mut ws,
+        ClientMessage::ScriptSubscribe {
+            project_id: "phase1-demo".into(),
+        },
+    )
+    .await;
+    store.publish("rockwell-1/Pressure", TagValue::Real(250.0), Quality::Good);
+
+    let event = timeout(Duration::from_millis(1_000), async {
+        loop {
+            if let ServerMessage::ScriptEvent {
+                project_id,
+                script_id,
+                event_kind,
+                message,
+                ..
+            } = next_message(&mut ws, Duration::from_millis(1_000)).await
+            {
+                if event_kind == "log" {
+                    return (project_id, script_id, message);
+                }
+            }
+        }
+    })
+    .await
+    .expect("script log event should be forwarded");
+    assert_eq!(event.0, "phase1-demo");
+    assert_eq!(event.1, "logger");
+    assert_eq!(event.2.as_deref(), Some("pressure changed"));
 
     server.abort();
 }

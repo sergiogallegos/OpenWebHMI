@@ -5,6 +5,9 @@ import { ConnectGateway } from "./modules/ConnectGateway";
 import { PreviewPane } from "./modules/PreviewPane";
 import { ProjectExplorer } from "./modules/ProjectExplorer";
 import { PropertyPanel } from "./modules/PropertyPanel";
+import { ScriptEditor } from "./modules/ScriptEditor";
+import { ScriptErrorPane } from "./modules/ScriptErrorPane";
+import { ScriptList } from "./modules/ScriptList";
 import { TagBrowser } from "./modules/TagBrowser";
 import { UserAdmin } from "./modules/UserAdmin";
 import { ViewEditor } from "./modules/ViewEditor";
@@ -32,7 +35,9 @@ export function App() {
   const [gatewayUrl, setGatewayUrl] = useState(DEFAULT_GATEWAY_URL);
   const [project, setProject] = useState<DesignerProject | null>(null);
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null);
-  const [selectedModule, setSelectedModule] = useState<"views" | "alarms">("views");
+  const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
+  const [selectedModule, setSelectedModule] = useState<"views" | "alarms" | "scripts">("views");
+  const [scriptGoToLine, setScriptGoToLine] = useState<number | null>(null);
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -46,6 +51,10 @@ export function App() {
   const tagPaths = useMemo(
     () => project?.tags.map((tag) => tag.path).sort() ?? [],
     [project],
+  );
+  const selectedScript = useMemo(
+    () => project?.scripts.find((script) => script.id === selectedScriptId) ?? null,
+    [project, selectedScriptId],
   );
 
   const connect = async (url: string, username: string, password: string) => {
@@ -63,6 +72,7 @@ export function App() {
       clientRef.current = client;
       setProject(loaded);
       setSelectedViewId(loaded.views[0]?.id ?? null);
+      setSelectedScriptId(loaded.scripts[0]?.id ?? null);
       setSelectedComponentId(loaded.views[0]?.root.id ?? null);
       setConnection("connected");
       setSaveState("saved");
@@ -206,6 +216,10 @@ export function App() {
           setSelectedComponentId(view?.root.id ?? null);
         }}
         onOpenAlarms={() => setSelectedModule("alarms")}
+        onOpenScripts={() => {
+          setSelectedModule("scripts");
+          setSelectedScriptId((current) => current ?? project.scripts[0]?.id ?? null);
+        }}
         onAddView={addView}
         onRenameView={renameView}
       />
@@ -243,6 +257,28 @@ export function App() {
               saving={saveState === "saving"}
               onSave={saveAlarms}
             />
+          ) : selectedModule === "scripts" ? (
+            <>
+              <ScriptList
+                client={clientRef.current!}
+                projectId={project.id}
+                scripts={project.scripts}
+                selectedScriptId={selectedScriptId}
+                onSelect={(scriptId) => {
+                  setSelectedScriptId(scriptId);
+                  setScriptGoToLine(null);
+                }}
+                onScriptsChanged={(scripts) =>
+                  setProject((current) => (current ? { ...current, scripts } : current))
+                }
+              />
+              <ScriptEditor
+                client={clientRef.current!}
+                projectId={project.id}
+                script={selectedScript}
+                goToLine={scriptGoToLine}
+              />
+            </>
           ) : selectedView ? (
             <>
               <ViewEditor
@@ -279,6 +315,18 @@ export function App() {
           viewId={selectedViewId}
           reloadKey={previewReload}
         />
+        {selectedModule === "scripts" ? (
+          <ScriptErrorPane
+            client={clientRef.current!}
+            projectId={project.id}
+            selectedScriptId={selectedScriptId}
+            onOpenScript={(scriptId, line) => {
+              setSelectedModule("scripts");
+              setSelectedScriptId(scriptId);
+              setScriptGoToLine(line ?? null);
+            }}
+          />
+        ) : null}
       </section>
       <TagBrowser
         tags={project.tags}

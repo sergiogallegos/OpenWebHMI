@@ -97,6 +97,7 @@ impl WorkerProc {
         &mut self,
         store: TagStore,
         write_sink: Arc<dyn TagWriteSink>,
+        project_id: String,
         events: broadcast::Sender<ScriptEvent>,
     ) -> anyhow::Result<tokio::task::JoinHandle<()>> {
         let Some(mut reader) = self.reader.take() else {
@@ -119,6 +120,7 @@ impl WorkerProc {
                     WorkerFrame::Rpc { id, method, args } => {
                         let response = handle_rpc(
                             &script_id,
+                            &project_id,
                             &store,
                             write_sink.as_ref(),
                             &events,
@@ -143,6 +145,7 @@ impl WorkerProc {
                     WorkerFrame::TriggerError { id, error } => {
                         warn!(%script_id, error = %error, "script trigger failed");
                         let _ = events.send(ScriptEvent::Error {
+                            project_id: project_id.clone(),
                             script_id: script_id.clone(),
                             message: error.clone(),
                         });
@@ -153,6 +156,7 @@ impl WorkerProc {
                     WorkerFrame::ScriptError { message, traceback } => {
                         warn!(%script_id, %message, ?traceback, "script error");
                         let _ = events.send(ScriptEvent::Error {
+                            project_id: project_id.clone(),
                             script_id: script_id.clone(),
                             message,
                         });
@@ -219,6 +223,7 @@ impl WorkerProc {
 
 async fn handle_rpc(
     script_id: &str,
+    project_id: &str,
     store: &TagStore,
     write_sink: &dyn TagWriteSink,
     events: &broadcast::Sender<ScriptEvent>,
@@ -264,6 +269,7 @@ async fn handle_rpc(
             let args: UtilLogArgs = serde_json::from_value(args).map_err(|err| err.to_string())?;
             info!(script_id, message = %args.message, "script log");
             let _ = events.send(ScriptEvent::Log {
+                project_id: project_id.to_string(),
                 script_id: script_id.to_string(),
                 message: args.message,
             });

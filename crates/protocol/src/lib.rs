@@ -116,6 +116,18 @@ pub enum ClientMessage {
         #[serde(default)]
         note: Option<String>,
     },
+    /// Subscribe to script lifecycle/log/error events.
+    #[serde(rename = "script.subscribe")]
+    ScriptSubscribe {
+        /// Project id.
+        project_id: String,
+    },
+    /// Unsubscribe from script lifecycle/log/error events.
+    #[serde(rename = "script.unsubscribe")]
+    ScriptUnsubscribe {
+        /// Project id.
+        project_id: String,
+    },
     /// Subscribe to live updates for one or more tag paths.
     #[serde(rename = "tag.subscribe")]
     TagSubscribe {
@@ -191,6 +203,28 @@ pub enum ClientMessage {
         artifact: ArtifactKind,
         /// Artifact body.
         body: serde_json::Value,
+    },
+    /// Read a single project artifact.
+    #[serde(rename = "project.read_artifact")]
+    ProjectReadArtifact {
+        /// Optional request id echoed in artifact result.
+        #[serde(default)]
+        request_id: Option<String>,
+        /// Project id.
+        project_id: String,
+        /// Artifact to read.
+        artifact: ArtifactKind,
+    },
+    /// Delete a single project artifact.
+    #[serde(rename = "project.delete_artifact")]
+    ProjectDeleteArtifact {
+        /// Optional request id echoed in delete result.
+        #[serde(default)]
+        request_id: Option<String>,
+        /// Project id.
+        project_id: String,
+        /// Artifact to delete.
+        artifact: ArtifactKind,
     },
     /// Open a view and request its current definition.
     #[serde(rename = "view.open")]
@@ -353,6 +387,28 @@ pub enum ServerMessage {
         /// New project version.
         version: u64,
     },
+    /// Body of a project artifact read.
+    #[serde(rename = "project.artifact")]
+    ProjectArtifact {
+        /// Optional request id echoed from client.
+        request_id: Option<String>,
+        /// Project id.
+        project_id: String,
+        /// Artifact read.
+        artifact: ArtifactKind,
+        /// Artifact body, or `null` when missing.
+        body: serde_json::Value,
+    },
+    /// Result of a project artifact delete.
+    #[serde(rename = "project.delete_result")]
+    ProjectDeleteResult {
+        /// Optional request id echoed from client.
+        request_id: Option<String>,
+        /// Project id.
+        project_id: String,
+        /// Artifact deleted.
+        artifact: ArtifactKind,
+    },
     /// View definition for an opened view.
     #[serde(rename = "view.definition")]
     ViewDefinition {
@@ -390,6 +446,22 @@ pub enum ServerMessage {
         script_id: String,
         /// Error message.
         message: String,
+    },
+    /// Streaming script lifecycle/log/error event.
+    #[serde(rename = "script.event")]
+    ScriptEvent {
+        /// Project id.
+        project_id: String,
+        /// Script id.
+        script_id: String,
+        /// Event kind: `status`, `log`, or `error`.
+        event_kind: String,
+        /// Optional status value for `status` events.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        status: Option<String>,
+        /// Optional message for `log` and `error` events.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
     },
 }
 
@@ -605,6 +677,34 @@ mod tests {
     }
 
     #[test]
+    fn project_read_artifact_wire_form_is_stable() {
+        let m = ClientMessage::ProjectReadArtifact {
+            request_id: Some("script-r1".into()),
+            project_id: "demo".into(),
+            artifact: ArtifactKind::ScriptSource {
+                id: "derived-setpoint".into(),
+            },
+        };
+        assert_eq!(
+            serde_json::to_string(&m).unwrap(),
+            r#"{"kind":"project.read_artifact","request_id":"script-r1","project_id":"demo","artifact":{"kind":"script_source","id":"derived-setpoint"}}"#
+        );
+
+        let result = ServerMessage::ProjectArtifact {
+            request_id: Some("script-r1".into()),
+            project_id: "demo".into(),
+            artifact: ArtifactKind::ScriptSource {
+                id: "derived-setpoint".into(),
+            },
+            body: serde_json::json!({"source":"import system\n"}),
+        };
+        assert_eq!(
+            serde_json::to_string(&result).unwrap(),
+            r#"{"kind":"project.artifact","request_id":"script-r1","project_id":"demo","artifact":{"kind":"script_source","id":"derived-setpoint"},"body":{"source":"import system\n"}}"#
+        );
+    }
+
+    #[test]
     fn view_tree_round_trips() {
         let view = sample_view();
         let json = serde_json::to_string(&view).unwrap();
@@ -664,6 +764,41 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&error).unwrap(),
             r#"{"kind":"script.error","request_id":"r1","script_id":"derived-setpoint","message":"boom"}"#
+        );
+    }
+
+    #[test]
+    fn script_streaming_wire_form_is_stable() {
+        let subscribe = ClientMessage::ScriptSubscribe {
+            project_id: "phase1-demo".into(),
+        };
+        assert_eq!(
+            serde_json::to_string(&subscribe).unwrap(),
+            r#"{"kind":"script.subscribe","project_id":"phase1-demo"}"#
+        );
+
+        let unsubscribe = ClientMessage::ScriptUnsubscribe {
+            project_id: "phase1-demo".into(),
+        };
+        assert_eq!(
+            serde_json::to_string(&unsubscribe).unwrap(),
+            r#"{"kind":"script.unsubscribe","project_id":"phase1-demo"}"#
+        );
+
+        let event = ServerMessage::ScriptEvent {
+            project_id: "phase1-demo".into(),
+            script_id: "derived-setpoint".into(),
+            event_kind: "error".into(),
+            status: None,
+            message: Some("NameError: name 'sytem' is not defined".into()),
+        };
+        assert_eq!(
+            serde_json::to_string(&event).unwrap(),
+            r#"{"kind":"script.event","project_id":"phase1-demo","script_id":"derived-setpoint","event_kind":"error","message":"NameError: name 'sytem' is not defined"}"#
+        );
+        assert_eq!(
+            serde_json::from_str::<ServerMessage>(&serde_json::to_string(&event).unwrap()).unwrap(),
+            event
         );
     }
 

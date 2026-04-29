@@ -4,9 +4,10 @@ import type { DesignerProject } from "../lib/designerClient";
 export type ProjectExplorerProps = {
   project: DesignerProject;
   selectedViewId: string | null;
-  selectedModule: "views" | "alarms";
+  selectedModule: "views" | "alarms" | "scripts";
   onOpenView: (viewId: string) => void;
   onOpenAlarms: () => void;
+  onOpenScripts: () => void;
   onAddView: () => void;
   onRenameView: (viewId: string) => void;
 };
@@ -18,6 +19,7 @@ export function ProjectExplorer({
   selectedModule,
   onOpenView,
   onOpenAlarms,
+  onOpenScripts,
   onAddView,
   onRenameView,
 }: ProjectExplorerProps) {
@@ -44,6 +46,16 @@ export function ProjectExplorer({
           }}
         >
           Alarms
+        </button>
+        <button
+          type="button"
+          onClick={onOpenScripts}
+          style={{
+            ...styles.treeButton,
+            ...(selectedModule === "scripts" ? styles.selected : null),
+          }}
+        >
+          Scripts
         </button>
       </section>
 

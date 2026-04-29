@@ -75,6 +75,7 @@ def pressure_changed(tag):
     );
     let store = TagStore::new();
     let host = ScriptHost::spawn(
+        "phase1-demo",
         store.clone(),
         std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
@@ -115,6 +116,7 @@ def pressure_changed(tag):
     );
     let store = TagStore::new();
     let host = ScriptHost::spawn(
+        "phase1-demo",
         store.clone(),
         std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
@@ -152,6 +154,7 @@ def pressure_changed(tag):
     );
     let store = TagStore::new();
     let host = ScriptHost::spawn(
+        "phase1-demo",
         store.clone(),
         std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, Some(100))],
@@ -197,6 +200,7 @@ def pressure_changed(tag):
     );
     let store = TagStore::new();
     let host = ScriptHost::spawn(
+        "phase1-demo",
         store.clone(),
         std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
@@ -208,7 +212,13 @@ def pressure_changed(tag):
     store.publish("rockwell-1/Pressure", TagValue::Real(5.0), Quality::Good);
     timeout(Duration::from_secs(5), async {
         loop {
-            if let Ok(ScriptEvent::Log { script_id, message }) = events.recv().await {
+            if let Ok(ScriptEvent::Log {
+                project_id,
+                script_id,
+                message,
+            }) = events.recv().await
+            {
+                assert_eq!(project_id, "phase1-demo");
                 assert_eq!(script_id, "derived-setpoint");
                 assert_eq!(message, "pressure changed");
                 return;
@@ -248,6 +258,7 @@ def pressure_changed(tag):
     );
     let store = TagStore::new();
     let host = ScriptHost::spawn(
+        "phase1-demo",
         store.clone(),
         std::sync::Arc::new(MemorySink::new(store.clone())),
         vec![script_config(script, None)],
@@ -296,6 +307,7 @@ def pressure_changed(tag):
     let store = TagStore::new();
     let sink = std::sync::Arc::new(RecordingSink::default());
     let host = ScriptHost::spawn(
+        "phase1-demo",
         store.clone(),
         sink.clone(),
         vec![script_config(script, None)],
@@ -354,6 +366,7 @@ def pressure_changed(tag):
     );
     let store = TagStore::new();
     let host = ScriptHost::spawn(
+        "phase1-demo",
         store.clone(),
         std::sync::Arc::new(BusySink {
             memory: MemorySink::new(store.clone()),

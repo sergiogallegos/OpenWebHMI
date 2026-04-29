@@ -54,6 +54,8 @@ pub enum ScriptStatus {
 pub enum ScriptEvent {
     /// Script status changed.
     Status {
+        /// Project id.
+        project_id: String,
         /// Script id.
         script_id: String,
         /// New status.
@@ -61,6 +63,8 @@ pub enum ScriptEvent {
     },
     /// Script wrote `system.util.log`.
     Log {
+        /// Project id.
+        project_id: String,
         /// Script id.
         script_id: String,
         /// Log message.
@@ -68,6 +72,8 @@ pub enum ScriptEvent {
     },
     /// Script produced an error.
     Error {
+        /// Project id.
+        project_id: String,
         /// Script id.
         script_id: String,
         /// Error message.
@@ -101,17 +107,28 @@ enum ControlMessage {
 impl ScriptHost {
     /// Spawn a script host for the supplied project script configs.
     pub fn spawn(
+        project_id: impl Into<String>,
         store: TagStore,
         write_sink: Arc<dyn TagWriteSink>,
         scripts: Vec<ScriptConfig>,
         options: ScriptHostOptions,
     ) -> ScriptHost {
+        let project_id = project_id.into();
         let (control, control_rx) = mpsc::channel(16);
         let (events, _) = broadcast::channel(1024);
         let task_events = events.clone();
         let task_control = control.clone();
         let task = tokio::spawn(async move {
-            run_host(store, write_sink, scripts, options, control_rx, task_events).await;
+            run_host(
+                project_id,
+                store,
+                write_sink,
+                scripts,
+                options,
+                control_rx,
+                task_events,
+            )
+            .await;
         });
         ScriptHost {
             control: task_control,
@@ -160,6 +177,7 @@ impl ScriptHostHandle {
 }
 
 async fn run_host(
+    project_id: String,
     store: TagStore,
     write_sink: Arc<dyn TagWriteSink>,
     scripts: Vec<ScriptConfig>,
@@ -174,6 +192,7 @@ async fn run_host(
         tokio::spawn(run_script_supervisor(
             store.clone(),
             write_sink.clone(),
+            project_id.clone(),
             script,
             options.clone(),
             events.clone(),
@@ -229,6 +248,7 @@ enum WorkerControl {
 async fn run_script_supervisor(
     store: TagStore,
     write_sink: Arc<dyn TagWriteSink>,
+    project_id: String,
     script: ScriptConfig,
     options: ScriptHostOptions,
     events: broadcast::Sender<ScriptEvent>,
@@ -247,6 +267,7 @@ async fn run_script_supervisor(
     let mut backoff = INITIAL_BACKOFF;
     loop {
         let _ = events.send(ScriptEvent::Status {
+            project_id: project_id.clone(),
             script_id: script.id.clone(),
             status: ScriptStatus::Starting,
         });
@@ -258,6 +279,7 @@ async fn run_script_supervisor(
                     "script worker ready"
                 );
                 let _ = events.send(ScriptEvent::Status {
+                    project_id: project_id.clone(),
                     script_id: script.id.clone(),
                     status: ScriptStatus::Ready,
                 });
@@ -265,6 +287,7 @@ async fn run_script_supervisor(
                 let runtime = ReadyWorkerRuntime {
                     store: &store,
                     write_sink: write_sink.clone(),
+                    project_id: &project_id,
                     script_id: &script.id,
                     tag_paths: &tag_paths,
                     timeout,
@@ -274,6 +297,7 @@ async fn run_script_supervisor(
                     warn!(script_id = %script.id, error = %err, "script worker restarting");
                 } else {
                     let _ = events.send(ScriptEvent::Status {
+                        project_id: project_id.clone(),
                         script_id: script.id.clone(),
                         status: ScriptStatus::Stopped,
                     });
@@ -284,6 +308,7 @@ async fn run_script_supervisor(
         }
 
         let _ = events.send(ScriptEvent::Status {
+            project_id: project_id.clone(),
             script_id: script.id.clone(),
             status: ScriptStatus::Restarting,
         });
@@ -295,6 +320,7 @@ async fn run_script_supervisor(
 struct ReadyWorkerRuntime<'a> {
     store: &'a TagStore,
     write_sink: Arc<dyn TagWriteSink>,
+    project_id: &'a str,
     script_id: &'a str,
     tag_paths: &'a [String],
     timeout: Duration,
@@ -309,6 +335,7 @@ async fn run_ready_worker(
     let _reader = worker.start_reader(
         runtime.store.clone(),
         runtime.write_sink,
+        runtime.project_id.to_string(),
         runtime.events.clone(),
     )?;
     let mut receivers = runtime
@@ -342,6 +369,7 @@ async fn run_ready_worker(
                 if let Err(err) = worker.invoke_tag_change(snapshot, runtime.timeout).await {
                     warn!(script_id = %runtime.script_id, error = %err, "script handler failed");
                     let _ = runtime.events.send(ScriptEvent::Error {
+                        project_id: runtime.project_id.to_string(),
                         script_id: runtime.script_id.to_string(),
                         message: err.to_string(),
                     });

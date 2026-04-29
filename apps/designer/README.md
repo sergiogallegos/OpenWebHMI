@@ -41,3 +41,7 @@ pnpm --filter @openwebhmi/designer tauri dev
 13. Add a `Trend` component with `windowSeconds=60` and `tagPaths` set to `rockwell-1/Pressure, rockwell-1/Counter`.
 14. Confirm the runtime preview shows two SVG trend lines and appends live samples as the simulator updates.
 15. Confirm the bundled `derived-setpoint` script writes `rockwell-1/Setpoint` to half of `rockwell-1/Pressure` whenever pressure is above `100`.
+16. Open `Scripts`, select `derived-setpoint`, and change the multiplier from `0.5` to `0.6`.
+17. Confirm `Setpoint` tracks roughly `0.6 * Pressure` within the next second while pressure remains above `100`.
+18. Introduce a typo such as `sytem.tag.read`, save, and confirm the traceback appears in Recent events.
+19. Click the traceback row and confirm the editor opens the offending line, then fix the typo and confirm the script resumes.

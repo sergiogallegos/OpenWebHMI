@@ -82,6 +82,62 @@ fn save_list_load_and_read_artifacts() {
 }
 
 #[test]
+fn script_source_artifact_round_trips_as_raw_python() {
+    let dir = tempdir().unwrap();
+    let store = ProjectStore::open(dir.path()).unwrap();
+    store
+        .save_artifact("demo", ArtifactKind::ProjectMeta, meta_body())
+        .unwrap();
+    store
+        .save_artifact(
+            "demo",
+            ArtifactKind::Tags,
+            json!([{ "path": "rockwell-1/Pressure", "driver": "rockwell-1", "address": "Pressure" }]),
+        )
+        .unwrap();
+    store
+        .save_artifact(
+            "demo",
+            ArtifactKind::Script {
+                id: "derived-setpoint".into(),
+            },
+            json!({
+                "id": "derived-setpoint",
+                "path": "derived_setpoint.py",
+                "enabled": true,
+                "triggers": [{ "kind": "on_tag_change", "path": "rockwell-1/Pressure" }]
+            }),
+        )
+        .unwrap();
+
+    let source = "import system\n\nsystem.util.log('saved')\n";
+    store
+        .save_artifact(
+            "demo",
+            ArtifactKind::ScriptSource {
+                id: "derived-setpoint".into(),
+            },
+            json!({ "source": source }),
+        )
+        .unwrap();
+
+    let path = dir.path().join("demo/scripts/derived_setpoint.py");
+    assert_eq!(std::fs::read_to_string(path).unwrap(), source);
+    assert_eq!(
+        store
+            .read_artifact(
+                "demo",
+                ArtifactKind::ScriptSource {
+                    id: "derived-setpoint".into(),
+                },
+            )
+            .unwrap()
+            .unwrap(),
+        json!({ "source": source })
+    );
+}
+
+#[test]
 fn versions_increment_on_each_save() {
     let dir = tempdir().unwrap();
     let store = ProjectStore::open(dir.path()).unwrap();

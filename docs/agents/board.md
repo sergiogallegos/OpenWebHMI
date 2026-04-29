@@ -4,19 +4,9 @@
 
 ## Phase 3 — Core SCADA features
 
-> Phase 3 is the largest phase by scope: alarms + history + trends + auth + scripting + script editor. Seven tasks. Most can run in parallel — the dependency graph below shows which ones gate others. Phase 3 exit criterion (per `docs/roadmap.md`): the demo HMI raises a high-temperature alarm, trends a process variable for 24h, requires login with an `Operator` role to write tags, and runs a Python script that writes a derived setpoint based on two inputs.
+**🎉 Phase 3 code-complete.** All seven tasks merged (O, Q, S, R, P, T, U) plus the V closeout follow-up. The demo HMI now has the full SCADA stack: alarms + history + auth + alarm UI + trends + scripting + Monaco script editor with live error surfacing. Awaiting **manual-smoke validation** of the full 19-step checklist in [`apps/designer/README.md`](../../apps/designer/README.md) (covers Phase 2 and Phase 3 together) before tagging `v0.3.0`.
 
-| Id | Title | Owner | Status | Last update | File |
-|---|---|---|---|---|---|
-| CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (unblocked, refreshed) | 2026-04-28 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
-
-### Phase 3 dependency graph
-
-```
-CODEX-U  (script editor)         ← unblocked (T merged); last open Phase 3 task
-```
-
-**One unblocked task: U** — the last in Phase 3. CODEX-V (script-write routing fix) merged, so the demo HMI's `derived-setpoint` script now actually writes to the simulator's PLC and persists across poll cycles. Phase 3 exit criterion is meaningfully met for everything except the script editor.
+*(no open Phase 3 tasks)*
 
 ## Phase 2 — Designer MVP
 
@@ -55,6 +45,7 @@ CODEX-U  (script editor)         ← unblocked (T merged); last open Phase 3 tas
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | `151afdb` | 3 |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | `f8b74a9` | 3 |
 | CODEX-V | Route `system.tag.write` through per-driver write queue | codex | `9db307e` | 3 |
+| CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | _pending merge_ | 3 |
 
 ## Conventions
 

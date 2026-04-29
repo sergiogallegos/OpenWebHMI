@@ -76,7 +76,12 @@ async fn main() -> anyhow::Result<()> {
         spawn_history_recorder(store.clone(), project_store.clone(), &project)?;
         spawn_alarm_runtime(store.clone(), project_store.clone(), &project)?;
         let driver_handles = project::spawn_project(project.clone(), store.clone())?;
-        _script_host = spawn_script_runtime(store.clone(), &project, driver_handles.clone());
+        _script_host = spawn_script_runtime(
+            store.clone(),
+            project_store.clone(),
+            &project,
+            driver_handles.clone(),
+        );
         driver_handles
     } else {
         project::DriverHandles::new()
@@ -95,9 +100,10 @@ async fn main() -> anyhow::Result<()> {
 
 fn spawn_script_runtime(
     store: TagStore,
+    project_store: Option<ProjectStore>,
     project: &openwebhmi_project_store::Project,
     driver_handles: project::DriverHandles,
-) -> Option<ScriptHost> {
+) -> Option<Arc<ScriptHost>> {
     let scripts = project
         .scripts
         .iter()
@@ -114,12 +120,51 @@ fn spawn_script_runtime(
         "starting project scripts"
     );
     let write_sink = std::sync::Arc::new(GatewayTagWriteSink::new(driver_handles, store.clone()));
-    Some(ScriptHost::spawn(
+    let host = Arc::new(ScriptHost::spawn(
+        project.id.clone(),
         store,
         write_sink,
         scripts,
         ScriptHostOptions::default(),
-    ))
+    ));
+    server::set_default_script_host(host.clone());
+    if let Some(project_store) = project_store {
+        let project_id = project.id.clone();
+        let handle = host.handle();
+        tokio::spawn(async move {
+            let mut changes = project_store.subscribe_changes(Some(&project_id));
+            loop {
+                match changes.recv().await {
+                    Ok(change)
+                        if change.project_id == project_id
+                            && matches!(
+                                change.artifact,
+                                ArtifactKind::ScriptSource { .. } | ArtifactKind::Script { .. }
+                            ) =>
+                    {
+                        let script_id = match change.artifact {
+                            ArtifactKind::ScriptSource { id } | ArtifactKind::Script { id } => id,
+                            _ => continue,
+                        };
+                        if let Err(err) = handle.kill_worker(script_id.clone()).await {
+                            warn!(
+                                project_id = %project_id,
+                                script_id = %script_id,
+                                error = %err,
+                                "failed to restart script after project change"
+                            );
+                        }
+                    }
+                    Ok(_) => {}
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                        warn!(project_id = %project_id, skipped, "script project change subscriber lagged");
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => return,
+                }
+            }
+        });
+    }
+    Some(host)
 }
 
 fn spawn_alarm_runtime(
