@@ -8,7 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (unblocked) | 2026-04-28 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
+| CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (unblocked, refreshed) | 2026-04-28 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
 
 ### Phase 3 dependency graph
 
