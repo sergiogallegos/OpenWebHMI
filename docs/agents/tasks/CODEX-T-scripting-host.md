@@ -5,7 +5,7 @@ owner: codex
 phase: 3
 status: open
 created: 2026-04-27
-last-update: 2026-04-27 claude
+last-update: 2026-04-28 claude
 ---
 
 # CODEX-T — `crates/scripting`
@@ -128,6 +128,7 @@ For v1: per-worker `tokio::time::timeout` on each trigger handler invocation (de
 - **Buffered stdout deadlocks**: Python's stdout is line-buffered by default but blocks may collect. Set `PYTHONUNBUFFERED=1` in the worker env or use `sys.stdout.flush()` after every write.
 - **JSON-RPC framing**: use `\n`-delimited JSON (one JSON object per line). Document this; don't invent length-prefixed framing.
 - **Don't silently swallow Python exceptions** — write them to a `script_error` event the host logs at WARN, and surface to the designer's script editor (CODEX-U) on next view of the script.
+- **Auth bypass on tag writes**: scripts call `system.tag.write` through the in-process `TagStore` directly, not through the role-gated WS path that CODEX-S guards. That's the correct design (the gateway *is* the trusted process), but every script-driven write must be logged at INFO with `script_id` + tag path + value so post-hoc audit can answer "why did Setpoint change at 03:14?". The journal goes through `tracing` for v1; a dedicated `script_audit` SQLite table can land in v1.1.
 
 ## Codex log
 
