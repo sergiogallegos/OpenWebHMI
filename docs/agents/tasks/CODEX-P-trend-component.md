@@ -134,6 +134,6 @@ Acceptance criteria — all five boxes verified.
 
 ## Verdict
 
-**Merged.** The Trend component closes the third Phase 3 deliverable (after alarms and historian). Demo HMI can now define `Pressure > 200`, watch it fire on the AlarmTable, ack it, and chart Pressure + Counter on a Trend with live append. Phase 3 remaining: T (scripting host) + U (script editor, blocked-by T).
+**Merged at `151afdb`.** The Trend component closes the third Phase 3 deliverable (after alarms and historian). Demo HMI can now define `Pressure > 200`, watch it fire on the AlarmTable, ack it, and chart Pressure + Counter on a Trend with live append. Phase 3 remaining: T (scripting host) + U (script editor, blocked-by T).
 
 Five v1.1 polish items added across this submission (pathForQuality segmentation, useMemo cache miss, effect-deps cycle, readHistory disconnect rejection, time-axis ticks). Together with the prior CODEX-O/Q/R/S backlog, the v1.1 hardening list is now ~15 items — appropriate volume for a single bundled PR after Phase 3 closes.

@@ -54,7 +54,7 @@ CODEX-U  (script editor)         blocked-by T
 | CODEX-S | `crates/auth` — local users + roles + JWT sessions + per-view ACLs | codex | `7eff30a` | 3 |
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | `ff56780` | 3 |
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | `29be0e9` | 3 |
-| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | _pending merge_ | 3 |
+| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | `151afdb` | 3 |
 
 ## Conventions
 
