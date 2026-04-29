@@ -167,7 +167,7 @@ Acceptance criteria — all six boxes verified (after the Claude-applied vite pl
 
 ## Verdict
 
-**Merged.** Phase 3 is **code-complete**. Backend trio (historian + alarms + auth) + alarm UI + trends + scripting host + script-write driver routing + Monaco script editor with live error pane — the demo HMI now has the full SCADA stack end-to-end:
+**Merged at `cfa1cc0`.** Phase 3 is **code-complete**. Backend trio (historian + alarms + auth) + alarm UI + trends + scripting host + script-write driver routing + Monaco script editor with live error pane — the demo HMI now has the full SCADA stack end-to-end:
 
 - Login as Operator, see the dashboard.
 - `Pressure > 200` raises a priority-2 alarm, table shows it, ack with note.

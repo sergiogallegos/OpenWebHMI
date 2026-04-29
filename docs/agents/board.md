@@ -45,7 +45,7 @@
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | `151afdb` | 3 |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | `f8b74a9` | 3 |
 | CODEX-V | Route `system.tag.write` through per-driver write queue | codex | `9db307e` | 3 |
-| CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | _pending merge_ | 3 |
+| CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | `cfa1cc0` | 3 |
 
 ## Conventions
 
