@@ -53,7 +53,7 @@ CODEX-U  (script editor)         ← unblocked (T merged)
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | `ff56780` | 3 |
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | `29be0e9` | 3 |
 | CODEX-P | `Trend` component — multi-pen historical + live chart | codex | `151afdb` | 3 |
-| CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | _pending merge_ | 3 |
+| CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | `f8b74a9` | 3 |
 
 ## Conventions
 

@@ -172,7 +172,7 @@ Acceptance criteria — all five boxes verified.
 
 ## Verdict
 
-**Merged.** CODEX-T closes the third architectural pillar of Phase 3 (after historian and alarms). CPython workers run user scripts in subprocess isolation, crash recovery is solid, and the Phase 1 demo gains a closed-loop derived-setpoint script (modulo the cache-vs-driver brief error noted above).
+**Merged at `f8b74a9`.** CODEX-T closes the third architectural pillar of Phase 3 (after historian and alarms). CPython workers run user scripts in subprocess isolation, crash recovery is solid, and the Phase 1 demo gains a closed-loop derived-setpoint script (modulo the cache-vs-driver brief error noted above).
 
 Six items added to v1.1 polish: cache-vs-driver write semantics (my brief error — biggest one), load-time error eventing, `recv_any` polling cost, broadcast lag visibility, unused Shutdown frame, scripts.json envelope shape. The v1.1 backlog is now ~21 items spanning O/Q/R/P/S/T — appropriate volume for a single hardening PR after Phase 3 closes with U.
 
