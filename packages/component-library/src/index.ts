@@ -9,6 +9,7 @@ export type {
   RuntimeContext,
   AlarmEvent,
   AlarmSubscribeOptions,
+  HistoryReadOptions,
 } from "./types";
 export { componentRegistry, components } from "./registry";
 export type { AlarmTableProps } from "./components/AlarmTable";
@@ -19,6 +20,8 @@ export type { ValueDisplayProps } from "./components/ValueDisplay";
 export { ValueDisplay } from "./components/ValueDisplay";
 export type { NumericInputProps } from "./components/NumericInput";
 export { NumericInput } from "./components/NumericInput";
+export type { TrendProps } from "./components/Trend";
+export { Trend } from "./components/Trend";
 export type { IndicatorProps } from "./components/Indicator";
 export { Indicator } from "./components/Indicator";
 export type { ImageProps } from "./components/Image";

@@ -37,3 +37,5 @@ pnpm --filter @openwebhmi/designer tauri dev
 10. Edit the `Setpoint` NumericInput in the preview and confirm the value loops through `tag.write`.
 11. Open `Alarms` in the project explorer and define `rockwell-1/Pressure > 200` with priority `2`.
 12. Add an `AlarmTable` component to the `home` view, force the simulator pressure high, confirm the table shows the active alarm, ack it, then clear the pressure and confirm the row clears.
+13. Add a `Trend` component with `windowSeconds=60` and `tagPaths` set to `rockwell-1/Pressure, rockwell-1/Counter`.
+14. Confirm the runtime preview shows two SVG trend lines and appends live samples as the simulator updates.

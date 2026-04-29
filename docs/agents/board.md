@@ -8,19 +8,17 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | open (unblocked) | 2026-04-28 claude | [tasks/CODEX-P-trend-component.md](tasks/CODEX-P-trend-component.md) |
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | open (no blockers) | 2026-04-27 claude | [tasks/CODEX-T-scripting-host.md](tasks/CODEX-T-scripting-host.md) |
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | open (blocked-by T) | 2026-04-27 claude | [tasks/CODEX-U-script-editor.md](tasks/CODEX-U-script-editor.md) |
 
 ### Phase 3 dependency graph
 
 ```
-CODEX-P  (Trend component)       ← unblocked
 CODEX-T  (scripting host)        ← no blockers
 CODEX-U  (script editor)         blocked-by T
 ```
 
-**Two can start in parallel: P, T.** Backend trio O+Q+S complete; alarm operator surface (CODEX-R) merged. The demo HMI now raises + displays + acks the `pressure-high` alarm end-to-end.
+**One unblocked task remains: T.** Backend trio O+Q+S complete; alarm + trend frontend complete (R, P merged). Demo HMI raises + acks the pressure alarm and trends Pressure+Counter end-to-end. Scripting (T → U) closes Phase 3.
 
 ## Phase 2 — Designer MVP
 
@@ -56,6 +54,7 @@ CODEX-U  (script editor)         blocked-by T
 | CODEX-S | `crates/auth` — local users + roles + JWT sessions + per-view ACLs | codex | `7eff30a` | 3 |
 | CODEX-Q | `crates/alarm-engine` — definitions + state machine + journal | codex | `ff56780` | 3 |
 | CODEX-R | `AlarmTable` component + designer alarm config | codex | `29be0e9` | 3 |
+| CODEX-P | `Trend` component — multi-pen historical + live chart | codex | _pending merge_ | 3 |
 
 ## Conventions
 

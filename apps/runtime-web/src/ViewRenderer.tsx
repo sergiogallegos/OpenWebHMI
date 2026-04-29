@@ -1,5 +1,7 @@
 import { componentRegistry, type BoundValue } from "@openwebhmi/component-library";
 import type { AlarmEvent, AlarmSubscribeOptions } from "@openwebhmi/component-library";
+import type { HistoryReadOptions } from "@openwebhmi/component-library";
+import type { HistoryPoint } from "@openwebhmi/protocol";
 import type {
   BindingSource,
   ComponentNode,
@@ -17,6 +19,7 @@ type ViewRendererProps = {
     callback: (event: AlarmEvent) => void,
   ) => () => void;
   onAckAlarm: (alarmId: string, note?: string | null) => void;
+  onReadHistory: (options: HistoryReadOptions) => Promise<HistoryPoint[]>;
 };
 
 export function ViewRenderer({
@@ -26,6 +29,7 @@ export function ViewRenderer({
   onWriteTag,
   onSubscribeAlarms,
   onAckAlarm,
+  onReadHistory,
 }: ViewRendererProps) {
   return (
     <section aria-label={view.title} style={styles.surface}>
@@ -34,6 +38,7 @@ export function ViewRenderer({
         onWriteTag,
         onSubscribeAlarms,
         onAckAlarm,
+        onReadHistory,
       })}
     </section>
   );
@@ -42,6 +47,11 @@ export function ViewRenderer({
 export function collectTagPaths(view: View): string[] {
   const paths = new Set<string>();
   walk(view.root, (node) => {
+    if (node.kind === "Trend") {
+      for (const path of trendTagPaths(node.props)) {
+        paths.add(path);
+      }
+    }
     for (const binding of node.bindings) {
       if (binding.source.kind === "tag") {
         paths.add(binding.source.path);
@@ -62,6 +72,7 @@ function renderNode(
       callback: (event: AlarmEvent) => void,
     ) => () => void;
     onAckAlarm: (alarmId: string, note?: string | null) => void;
+    onReadHistory: (options: HistoryReadOptions) => Promise<HistoryPoint[]>;
   },
 ) {
   const definition = componentRegistry[node.kind];
@@ -87,7 +98,7 @@ function renderNode(
       key={node.id}
       props={props}
       bindings={bindings}
-      context={{ mode: "runtime", ...runtime }}
+      context={{ mode: "runtime", liveValues: boundValues, ...runtime }}
     >
       {children}
     </definition.Render>
@@ -139,6 +150,13 @@ function recordProps(value: unknown): Record<string, unknown> {
     return value as Record<string, unknown>;
   }
   return {};
+}
+
+function trendTagPaths(value: unknown): string[] {
+  const props = recordProps(value);
+  return Array.isArray(props.tagPaths)
+    ? props.tagPaths.filter((path): path is string => typeof path === "string")
+    : [];
 }
 
 function walk(node: ComponentNode, visit: (node: ComponentNode) => void) {

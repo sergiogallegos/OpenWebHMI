@@ -42,6 +42,7 @@ describe("componentRegistry", () => {
       "Indicator",
       "Label",
       "NumericInput",
+      "Trend",
       "ValueDisplay",
     ]);
   });

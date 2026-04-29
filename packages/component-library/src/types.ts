@@ -1,8 +1,8 @@
 import type React from "react";
-import type { Quality, ServerMessage, TagValue } from "@openwebhmi/protocol";
+import type { HistoryPoint, Quality, ServerMessage, TagValue } from "@openwebhmi/protocol";
 
 export type PropSchemaField = {
-  type: "string" | "number" | "boolean" | "color" | "select";
+  type: "string" | "number" | "boolean" | "color" | "select" | "stringList";
   label?: string;
   options?: string[];
   default?: unknown;
@@ -28,9 +28,19 @@ export type AlarmSubscribeOptions = {
   priorityMax?: number | null;
 };
 
+export type HistoryReadOptions = {
+  tagPath: string;
+  tStartMs: number;
+  tEndMs: number;
+  aggregation: string;
+  maxPoints: number;
+};
+
 export type RuntimeContext = {
   mode: "runtime";
   onWriteTag: (path: string, value: TagValue) => void;
+  liveValues?: Record<string, BoundValue | undefined>;
+  onReadHistory?: (options: HistoryReadOptions) => Promise<HistoryPoint[]>;
   projectId?: string;
   onSubscribeAlarms?: (
     options: AlarmSubscribeOptions,

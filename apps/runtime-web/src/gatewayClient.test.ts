@@ -263,6 +263,63 @@ describe("GatewayClient", () => {
     client.disconnect();
   });
 
+  it("sends history.read and resolves matching history.result", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    MockWebSocket.instances = [];
+
+    const client = new GatewayClient({
+      url: "ws://127.0.0.1:8080",
+      webSocketImpl: MockWebSocket,
+    });
+
+    client.connect();
+    const socket = MockWebSocket.instances[0]!;
+    socket.open();
+
+    const request = client.readHistory({
+      tagPath: "rockwell-1/Pressure",
+      tStartMs: 10,
+      tEndMs: 20,
+      aggregation: "raw",
+      maxPoints: 100,
+    });
+    const frame = JSON.parse(socket.sent.at(-1) ?? "{}");
+    expect(frame).toMatchObject({
+      kind: "history.read",
+      tag_path: "rockwell-1/Pressure",
+      t_start_ms: 10,
+      t_end_ms: 20,
+      aggregation: "raw",
+      max_points: 100,
+    });
+
+    socket.onmessage?.({
+      data: JSON.stringify({
+        kind: "history.result",
+        request_id: frame.request_id,
+        tag_path: "rockwell-1/Pressure",
+        points: [
+          {
+            ts_ms: 10,
+            value: { type: "real", value: 42 },
+            quality: "good",
+          },
+        ],
+      }),
+    } as MessageEvent<string>);
+
+    await expect(request).resolves.toEqual([
+      {
+        ts_ms: 10,
+        value: { type: "real", value: 42 },
+        quality: "good",
+      },
+    ]);
+
+    client.disconnect();
+    vi.mocked(Math.random).mockRestore();
+  });
+
   it("subscribes to alarms, routes events, resubscribes, and sends ack", async () => {
     vi.useFakeTimers();
     vi.spyOn(Math, "random").mockReturnValue(0.5);

@@ -184,6 +184,22 @@ function PropInput({
       </select>
     );
   }
+  if (type === "stringList") {
+    return (
+      <textarea
+        value={Array.isArray(value) ? value.join(", ") : String(value)}
+        onChange={(event) =>
+          onChange(
+            event.currentTarget.value
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean),
+          )
+        }
+        style={{ ...styles.input, minHeight: 70, resize: "vertical" }}
+      />
+    );
+  }
   return (
     <input
       type={type === "number" ? "number" : type === "color" ? "color" : "text"}

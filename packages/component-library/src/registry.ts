@@ -5,6 +5,7 @@ import { Image } from "./components/Image";
 import { Indicator } from "./components/Indicator";
 import { Label } from "./components/Label";
 import { NumericInput } from "./components/NumericInput";
+import { Trend } from "./components/Trend";
 import { ValueDisplay } from "./components/ValueDisplay";
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
@@ -15,6 +16,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
   [Image.kind]: Image,
   [Container.kind]: Container,
   [AlarmTable.kind]: AlarmTable,
+  [Trend.kind]: Trend,
 };
 
 export const components = [
@@ -25,4 +27,5 @@ export const components = [
   Image,
   Container,
   AlarmTable,
+  Trend,
 ] as const;

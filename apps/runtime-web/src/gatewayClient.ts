@@ -1,6 +1,7 @@
 import {
   isServerMessage,
   type ClientMessage,
+  type HistoryPoint,
   type Quality,
   type ServerMessage,
   type TagValue,
@@ -26,6 +27,13 @@ export type AlarmSubscribeOptions = {
   projectId: string;
   priorityMin?: number | null;
   priorityMax?: number | null;
+};
+export type HistoryReadOptions = {
+  tagPath: string;
+  tStartMs: number;
+  tEndMs: number;
+  aggregation?: string;
+  maxPoints?: number;
 };
 
 export type GatewayError = Extract<ServerMessage, { kind: "error" }>;
@@ -70,6 +78,13 @@ export class GatewayClient {
   private readonly projectCallbacks = new Map<string, Set<ProjectChangeCallback>>();
   private readonly alarmCallbacks = new Map<string, AlarmSubscription>();
   private readonly errorCallbacks = new Set<ErrorCallback>();
+  private readonly pendingHistory = new Map<
+    string,
+    {
+      resolve: (points: HistoryPoint[]) => void;
+      reject: (error: Error) => void;
+    }
+  >();
   private readonly stateCallbacks = new Set<StateCallback>();
   private readonly lastTagUpdates = new Map<string, TagUpdate>();
   private currentState: ConnectionState = "idle";
@@ -282,6 +297,25 @@ export class GatewayClient {
     this.send({ kind: "alarm.ack", alarm_id: alarmId, note: note ?? null });
   }
 
+  readHistory(options: HistoryReadOptions): Promise<HistoryPoint[]> {
+    const requestId = `history-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    const request = new Promise<HistoryPoint[]>((resolve, reject) => {
+      this.pendingHistory.set(requestId, { resolve, reject });
+    });
+    this.send({
+      kind: "history.read",
+      request_id: requestId,
+      tag_path: options.tagPath,
+      t_start_ms: options.tStartMs,
+      t_end_ms: options.tEndMs,
+      aggregation: options.aggregation ?? "raw",
+      max_points: options.maxPoints ?? 600,
+    });
+    return request;
+  }
+
   disconnect() {
     this.manuallyClosed = true;
     this.clearReconnectTimer();
@@ -355,10 +389,14 @@ export class GatewayClient {
       case "project.changed":
         this.dispatchProjectChange(parsed);
         break;
+      case "history.result":
+        this.dispatchHistoryResult(parsed);
+        break;
       case "alarm.event":
         this.dispatchAlarmEvent(parsed);
         break;
       case "error":
+        this.rejectOldestHistory(parsed);
         for (const callback of this.errorCallbacks) {
           callback(parsed);
         }
@@ -419,6 +457,25 @@ export class GatewayClient {
         callback(event);
       }
     }
+  }
+
+  private dispatchHistoryResult(result: Extract<ServerMessage, { kind: "history.result" }>) {
+    const requestId = result.request_id ?? "";
+    const pending = this.pendingHistory.get(requestId);
+    if (!pending) {
+      return;
+    }
+    this.pendingHistory.delete(requestId);
+    pending.resolve(result.points);
+  }
+
+  private rejectOldestHistory(error: GatewayError) {
+    const [requestId, pending] = this.pendingHistory.entries().next().value ?? [];
+    if (!requestId || !pending) {
+      return;
+    }
+    this.pendingHistory.delete(requestId);
+    pending.reject(new Error(`${error.code}: ${error.message}`));
   }
 
   private resubscribeAll() {

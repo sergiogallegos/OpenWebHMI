@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   collectTagPaths,
   ViewRenderer,
@@ -59,6 +59,19 @@ export function App() {
   );
   const tagPaths = useMemo(() => (view ? collectTagPaths(view) : []), [view]);
   const { boundValues, writeTag } = useTagBindings(client, tagPaths);
+  const subscribeAlarms = useCallback(
+    (options: Parameters<GatewayClient["subscribeAlarms"]>[0], callback: Parameters<GatewayClient["subscribeAlarms"]>[1]) =>
+      client.subscribeAlarms(options, callback),
+    [client],
+  );
+  const ackAlarm = useCallback(
+    (alarmId: string, note?: string | null) => client.ackAlarm(alarmId, note),
+    [client],
+  );
+  const readHistory = useCallback(
+    (options: Parameters<GatewayClient["readHistory"]>[0]) => client.readHistory(options),
+    [client],
+  );
 
   if (!sessionToken) {
     return (
@@ -101,10 +114,9 @@ export function App() {
           projectId={PROJECT_ID}
           boundValues={boundValues}
           onWriteTag={writeTag}
-          onSubscribeAlarms={(options, callback) =>
-            client.subscribeAlarms(options, callback)
-          }
-          onAckAlarm={(alarmId, note) => client.ackAlarm(alarmId, note)}
+          onSubscribeAlarms={subscribeAlarms}
+          onAckAlarm={ackAlarm}
+          onReadHistory={readHistory}
         />
       ) : (
         <section role="status" style={styles.loading}>

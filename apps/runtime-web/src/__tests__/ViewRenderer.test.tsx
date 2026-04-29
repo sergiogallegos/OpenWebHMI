@@ -18,6 +18,7 @@ describe("ViewRenderer", () => {
         onWriteTag={vi.fn()}
         onSubscribeAlarms={vi.fn()}
         onAckAlarm={vi.fn()}
+        onReadHistory={vi.fn()}
       />,
     );
 
@@ -40,6 +41,7 @@ describe("ViewRenderer", () => {
         onWriteTag={vi.fn()}
         onSubscribeAlarms={vi.fn()}
         onAckAlarm={vi.fn()}
+        onReadHistory={vi.fn()}
       />,
     );
 
@@ -53,6 +55,7 @@ describe("ViewRenderer", () => {
         onWriteTag={vi.fn()}
         onSubscribeAlarms={vi.fn()}
         onAckAlarm={vi.fn()}
+        onReadHistory={vi.fn()}
       />,
     );
 
@@ -70,6 +73,7 @@ describe("ViewRenderer", () => {
         onWriteTag={vi.fn()}
         onSubscribeAlarms={vi.fn()}
         onAckAlarm={vi.fn()}
+        onReadHistory={vi.fn()}
       />,
     );
 
@@ -87,12 +91,20 @@ describe("ViewRenderer", () => {
         onWriteTag={vi.fn()}
         onSubscribeAlarms={vi.fn()}
         onAckAlarm={vi.fn()}
+        onReadHistory={vi.fn()}
       />,
     );
 
     expect(screen.getByLabelText("Value display").getAttribute("title")).toContain(
       "bad",
     );
+  });
+
+  it("collects Trend tag paths from props", () => {
+    expect(collectTagPaths(viewWithTrend())).toEqual([
+      "rockwell-1/Counter",
+      "rockwell-1/Pressure",
+    ]);
   });
 });
 
@@ -124,6 +136,34 @@ function viewWithDisplay(label: string): View {
               source: { kind: "tag", path: "rockwell-1/Pressure" },
             },
           ],
+          children: [],
+        },
+      ],
+    },
+  };
+}
+
+function viewWithTrend(): View {
+  return {
+    id: "home",
+    title: "Home",
+    schema_version: 1,
+    root: {
+      id: "root",
+      kind: "Container",
+      props: {},
+      bindings: [],
+      children: [
+        {
+          id: "trend",
+          kind: "Trend",
+          props: {
+            tagPaths: ["rockwell-1/Pressure", "rockwell-1/Counter"],
+            windowSeconds: 60,
+            maxPoints: 120,
+            showLegend: true,
+          },
+          bindings: [],
           children: [],
         },
       ],
