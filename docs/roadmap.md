@@ -110,8 +110,14 @@ Deliverables:
 
 **Goal:** a small real plant could deploy this. Plugin SDK is real. Docs cover everything a contributor needs. **Picks up any Phase 2 stretch deliverables that slipped** (visual canvas, snap/undo/redo, the remaining 4 components, theme editor) before tagging 1.0.
 
+> **Driver scope expansion (2026-04-30).** The original Phase 4 plan listed OPC UA as the only second driver. Per user direction, Phase 4 now ships **four new drivers** alongside Rockwell: OPC UA, Modbus (TCP+RTU), MQTT (generic + Sparkplug B), and Beckhoff ADS. Each lands as a real driver crate + simulator harness + simulator-driven CI integration tests + wiki entry + designer manual smoke step. Real-hardware validation remains the pre-1.0 gate for `driver-rockwell` only; the simulator-validation bar is the merge gate for the others. Drivers are independent — they can land in any order in parallel.
+
 Deliverables:
-- **Second driver: `driver-opcua`** (committed v1 scope). Opens up Siemens, Schneider, Beckhoff, and most modern controllers via OPC UA, and lets us validate the driver-API contract against a fundamentally different protocol from Rockwell's EtherNet/IP. Modbus TCP is **deferred to post-1.0**; the v1 second driver is OPC UA, not "one of".
+- **Four new drivers** (committed v1 scope, tracked separately):
+  - `crates/driver-opcua` — [CODEX-W](agents/tasks/CODEX-W-driver-opcua.md). Validates the `Driver` trait against a fundamentally different protocol from EtherNet/IP. Opens up Siemens / Schneider / Beckhoff via OPC UA endpoints.
+  - `crates/driver-modbus` — [CODEX-X](agents/tasks/CODEX-X-driver-modbus.md). TCP + RTU in one crate. The most common legacy protocol — every Schneider, Eaton, AB Micro, GE Versamax speaks it.
+  - `crates/driver-mqtt` — [CODEX-Y](agents/tasks/CODEX-Y-driver-mqtt.md). Generic topic-to-tag mapping + Sparkplug B (the IIoT MQTT spec used in cloud-deployed Ignition). Includes vendored Sparkplug B protobuf schema.
+  - `crates/driver-ads` — [CODEX-Z](agents/tasks/CODEX-Z-driver-ads.md). Beckhoff TwinCAT (PLC + NC + I/O symbols). Unlocks the dominant non-Rockwell PLC platform in motion control.
 - **More components** (target: 25+ total): `Gauge, Pie/Bar/Line charts, AlarmBanner, MultiState, ProgressBar, Slider, Dropdown, Tabs, DataGrid`, etc.
 - **Plugin SDK** (`packages/sdk` + Rust crate templates):
   - `cargo generate` template for a new driver crate.

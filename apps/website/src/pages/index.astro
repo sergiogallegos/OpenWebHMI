@@ -7,7 +7,7 @@ import Logo from "../components/Logo.astro";
   <section class="hero">
     <div class="container hero-inner">
       <Logo size={88} />
-      <span class="badge warn">Pre-alpha · Phase 3 in progress</span>
+      <span class="badge warn">Pre-alpha · Phase 4 in progress</span>
       <h1>The open-source SCADA & HMI platform.</h1>
       <p class="lede">
         Web-first runtime, cross-platform desktop designer, plant-floor
@@ -55,7 +55,7 @@ import Logo from "../components/Logo.astro";
       <li><strong>Single gateway</strong> per deployment</li>
       <li><strong>≤ 10,000</strong> live tags per gateway</li>
       <li><strong>≤ 50</strong> concurrent runtime clients per gateway</li>
-      <li><strong>Two shipped drivers:</strong> Rockwell EtherNet/IP, OPC UA</li>
+      <li><strong>Five shipped drivers:</strong> Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff ADS</li>
       <li><strong>Web-only runtime</strong>; Tauri desktop runtime is post-1.0</li>
       <li><strong>Linux, macOS, Windows</strong> for gateway and designer</li>
     </ul>
@@ -140,12 +140,12 @@ import Logo from "../components/Logo.astro";
         Designer MVP — form-based authoring, 6 essential components, hot reload.
       </li>
       <li>
-        <span class="badge">In progress</span>
-        Phase 3 — historian, alarms, auth, trends, and Python scripting.
+        <span class="badge success">✓ Phase 3</span>
+        Core SCADA — historian, alarms, auth, trends, Python scripting host, Monaco script editor.
       </li>
       <li>
-        <span class="muted">Phase 4</span>
-        1.0 release — second driver, plugin SDK, real-hardware validation gate.
+        <span class="badge">In progress</span>
+        Phase 4 — five drivers (Rockwell, OPC UA, Modbus, MQTT/Sparkplug B, Beckhoff ADS), plugin SDK, real-hardware validation gate before 1.0.
       </li>
     </ol>
     <p>

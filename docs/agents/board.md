@@ -2,6 +2,28 @@
 
 > Snapshot of every cross-agent task. Update the row whenever a task's status changes. Authoring rules: see [`README.md`](README.md).
 
+## Phase 4 — 1.0 release (in progress)
+
+**Driver scope expansion (2026-04-30).** Phase 4 now ships **four new drivers** (in addition to Rockwell from Phase 1): OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), and Beckhoff ADS. Each lands as a real driver crate + simulator harness + simulator-driven CI integration tests + wiki entry + designer manual smoke step. Real-hardware validation remains the pre-1.0 gate. Drivers are independent — they can run in parallel.
+
+| Id | Title | Owner | Status | Last update | File |
+|---|---|---|---|---|---|
+| CODEX-W | `crates/driver-opcua` — OPC UA client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-W-driver-opcua.md](tasks/CODEX-W-driver-opcua.md) |
+| CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-X-driver-modbus.md](tasks/CODEX-X-driver-modbus.md) |
+| CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | open | 2026-04-30 claude | [tasks/CODEX-Y-driver-mqtt.md](tasks/CODEX-Y-driver-mqtt.md) |
+| CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
+
+### Phase 4 dependency graph
+
+```
+CODEX-W  (OPC UA driver)         ← unblocked
+CODEX-X  (Modbus driver)         ← unblocked
+CODEX-Y  (MQTT driver)           ← unblocked
+CODEX-Z  (ADS driver)            ← unblocked
+```
+
+**All four drivers are independent and can run in parallel.** No shared blocker — `Driver` trait already exposes the right surface (Capabilities flags, opaque TagAddress, optional TagNode browse). Recommend Codex picks them up in the order that matches available simulator effort: Modbus + MQTT have the easiest sim story (in-process or mosquitto); OPC UA + ADS need slightly more sim setup.
+
 ## Phase 3 — Core SCADA features
 
 **🎉 Phase 3 code-complete.** All seven tasks merged (O, Q, S, R, P, T, U) plus the V closeout follow-up. The demo HMI now has the full SCADA stack: alarms + history + auth + alarm UI + trends + scripting + Monaco script editor with live error surfacing. Awaiting **manual-smoke validation** of the full 19-step checklist in [`apps/designer/README.md`](../../apps/designer/README.md) (covers Phase 2 and Phase 3 together) before tagging `v0.3.0`.
