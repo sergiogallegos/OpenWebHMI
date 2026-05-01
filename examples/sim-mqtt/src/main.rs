@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
     let sim = sim_mqtt::start(args.bind).await?;
-    tracing::info!(addr = %sim.addr(), "sim-mqtt listening");
+    tracing::info!(addr = %sim.addr(), ws_addr = %sim.ws_addr(), "sim-mqtt listening");
     loop {
         sim.publish_once().await?;
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;

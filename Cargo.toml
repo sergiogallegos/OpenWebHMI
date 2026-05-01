@@ -58,8 +58,9 @@ pyo3 = "0.22"
 tokio-modbus = "=0.16.1"
 tokio-serial = "5"
 opcua = { package = "async-opcua", version = "=0.18.0", features = ["client", "server"] }
-rumqttc = "=0.25.1"
+rumqttc = { version = "=0.25.1", features = ["websocket"] }
 rumqttd = "=0.20.0"
 prost = "=0.13.5"
+jsonpath-rust = "=1.0.4"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"

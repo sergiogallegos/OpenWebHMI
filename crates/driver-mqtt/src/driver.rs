@@ -6,12 +6,13 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use async_trait::async_trait;
 use futures_util::stream::{self, BoxStream, StreamExt};
+use jsonpath_rust::JsonPath;
 use openwebhmi_driver_api::{
     make_metadata, Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate,
     TagAddress, TagNode,
 };
 use openwebhmi_protocol::{Quality, TagValue};
-use rumqttc::{AsyncClient, Event, MqttOptions, Packet, Publish, QoS};
+use rumqttc::{AsyncClient, Event, MqttOptions, Packet, Publish, QoS, Transport};
 use tokio::sync::{broadcast, RwLock};
 use tokio::task::JoinHandle;
 
@@ -57,12 +58,7 @@ impl Driver for MqttDriver {
     async fn connect(&mut self, config: serde_json::Value) -> DriverResult<()> {
         let config = MqttConfig::from_value(config)
             .map_err(|err| DriverError::Other(anyhow::anyhow!("invalid MQTT config: {err}")))?;
-        if !matches!(config.transport, MqttTransport::Tcp) {
-            return Err(DriverError::UnsupportedType {
-                device_type: "MQTT TLS/WebSocket config is reserved for v1 hardening".to_string(),
-            });
-        }
-        let mut options = MqttOptions::new(&config.client_id, &config.host, config.port);
+        let mut options = mqtt_options(&config)?;
         options.set_keep_alive(Duration::from_secs(config.keep_alive_secs));
         if let AuthMode::Username { username, password } = &config.auth {
             options.set_credentials(username, password);
@@ -80,6 +76,7 @@ impl Driver for MqttDriver {
         let worker_tx = tx.clone();
         let cache = Arc::clone(&self.cache);
         let mappings = topic_mappings(&config)?;
+        seed_uncertain_cache(&cache, &mappings).await;
         let worker = tokio::spawn(async move {
             let mut sparkplug = SparkplugState::default();
             loop {
@@ -192,7 +189,7 @@ fn subscription_filters(config: &MqttConfig) -> HashSet<String> {
     let mut filters = HashSet::new();
     for topic in &config.topics {
         filters.insert(topic.topic.clone().unwrap_or_else(|| topic.address.clone()));
-        if matches!(topic.payload_type, PayloadType::SparkplugMetric) {
+        if matches!(&topic.payload_type, PayloadType::SparkplugMetric) {
             if let Ok(parsed) = MqttAddress::parse(&topic.address) {
                 if let MqttAddressKind::Sparkplug {
                     group_id,
@@ -226,9 +223,9 @@ fn topic_mappings(config: &MqttConfig) -> DriverResult<HashMap<String, Vec<Topic
             .or_default()
             .push(TopicMapping {
                 address: topic.address.clone(),
-                payload_type: topic.payload_type,
+                payload_type: topic.payload_type.clone(),
             });
-        if matches!(topic.payload_type, PayloadType::SparkplugMetric) {
+        if matches!(&topic.payload_type, PayloadType::SparkplugMetric) {
             if let MqttAddressKind::Sparkplug {
                 group_id,
                 edge_node_id,
@@ -243,7 +240,7 @@ fn topic_mappings(config: &MqttConfig) -> DriverResult<HashMap<String, Vec<Topic
                     .or_default()
                     .push(TopicMapping {
                         address: topic.address.clone(),
-                        payload_type: topic.payload_type,
+                        payload_type: topic.payload_type.clone(),
                     });
             }
         }
@@ -283,10 +280,10 @@ fn decode_mapping(
     payload: &[u8],
     sparkplug: &mut SparkplugState,
 ) -> Vec<(String, TagValue, Quality)> {
-    if mapping.payload_type == PayloadType::SparkplugMetric {
+    if matches!(&mapping.payload_type, PayloadType::SparkplugMetric) {
         return decode_sparkplug(mapping, topic, payload, sparkplug);
     }
-    match decode_payload(mapping.payload_type, payload) {
+    match decode_payload(&mapping.payload_type, payload) {
         Ok(value) => vec![(mapping.address.clone(), value, Quality::Good)],
         Err(err) => {
             tracing::warn!(%err, address = %mapping.address, "failed to decode MQTT payload");
@@ -378,6 +375,20 @@ async fn publish_update(
     let _ = tx.send(update);
 }
 
+async fn seed_uncertain_cache(cache: &Cache, mappings: &HashMap<String, Vec<TopicMapping>>) {
+    let mut cache = cache.write().await;
+    for mapping in mappings.values().flatten() {
+        cache
+            .entry(mapping.address.clone())
+            .or_insert(DriverUpdate {
+                address: TagAddress::new(mapping.address.clone()),
+                value: TagValue::String("no value seen".to_string()),
+                quality: Quality::Uncertain,
+                ts_ms: now_ms(),
+            });
+    }
+}
+
 async fn mark_bad(cache: &Cache, tx: &broadcast::Sender<DriverUpdate>) {
     let updates = cache.read().await.values().cloned().collect::<Vec<_>>();
     for mut update in updates {
@@ -386,35 +397,46 @@ async fn mark_bad(cache: &Cache, tx: &broadcast::Sender<DriverUpdate>) {
     }
 }
 
-fn decode_payload(payload_type: PayloadType, payload: &[u8]) -> DriverResult<TagValue> {
+fn decode_payload(payload_type: &PayloadType, payload: &[u8]) -> DriverResult<TagValue> {
     match payload_type {
         PayloadType::Utf8String => Ok(TagValue::String(
             std::str::from_utf8(payload)
                 .map_err(|err| DriverError::Other(anyhow::anyhow!(err)))?
                 .to_string(),
         )),
-        PayloadType::RawIntBe => Ok(TagValue::Int(
+        PayloadType::Utf8Int => Ok(TagValue::Int(
             std::str::from_utf8(payload)
                 .map_err(|err| DriverError::Other(anyhow::anyhow!(err)))?
                 .parse::<i64>()
                 .map_err(|err| DriverError::Other(anyhow::anyhow!(err)))?,
         )),
-        PayloadType::RawFloatBe => Ok(TagValue::Real(
+        PayloadType::Utf8Float => Ok(TagValue::Real(
             std::str::from_utf8(payload)
                 .map_err(|err| DriverError::Other(anyhow::anyhow!(err)))?
                 .parse::<f64>()
                 .map_err(|err| DriverError::Other(anyhow::anyhow!(err)))?,
         )),
+        PayloadType::RawIntBe if payload.len() == 8 => {
+            let mut bytes = [0_u8; 8];
+            bytes.copy_from_slice(payload);
+            Ok(TagValue::Int(i64::from_be_bytes(bytes)))
+        }
         PayloadType::RawIntLe if payload.len() == 8 => {
             let mut bytes = [0_u8; 8];
             bytes.copy_from_slice(payload);
             Ok(TagValue::Int(i64::from_le_bytes(bytes)))
+        }
+        PayloadType::RawFloatBe if payload.len() == 8 => {
+            let mut bytes = [0_u8; 8];
+            bytes.copy_from_slice(payload);
+            Ok(TagValue::Real(f64::from_be_bytes(bytes)))
         }
         PayloadType::RawFloatLe if payload.len() == 8 => {
             let mut bytes = [0_u8; 8];
             bytes.copy_from_slice(payload);
             Ok(TagValue::Real(f64::from_le_bytes(bytes)))
         }
+        PayloadType::JsonPath { path } => decode_json_path(path, payload),
         PayloadType::SparkplugMetric => Err(DriverError::UnsupportedType {
             device_type: "Sparkplug payloads are decoded via Sparkplug mappings".to_string(),
         }),
@@ -422,6 +444,104 @@ fn decode_payload(payload_type: PayloadType, payload: &[u8]) -> DriverResult<Tag
             device_type: format!("invalid payload length for {other:?}"),
         }),
     }
+}
+
+fn decode_json_path(path: &str, payload: &[u8]) -> DriverResult<TagValue> {
+    let json: serde_json::Value = serde_json::from_slice(payload)
+        .map_err(|err| DriverError::Other(anyhow::anyhow!("invalid JSON payload: {err}")))?;
+    let matches = json
+        .query(path)
+        .map_err(|err| DriverError::Other(anyhow::anyhow!("invalid JSONPath {path}: {err}")))?;
+    let Some(value) = matches.first() else {
+        return Err(DriverError::Other(anyhow::anyhow!(
+            "JSONPath {path} matched no values"
+        )));
+    };
+    json_value_to_tag_value(value)
+}
+
+fn json_value_to_tag_value(value: &serde_json::Value) -> DriverResult<TagValue> {
+    match value {
+        serde_json::Value::Bool(value) => Ok(TagValue::Bool(*value)),
+        serde_json::Value::Number(number) => {
+            if let Some(value) = number.as_i64() {
+                Ok(TagValue::Int(value))
+            } else if let Some(value) = number.as_f64() {
+                Ok(TagValue::Real(value))
+            } else {
+                Err(DriverError::UnsupportedType {
+                    device_type: format!("unsupported JSON number: {number}"),
+                })
+            }
+        }
+        serde_json::Value::String(value) => Ok(TagValue::String(value.clone())),
+        other => Err(DriverError::UnsupportedType {
+            device_type: format!("unsupported JSONPath result: {other}"),
+        }),
+    }
+}
+
+fn mqtt_options(config: &MqttConfig) -> DriverResult<MqttOptions> {
+    let host = match config.transport {
+        MqttTransport::WebSocket => websocket_url(config),
+        MqttTransport::Tcp | MqttTransport::Tls => config.host.clone(),
+    };
+    let mut options = MqttOptions::new(&config.client_id, host, config.port);
+    match config.transport {
+        MqttTransport::Tcp => {}
+        MqttTransport::Tls => {
+            if config.tls_insecure {
+                tracing::warn!(
+                    "MQTT tls_insecure=true requested; certificate verification is still enforced by rumqttc/rustls in v1"
+                );
+            }
+            options.set_transport(tls_transport(config, false)?);
+        }
+        MqttTransport::WebSocket => {
+            if websocket_url(config).starts_with("wss://") {
+                if config.tls_insecure {
+                    tracing::warn!(
+                        "MQTT tls_insecure=true requested for WSS; certificate verification is still enforced by rumqttc/rustls in v1"
+                    );
+                }
+                options.set_transport(tls_transport(config, true)?);
+            } else {
+                options.set_transport(Transport::ws());
+            }
+        }
+    }
+    Ok(options)
+}
+
+fn tls_transport(config: &MqttConfig, websocket: bool) -> DriverResult<Transport> {
+    let ca = match &config.ca_cert_path {
+        Some(path) => Some(std::fs::read(path).map_err(|err| {
+            DriverError::Other(anyhow::anyhow!(
+                "failed to read MQTT CA certificate {}: {err}",
+                path.display()
+            ))
+        })?),
+        None => None,
+    };
+    Ok(match (websocket, ca) {
+        (false, Some(ca)) => Transport::tls(ca, None, None),
+        (false, None) => Transport::tls_with_default_config(),
+        (true, Some(ca)) => Transport::wss(ca, None, None),
+        (true, None) => Transport::wss_with_default_config(),
+    })
+}
+
+fn websocket_url(config: &MqttConfig) -> String {
+    if config.host.starts_with("ws://") || config.host.starts_with("wss://") {
+        return config.host.clone();
+    }
+    let path = config.ws_path.as_deref().unwrap_or("/mqtt");
+    let path = if path.starts_with('/') {
+        path.to_string()
+    } else {
+        format!("/{path}")
+    };
+    format!("ws://{}:{}{path}", config.host, config.port)
 }
 
 fn tag_value_to_payload(value: TagValue) -> Vec<u8> {
@@ -445,4 +565,35 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_millis() as u64)
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decodes_binary_big_endian_payloads() {
+        assert_eq!(
+            decode_payload(&PayloadType::RawIntBe, &42_i64.to_be_bytes()).unwrap(),
+            TagValue::Int(42)
+        );
+        assert_eq!(
+            decode_payload(&PayloadType::RawFloatBe, &12.5_f64.to_be_bytes()).unwrap(),
+            TagValue::Real(12.5)
+        );
+    }
+
+    #[test]
+    fn decodes_json_path_payloads() {
+        assert_eq!(
+            decode_payload(
+                &PayloadType::JsonPath {
+                    path: "$.outer.inner".to_string()
+                },
+                br#"{"outer":{"inner":77}}"#
+            )
+            .unwrap(),
+            TagValue::Int(77)
+        );
+    }
 }

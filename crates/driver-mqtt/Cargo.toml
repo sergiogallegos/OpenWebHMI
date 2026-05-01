@@ -22,6 +22,7 @@ futures-util = { workspace = true }
 openwebhmi-driver-api = { path = "../driver-api" }
 openwebhmi-protocol = { path = "../protocol" }
 prost = { workspace = true }
+jsonpath-rust = { workspace = true }
 rumqttc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

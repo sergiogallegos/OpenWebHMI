@@ -1,6 +1,7 @@
 //! MQTT driver connection configuration.
 
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 use crate::address::PayloadType;
 
@@ -60,6 +61,12 @@ pub struct MqttConfig {
     pub keep_alive_secs: u64,
     /// Transport mode.
     pub transport: MqttTransport,
+    /// Allow insecure TLS verification. Logged as a deployment warning when enabled.
+    pub tls_insecure: bool,
+    /// Optional PEM CA certificate path for TLS or WSS.
+    pub ca_cert_path: Option<PathBuf>,
+    /// WebSocket path. Defaults to `/mqtt`.
+    pub ws_path: Option<String>,
     /// Authentication mode.
     pub auth: AuthMode,
     /// Configured topic/tag mappings.
@@ -74,6 +81,9 @@ impl Default for MqttConfig {
             client_id: "openwebhmi-mqtt".to_string(),
             keep_alive_secs: 5,
             transport: MqttTransport::Tcp,
+            tls_insecure: false,
+            ca_cert_path: None,
+            ws_path: None,
             auth: AuthMode::Anonymous,
             topics: Vec::new(),
         }

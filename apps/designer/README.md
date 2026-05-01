@@ -50,4 +50,6 @@ pnpm --filter @openwebhmi/designer tauri dev
 22. Start `examples/sim-opcua` with `cargo run -p sim-opcua -- --bind 127.0.0.1:4855`.
 23. Configure an OPC UA driver pointed at `opc.tcp://127.0.0.1:4855/`, subscribe to the simulator `Pressure` node using the namespace index reported by the simulator/tests, and confirm live updates plus a write round-trip in the runtime.
 24. Start `examples/sim-mqtt` with `cargo run -p sim-mqtt -- --bind 127.0.0.1:1883`.
-25. Configure an MQTT driver pointed at `127.0.0.1:1883`, subscribe to `factory/line1/temperature` and `spB/v1.0/group/DDATA/edge/device/Pressure`, and confirm generic plus Sparkplug B values update in the runtime.
+25. Configure an MQTT driver pointed at `127.0.0.1:1883`, subscribe to `factory/line1/temperature`, `factory/line1/count`, `factory/line1/json`, and `spB/v1.0/group/DDATA/edge/device/Pressure`, and confirm generic plus Sparkplug B values update in the runtime.
+26. Reconfigure the same MQTT driver with `transport="websocket"` and `host="ws://127.0.0.1:1884/mqtt"` (the simulator logs the WebSocket address on start), then confirm `factory/line1/temperature` continues updating.
+27. TLS smoke uses an external TLS broker such as Mosquitto because the embedded `rumqttd` fixture is kept plaintext for deterministic CI. Start Mosquitto with a server cert signed by a local CA, set `transport="tls"`, `host`/`port` to the TLS listener, and `ca_cert_path` to that CA PEM; confirm the driver connects without setting `tls_insecure`.

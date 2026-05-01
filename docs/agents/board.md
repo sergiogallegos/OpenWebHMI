@@ -9,16 +9,14 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
-| CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | open | 2026-05-01 claude | [tasks/CODEX-AA-mqtt-v1-gaps.md](tasks/CODEX-AA-mqtt-v1-gaps.md) |
 
 ### Phase 4 dependency graph
 
 ```
 CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS protocol; brief amended (=0.4.4 + use ads crate)
-CODEX-AA  (MQTT v1 gaps)           ← unblocked — TLS + WebSocket + json_path + binary BE
 ```
 
-**Two open tasks: Z (rework) and AA (MQTT follow-up).** W and Y merged; Z rejected because the submitted driver doesn't implement ADS wire protocol (used a custom JSON-line dialect with the `ads` crate as a dead-code import). AA is a focused follow-up to Y closing the v1 scope gaps the brief committed to but the merged code didn't ship — feature-matrix MQTT entries stay at "in development" until AA lands.
+**One open task: Z (rework).** X + W + Y all simulator-validated and merged. Y's v1 scope gaps closed by CODEX-AA (TLS + WS + json_path + binary BE). Z is the only remaining Phase 4 driver — needs rework with real ADS wire protocol (`ads` 0.4.4 crate's wire API, sync→async via `spawn_blocking`).
 
 ## Phase 3 — Core SCADA features
 
@@ -67,6 +65,7 @@ CODEX-AA  (MQTT v1 gaps)           ← unblocked — TLS + WebSocket + json_path
 | CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | `16f11bb` | 4 |
 | CODEX-W | `crates/driver-opcua` — OPC UA client driver | codex | `6a8c2e2` | 4 |
 | CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | `6a8c2e2` | 4 |
+| CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | _pending merge_ | 4 |
 
 ## Conventions
 

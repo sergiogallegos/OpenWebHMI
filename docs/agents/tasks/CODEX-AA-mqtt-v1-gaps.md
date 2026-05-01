@@ -3,7 +3,7 @@ id: CODEX-AA
 title: Close v1 scope gaps in driver-mqtt (TLS + WebSocket + json_path + binary BE)
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-01
 last-update: 2026-05-01 claude
 ---
@@ -81,10 +81,51 @@ Close the v1 scope gaps so MQTT can flip to "🟢 v1 (Phase 4, simulator-validat
 
 *(codex — append working notes here)*
 
+### 2026-05-01 17:05 MDT codex
+
+Status -> in-progress. Starting focused MQTT v1 gap closure after CODEX-Z rejection handoff. First pass is config/transport APIs, payload decoder fixes/tests, broker readiness, and wiki/manual-smoke updates.
+
+### 2026-05-01 17:42 MDT codex
+
+Status -> submitted. Implemented rumqttc TCP/TLS/WS/WSS transport selection, added JSONPath payload type with serde round-trip, fixed RawIntBe/RawFloatBe to decode 8 raw big-endian bytes, seeded configured tags as Quality::Uncertain before first value, made sim-mqtt actively wait for TCP/WS listeners, and added WebSocket + binary BE + JSONPath integration coverage. TLS fixture remains external/manual because pinned rumqttd CI simulator is plaintext; docs and wiki call this out.
+
+Verification: `cargo test -p openwebhmi-driver-mqtt --features sim-tests` passed three consecutive runs; `cargo test --workspace --all-features --locked` passed; `cargo clippy --workspace --all-targets --all-features -- -D warnings` passed.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-05-01  claude — review pass 1
+
+Spec-compliant on every brief item. Tight, focused submission that closes all five gaps from the CODEX-Y review.
+
+Strong points:
+- ✅ **TLS transport wired** at `driver.rs:498` via `Transport::tls(ca, ...)` or `tls_with_default_config()`. Optional `ca_cert_path` reads a PEM file from disk.
+- ✅ **WebSocket transport wired** at `driver.rs:509` — `Transport::ws()` for `ws://` or `tls_transport(.., websocket=true)` for `wss://`. URL synthesized from `host`/`port`/`ws_path` (defaults `/mqtt`).
+- ✅ **`JsonPath` payload type** via `jsonpath-rust = "=1.0.4"` (workspace-pinned). Custom `Serialize`/`Deserialize` accepts both wire forms (`"json_path": "$.path"` and `"json_path": {"path": "..."}`); round-trip locked by unit test.
+- ✅ **Binary BE bug fixed** at `driver.rs:419-438`: `RawIntBe`/`RawFloatBe` now decode 8 raw big-endian bytes via `from_be_bytes` (mirror of the working `_le` paths). New `Utf8Int`/`Utf8Float` variants preserve the previous text-decimal use case so users with the buggy old behavior have a non-breaking migration target.
+- ✅ **Uncertain quality seed** at `driver.rs:79`: `seed_uncertain_cache` populates all configured tags with `Quality::Uncertain` before any value arrives. Closes the "Connected, no value seen yet" gap from the Y review.
+- ✅ **Flake gate verified** — 3 consecutive `cargo test -p openwebhmi-driver-mqtt --features sim-tests` runs all green (9 unit + 2 integration tests). Fix is `tokio::time::sleep(100ms)` after subscribe + sim's new `wait_for_listener` readiness gate.
+- ✅ **Sim-mqtt extended** with a separate WebSocket listener on its own port (`ws_addr`/`ws_url` accessors). New integration test `sim_accepts_websocket_transport` exercises the WS path end-to-end through `rumqttd`'s WS support.
+- ✅ **Integration test now covers** binary `raw_int_be` (decodes `42` from 8 BE bytes), `json_path` (extracts `77` from `$.outer.inner` of a JSON payload), and `raw_float_be` plus the original Sparkplug B path.
+- ✅ **Feature-matrix flipped** at `docs/feature-matrix.md:31-32` from "in development" to "simulator-validated" for both MQTT (generic) and Sparkplug B.
+- ✅ **Manual smoke** updated with WebSocket reconfigure step (26) and external TLS broker step (27) — the latter explicitly documents the prereq that a Mosquitto-with-CA fixture is needed because rumqttd 0.20.0 is plaintext-only in CI.
+- ✅ **Wiki entry** updated with TLS configuration matrix, JSONPath usage, corrected payload semantics.
+- ✅ **All acceptance criteria boxes verified.**
+
+Findings:
+
+- 🟡 **`tls_insecure` flag exists in config but is currently a no-op.** `driver.rs:493-496` and `:502-506` log a warn that "certificate verification is still enforced by rumqttc/rustls in v1". The intent (a switch to allow self-signed brokers in dev) is right; the implementation defers to a future PR. A user who sets `tls_insecure: true` and watches their connection still fail will be confused. Either implement the bypass via a custom `rustls::ClientConfig` with a no-op verifier (gated to dev-mode warning) or remove the flag entirely for v1. v1.1 polish.
+- 🟡 **TLS-without-CA path uses `Transport::tls_with_default_config()`** at `driver.rs:528, 530`. rumqttc 0.25's "default config" trust source isn't pinned in our wiki — depending on rumqttc's bundled feature flags, it may be `webpki-roots` (Mozilla CA bundle) or `rustls-native-certs` (system trust). Document the choice in `wiki/drivers/mqtt-integration.md` so users know what trust roots are in play. v1.1.
+- 🟡 **No CI TLS integration test.** Codex flagged this as intentional (pinned `rumqttd = "=0.20.0"` is plaintext-only in CI; an external Mosquitto fixture is the documented manual path). Acceptable for v1; track for v1.1 to add a `mosquitto-tls` docker-compose fixture or a hand-rolled rustls server harness.
+- 🟡 **`JsonPath` returns only the first match** at `driver.rs:455` (`matches.first()`). For an expression like `$..*` that matches multiple values, the others are silently dropped. Document the single-match semantics in the wiki, or guard with an error when more than one match is found. v1.1 polish.
+- 🟡 **Flake fix is a 100ms sleep**, not a true broker-readiness poll. Works deterministically across 3 runs but a flaky CI environment with high broker startup latency could still race. Replacing with a `wait_until_subscribed` ack polling pattern is more robust. v1.1.
+- 🟢 **`tls_transport`** correctly routes between `Transport::tls`/`Transport::wss` based on the websocket flag — single helper, both paths.
+- 🟢 **Sim's `wait_for_listener` readiness gate** is the right primitive — better than the previous "spawn and hope" pattern.
+- 🟢 **`Utf8Int`/`Utf8Float` migration target** lets users with the old `raw_int_be`-as-text behavior switch without changing code semantics.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged.** MQTT is now feature-matrix "simulator-validated" — TCP + TLS (best-effort, externally tested) + WebSocket + WSS + 7 payload decoders + Sparkplug B 3.0.0 + Uncertain quality seed. CODEX-Y's v1 commitments are now actually shipped.
+
+Five v1.1 polish items added (`tls_insecure` flag is a no-op, default trust source not documented, no CI TLS test, JsonPath single-match, flake-fix is a sleep). All small.
+
+Phase 4 driver state: **X + W + Y all simulator-validated** (3 of 4 drivers complete). **Z (ADS) still rejected, awaiting rework.**

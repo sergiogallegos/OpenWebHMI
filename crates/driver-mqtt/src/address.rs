@@ -1,24 +1,113 @@
 //! MQTT tag address parsing.
 
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
 /// Payload decoder for generic MQTT topics.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum PayloadType {
     /// UTF-8 string payload.
     #[default]
     Utf8String,
     /// Signed 64-bit integer encoded as decimal UTF-8.
+    Utf8Int,
+    /// 64-bit float encoded as decimal UTF-8.
+    Utf8Float,
+    /// Signed 64-bit integer encoded as 8 big-endian bytes.
     RawIntBe,
     /// Signed 64-bit integer encoded as little-endian bytes.
     RawIntLe,
-    /// 64-bit float encoded as decimal UTF-8.
+    /// 64-bit float encoded as 8 big-endian bytes.
     RawFloatBe,
     /// 64-bit float encoded as little-endian bytes.
     RawFloatLe,
+    /// JSON payload decoded with a JSONPath expression.
+    JsonPath {
+        /// JSONPath expression, for example `$.outer.inner`.
+        path: String,
+    },
     /// Sparkplug metric protobuf payload.
     SparkplugMetric,
+}
+
+impl Serialize for PayloadType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Self::Utf8String => serializer.serialize_str("utf8_string"),
+            Self::Utf8Int => serializer.serialize_str("utf8_int"),
+            Self::Utf8Float => serializer.serialize_str("utf8_float"),
+            Self::RawIntBe => serializer.serialize_str("raw_int_be"),
+            Self::RawIntLe => serializer.serialize_str("raw_int_le"),
+            Self::RawFloatBe => serializer.serialize_str("raw_float_be"),
+            Self::RawFloatLe => serializer.serialize_str("raw_float_le"),
+            Self::SparkplugMetric => serializer.serialize_str("sparkplug_metric"),
+            Self::JsonPath { path } => {
+                #[derive(Serialize)]
+                struct JsonPathWire<'a> {
+                    json_path: &'a str,
+                }
+
+                JsonPathWire { json_path: path }.serialize(serializer)
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for PayloadType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum PayloadWire {
+            Name(String),
+            JsonPath { json_path: JsonPathWire },
+        }
+
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum JsonPathWire {
+            Path(String),
+            Object { path: String },
+        }
+
+        match PayloadWire::deserialize(deserializer)? {
+            PayloadWire::Name(name) => match name.as_str() {
+                "utf8_string" => Ok(Self::Utf8String),
+                "utf8_int" => Ok(Self::Utf8Int),
+                "utf8_float" => Ok(Self::Utf8Float),
+                "raw_int_be" => Ok(Self::RawIntBe),
+                "raw_int_le" => Ok(Self::RawIntLe),
+                "raw_float_be" => Ok(Self::RawFloatBe),
+                "raw_float_le" => Ok(Self::RawFloatLe),
+                "sparkplug_metric" => Ok(Self::SparkplugMetric),
+                other => Err(serde::de::Error::unknown_variant(
+                    other,
+                    &[
+                        "utf8_string",
+                        "utf8_int",
+                        "utf8_float",
+                        "raw_int_be",
+                        "raw_int_le",
+                        "raw_float_be",
+                        "raw_float_le",
+                        "json_path",
+                        "sparkplug_metric",
+                    ],
+                )),
+            },
+            PayloadWire::JsonPath { json_path } => {
+                let path = match json_path {
+                    JsonPathWire::Path(path) | JsonPathWire::Object { path } => path,
+                };
+                Ok(Self::JsonPath { path })
+            }
+        }
+    }
 }
 
 /// Parsed MQTT address.
@@ -123,5 +212,21 @@ mod tests {
         assert!(MqttAddress::parse("spB/v1.0/group/NBIRTH/edge/Pressure").is_err());
         assert!(MqttAddress::parse("spB/v1.0/group/DDATA/edge/device").is_err());
         assert!(MqttAddress::parse("/bad").is_err());
+    }
+
+    #[test]
+    fn json_path_payload_type_round_trips() {
+        let payload_type: PayloadType =
+            serde_json::from_value(serde_json::json!({ "json_path": "$.outer.inner" })).unwrap();
+        assert_eq!(
+            payload_type,
+            PayloadType::JsonPath {
+                path: "$.outer.inner".to_string()
+            }
+        );
+        assert_eq!(
+            serde_json::to_value(payload_type).unwrap(),
+            serde_json::json!({ "json_path": "$.outer.inner" })
+        );
     }
 }
