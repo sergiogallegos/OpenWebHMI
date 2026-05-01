@@ -160,4 +160,4 @@ Acceptance criteria all six boxes verified.
 
 ## Verdict
 
-**Merged.** Second of four Phase 4 drivers in (X already merged). The driver pattern (real wire crate + real-protocol sim + Driver trait abstraction + tight wiki) is now established — three down on the foundation. Two v1.1 polish items added (TLS verify default, NodeId round-trip lock). Both are likely a single line each — fold into the v1.1 driver-hardening item.
+**Merged at `6a8c2e2`.** Second of four Phase 4 drivers in (X already merged). The driver pattern (real wire crate + real-protocol sim + Driver trait abstraction + tight wiki) is now established — three down on the foundation. Two v1.1 polish items added (TLS verify default, NodeId round-trip lock). Both are likely a single line each — fold into the v1.1 driver-hardening item.

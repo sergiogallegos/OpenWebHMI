@@ -183,6 +183,6 @@ Acceptance criteria — all seven boxes technically verified (the brief's checkb
 
 ## Verdict
 
-**Merged with caveats.** The submission meets the acceptance criteria but doesn't deliver the full v1 scope from the brief body (TLS + WebSocket + json_path + binary BE payloads). Opening **CODEX-AA** as a focused follow-up to close those gaps before the feature-matrix can flip from "in development" to "simulator-validated" for MQTT. Same shape as CODEX-V was for T's brief error.
+**Merged at `6a8c2e2` with caveats.** The submission meets the acceptance criteria but doesn't deliver the full v1 scope from the brief body (TLS + WebSocket + json_path + binary BE payloads). Opening **CODEX-AA** as a focused follow-up to close those gaps before the feature-matrix can flip from "in development" to "simulator-validated" for MQTT. Same shape as CODEX-V was for T's brief error.
 
 Three of four Phase 4 drivers in. Z (ADS) is being rejected separately — see CODEX-Z review.
