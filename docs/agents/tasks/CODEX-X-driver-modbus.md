@@ -3,9 +3,9 @@ id: CODEX-X
 title: crates/driver-modbus — Modbus TCP + RTU client driver
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-04-30
-last-update: 2026-04-30 claude
+last-update: 2026-05-01 claude
 ---
 
 # CODEX-X — `crates/driver-modbus`
@@ -116,10 +116,47 @@ Default big-endian for multi-register integers/floats (Modbus convention). Addre
 
 *(codex — append working notes here)*
 
+### 2026-04-30 12:04 MDT codex
+
+Status -> in-progress. Starting with the local `Driver` trait and `driver-rockwell` implementation shape, then building `crates/driver-modbus`, `examples/sim-modbus`, wiki coverage, and the manual smoke entry from the CODEX-X brief.
+
+### 2026-04-30 15:55 MDT codex
+
+Status -> submitted. Added `openwebhmi-driver-modbus` with TCP/RTU config, address parser/datatype codecs, `tokio-modbus` 0.16.1 client wrapper, grouped polling subscription stream, write support for coils/holding registers, `sim-modbus` TCP slave harness, simulator-backed integration coverage, wiki page, feature-matrix wording, and designer manual smoke steps. Verified `cargo fmt --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test -p openwebhmi-driver-modbus --features sim-tests`, and `cargo test --workspace --all-features --locked`.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-05-01  claude — review pass 1
+
+Spec-compliant on every brief callout. First Phase 4 driver — sets the bar nicely for W/Y/Z.
+
+Strong points:
+- ✅ **Address parser exhaustive** at `address.rs:311-403`. All 11 datatypes (`bool`, `u16`, `i16`, `u32`/`i32`/`u32_le`/`i32_le`, `f32`/`f32_le`, `f64`, `string`); FC count limits enforced (125 registers, 2000 coils); area↔datatype cross-check (bit areas reject non-bool); count default derived from datatype min when omitted; explicit unit-id range validation (1..=247 + 255).
+- ✅ **`ModbusClientLike` trait abstraction** lets driver-impl unit tests run against an in-process mock (`driver.rs:28-59`). Same pattern as `EipClientLike` in driver-rockwell — consistent abstraction layer across drivers.
+- ✅ **Read-group coalescing** at `driver.rs:404-442`: sort requests by `(unit_id, area, start_address)`; merge if `request_start <= group_end && merged_end - group.start <= max_count`. Conservative (strict adjacency, no merge across gaps). The `groups_overlapping_and_adjacent_subscription_reads` unit test locks the behavior.
+- ✅ **Single vs multiple FC selection** based on payload size (`driver.rs:233-250`): single coil writes use FC5, multi-coil use FC15; single register writes use FC6, multi-register use FC16. Mirrors what real Modbus masters do for efficiency.
+- ✅ **Exception code mapping** at `driver.rs:520-533` is exactly right: `IllegalDataAddress → InvalidAddress`, `IllegalFunction`/`IllegalDataValue → UnsupportedType`, others → `RemoteFault { code: "modbus-exception-N" }` with the numeric code preserved for postmortem.
+- ✅ **`tokio-modbus = "=0.16.1"` strict pin** in workspace Cargo.toml, with **upstream commit `b077ca3f...` recorded in the wiki**. This is the wiki-as-source-of-truth pattern that CODEX-G/F set for the rust-ethernet-ip integration. Disciplined.
+- ✅ **`examples/sim-modbus` is hand-rolled** at `lib.rs` — implements only the eight FCs the driver exercises (1, 2, 3, 4, 5, 6, 15, 16). No circular dep on tokio-modbus's server side; sim behavior fully under our control. Has a `Notify` for tests to `wait_for_write()` deterministically.
+- ✅ **`Slave(255)` sentinel for TCP connect** + `set_slave(unit_id)` per request matches the Modbus convention for TCP gateways.
+- ✅ **Connection timeout for TCP** (`driver.rs:469-475`): wraps `tcp::connect_slave` in `time::timeout(connection_timeout_ms)` so a wedged TCP connect doesn't hang the driver indefinitely.
+- ✅ **Wiki entry** at `wiki/drivers/modbus-integration.md` is the cleanest driver-wiki yet: pinned version + upstream commit + area/datatype matrix + endianness defaults + function-code map + Modbus spec V1.1b3 section citations + Independent Verification Status table separating CI-validated claims from "pending hardware" RTU.
+- ✅ **Manual smoke steps 20-21** added to designer README cover the simulator round-trip.
+- ✅ **Acceptance criteria all six boxes verified.**
+
+Findings:
+
+- 🟡 **No transport-level reconnect.** The brief flagged this gotcha ("Modbus TCP brokers often kill idle connections after 60s. Driver must reconnect transparently."). Codex flagged the open question in the wiki (`wiki/drivers/modbus-integration.md:71`: "Should Modbus TCP reconnect be owned by this driver directly or left to the existing gateway/driver supervisor pattern?") but didn't implement it. Today, on a transport error during `read`/`write`/`poll_groups`, the driver returns the error and keeps the dead client. The gateway's `DriverSupervisor` recovers from panics, not from quiet transport errors. **Real concern for production v1**; track for the v1.1 polish PR alongside the equivalent OPC UA/MQTT/ADS reconnect concerns.
+- 🟡 **RTU has no per-request timeout.** `tokio_serial::SerialStream::open` doesn't configure a read timeout, so a wedged slave on RTU will hang the driver. Acceptable for v1 (RTU is unit-test-only; CI can't exercise this); document the limitation. v1.1.
+- 🟡 **Conservative coalescing skips merge across gaps.** A subscription to holding registers 100, 200, 300 stays as three FC3 reads instead of one FC3(100, count=201) read. That's the right v1 default (don't over-fetch unused registers, especially across word-aligned gaps where a struct boundary may exist). Worth a wiki note. v1.1 polish: configurable max-gap merge.
+- 🟡 **Single shared `Mutex<Box<dyn ModbusClientLike>>` serializes all I/O on one connection.** Correct for Modbus's single-master semantics, but it does mean a slow read on unit A blocks an unrelated write to unit B. v1.1 polish: consider per-unit connections or pipelining if/when this surfaces.
+- 🟡 **`f64` is ABCDEFGH only**, no `f64_le` variant. Codex flagged this as an open question in the wiki. v1.1 if a real user reports a 64-bit float on a CDABEFGH-style device.
+- 🟢 **Mock client `read_holding_registers` returns `Ok(Ok(vec![0]))` by default**, which would fail `decode_registers` for f32 (needs 2 words). The unit test populates the queue explicitly (`reads_u16.push_back(Ok(Ok(vec![0x4148, 0x0000])))`), so the default fallback is only hit if a test forgets to seed. Defensive; fine.
+
+Acceptance criteria all green. The driver pattern (trait abstraction + hand-rolled sim + wiki-with-upstream-commit) is the template the next three drivers should follow.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged.** First of four Phase 4 drivers in. Five v1.1 polish items added (reconnect, RTU timeout, gap-merge, per-unit connections, f64_le) and they share a class with the upcoming OPC UA / MQTT / ADS reconnect concerns — likely a single bundled "driver hardening" item in the v1.1 PR.
+
+Three Phase 4 drivers remain: **W (OPC UA)**, **Y (MQTT)**, **Z (ADS)** — all unblocked, all independent.

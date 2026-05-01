@@ -45,3 +45,5 @@ pnpm --filter @openwebhmi/designer tauri dev
 17. Confirm `Setpoint` tracks roughly `0.6 * Pressure` within the next second while pressure remains above `100`.
 18. Introduce a typo such as `sytem.tag.read`, save, and confirm the traceback appears in Recent events.
 19. Click the traceback row and confirm the editor opens the offending line, then fix the typo and confirm the script resumes.
+20. Start `examples/sim-modbus` with `cargo run -p sim-modbus -- --bind 127.0.0.1:5502`.
+21. Configure a Modbus TCP driver pointed at `127.0.0.1:5502`, subscribe to `1/holding/100:2:f32` and `1/coils/0`, and confirm the runtime shows `12.5` plus a `true` coil value.

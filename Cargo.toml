@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/alarm-engine",
     "crates/driver-api",
+    "crates/driver-modbus",
     "crates/driver-rockwell",
     "crates/gateway",
     "crates/historian",
@@ -12,6 +13,7 @@ members = [
     "crates/scripting",
     "crates/tag-engine",
     "apps/designer/src-tauri",
+    "examples/sim-modbus",
     "examples/sim-rockwell",
 ]
 
@@ -48,5 +50,7 @@ tempfile = "3"
 rustls-pemfile = "2"
 tokio-rustls = "0.26"
 pyo3 = "0.22"
+tokio-modbus = "=0.16.1"
+tokio-serial = "5"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"

@@ -1,0 +1,23 @@
+[package]
+name = "sim-modbus"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Minimal Modbus TCP simulator for OpenWebHMI Phase 4 tests."
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "sim-modbus"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

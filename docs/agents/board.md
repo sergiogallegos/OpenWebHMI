@@ -9,7 +9,6 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-W | `crates/driver-opcua` — OPC UA client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-W-driver-opcua.md](tasks/CODEX-W-driver-opcua.md) |
-| CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-X-driver-modbus.md](tasks/CODEX-X-driver-modbus.md) |
 | CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | open | 2026-04-30 claude | [tasks/CODEX-Y-driver-mqtt.md](tasks/CODEX-Y-driver-mqtt.md) |
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
 
@@ -17,7 +16,6 @@
 
 ```
 CODEX-W  (OPC UA driver)         ← unblocked
-CODEX-X  (Modbus driver)         ← unblocked
 CODEX-Y  (MQTT driver)           ← unblocked
 CODEX-Z  (ADS driver)            ← unblocked
 ```
@@ -68,6 +66,7 @@ CODEX-Z  (ADS driver)            ← unblocked
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | `f8b74a9` | 3 |
 | CODEX-V | Route `system.tag.write` through per-driver write queue | codex | `9db307e` | 3 |
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | `cfa1cc0` | 3 |
+| CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | _pending merge_ | 4 |
 
 ## Conventions
 

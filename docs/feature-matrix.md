@@ -21,8 +21,8 @@
 | Rockwell EtherNet/IP (CompactLogix, ControlLogix) | ✅ | ✅ | 🟢 v1 (Phase 1, via `rust-ethernet-ip`) |
 | Rockwell Micro800 / Micrologix | ✅ | ❔ | 🟡 post-1.0 (depends on `rust-ethernet-ip` support) |
 | Siemens S7 (S7-300/400/1200/1500) | ✅ | ✅ | 🟡 post-1.0 (S7 native; v1 covers Siemens via OPC UA) |
-| Modbus TCP | ✅ | ✅ | 🟢 v1 (Phase 4 — `crates/driver-modbus`) |
-| Modbus RTU (serial) | ✅ | ✅ | 🟢 v1 (Phase 4 — same crate, RTU transport) |
+| Modbus TCP | ✅ | ✅ | 🟢 v1 (Phase 4, in development — `crates/driver-modbus`) |
+| Modbus RTU (serial) | ✅ | ✅ | 🟢 v1 (Phase 4, in development — same crate, RTU transport) |
 | OPC UA client | ✅ | ✅ | 🟢 v1 (Phase 4 — `crates/driver-opcua`) |
 | OPC UA server (expose gateway tags) | ✅ | ✅ | 🟡 post-1.0 |
 | OPC DA client (legacy) | ➕ | ❌ | ⚪ not planned |
