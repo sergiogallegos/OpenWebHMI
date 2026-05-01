@@ -157,6 +157,6 @@ Acceptance criteria all green. The driver pattern (trait abstraction + hand-roll
 
 ## Verdict
 
-**Merged.** First of four Phase 4 drivers in. Five v1.1 polish items added (reconnect, RTU timeout, gap-merge, per-unit connections, f64_le) and they share a class with the upcoming OPC UA / MQTT / ADS reconnect concerns — likely a single bundled "driver hardening" item in the v1.1 PR.
+**Merged at `16f11bb`.** First of four Phase 4 drivers in. Five v1.1 polish items added (reconnect, RTU timeout, gap-merge, per-unit connections, f64_le) and they share a class with the upcoming OPC UA / MQTT / ADS reconnect concerns — likely a single bundled "driver hardening" item in the v1.1 PR.
 
 Three Phase 4 drivers remain: **W (OPC UA)**, **Y (MQTT)**, **Z (ADS)** — all unblocked, all independent.

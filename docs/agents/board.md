@@ -66,7 +66,7 @@ CODEX-Z  (ADS driver)            ← unblocked
 | CODEX-T | `crates/scripting` — CPython 3.11+ host + worker subprocesses + system.* RPC | codex | `f8b74a9` | 3 |
 | CODEX-V | Route `system.tag.write` through per-driver write queue | codex | `9db307e` | 3 |
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | `cfa1cc0` | 3 |
-| CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | _pending merge_ | 4 |
+| CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | `16f11bb` | 4 |
 
 ## Conventions
 
