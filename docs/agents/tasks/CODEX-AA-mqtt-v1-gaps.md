@@ -124,7 +124,7 @@ Findings:
 
 ## Verdict
 
-**Merged.** MQTT is now feature-matrix "simulator-validated" — TCP + TLS (best-effort, externally tested) + WebSocket + WSS + 7 payload decoders + Sparkplug B 3.0.0 + Uncertain quality seed. CODEX-Y's v1 commitments are now actually shipped.
+**Merged at `560227e`.** MQTT is now feature-matrix "simulator-validated" — TCP + TLS (best-effort, externally tested) + WebSocket + WSS + 7 payload decoders + Sparkplug B 3.0.0 + Uncertain quality seed. CODEX-Y's v1 commitments are now actually shipped.
 
 Five v1.1 polish items added (`tls_insecure` flag is a no-op, default trust source not documented, no CI TLS test, JsonPath single-match, flake-fix is a sleep). All small.
 

@@ -65,7 +65,7 @@ CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS prot
 | CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | `16f11bb` | 4 |
 | CODEX-W | `crates/driver-opcua` — OPC UA client driver | codex | `6a8c2e2` | 4 |
 | CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | `6a8c2e2` | 4 |
-| CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | _pending merge_ | 4 |
+| CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | `560227e` | 4 |
 
 ## Conventions
 
