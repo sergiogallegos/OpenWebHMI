@@ -9,14 +9,16 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
+| CODEX-AB | Component library batch 2 — 8 new components (Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner) | codex | open | 2026-05-01 claude | [tasks/CODEX-AB-component-batch-2.md](tasks/CODEX-AB-component-batch-2.md) |
 
 ### Phase 4 dependency graph
 
 ```
 CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS protocol; brief amended (=0.4.4 + use ads crate)
+CODEX-AB  (component batch 2)      ← unblocked — 8 components, independent of driver work
 ```
 
-**One open task: Z (rework).** X + W + Y all simulator-validated and merged. Y's v1 scope gaps closed by CODEX-AA (TLS + WS + json_path + binary BE). Z is the only remaining Phase 4 driver — needs rework with real ADS wire protocol (`ads` 0.4.4 crate's wire API, sync→async via `spawn_blocking`).
+**Two open tasks: Z (driver rework) and AB (component batch 2).** Independent — Z is wire-protocol Rust + sim, AB is pure TS+SVG component work. Can run in parallel. Once both land plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate), Phase 4 closes.
 
 ## Phase 3 — Core SCADA features
 
