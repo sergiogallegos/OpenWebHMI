@@ -8,19 +8,17 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-W | `crates/driver-opcua` — OPC UA client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-W-driver-opcua.md](tasks/CODEX-W-driver-opcua.md) |
-| CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | open | 2026-04-30 claude | [tasks/CODEX-Y-driver-mqtt.md](tasks/CODEX-Y-driver-mqtt.md) |
-| CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | open | 2026-04-30 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
+| CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
+| CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | open | 2026-05-01 claude | [tasks/CODEX-AA-mqtt-v1-gaps.md](tasks/CODEX-AA-mqtt-v1-gaps.md) |
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-W  (OPC UA driver)         ← unblocked
-CODEX-Y  (MQTT driver)           ← unblocked
-CODEX-Z  (ADS driver)            ← unblocked
+CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS protocol; brief amended (=0.4.4 + use ads crate)
+CODEX-AA  (MQTT v1 gaps)           ← unblocked — TLS + WebSocket + json_path + binary BE
 ```
 
-**All four drivers are independent and can run in parallel.** No shared blocker — `Driver` trait already exposes the right surface (Capabilities flags, opaque TagAddress, optional TagNode browse). Recommend Codex picks them up in the order that matches available simulator effort: Modbus + MQTT have the easiest sim story (in-process or mosquitto); OPC UA + ADS need slightly more sim setup.
+**Two open tasks: Z (rework) and AA (MQTT follow-up).** W and Y merged; Z rejected because the submitted driver doesn't implement ADS wire protocol (used a custom JSON-line dialect with the `ads` crate as a dead-code import). AA is a focused follow-up to Y closing the v1 scope gaps the brief committed to but the merged code didn't ship — feature-matrix MQTT entries stay at "in development" until AA lands.
 
 ## Phase 3 — Core SCADA features
 
@@ -67,6 +65,8 @@ CODEX-Z  (ADS driver)            ← unblocked
 | CODEX-V | Route `system.tag.write` through per-driver write queue | codex | `9db307e` | 3 |
 | CODEX-U | Designer script editor — Monaco + Python syntax + system.* stubs | codex | `cfa1cc0` | 3 |
 | CODEX-X | `crates/driver-modbus` — Modbus TCP + RTU client driver | codex | `16f11bb` | 4 |
+| CODEX-W | `crates/driver-opcua` — OPC UA client driver | codex | _pending merge_ | 4 |
+| CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | _pending merge_ | 4 |
 
 ## Conventions
 

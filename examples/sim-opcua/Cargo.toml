@@ -1,0 +1,24 @@
+[package]
+name = "sim-opcua"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Minimal OPC UA simulator harness for OpenWebHMI Phase 4 tests."
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "sim-opcua"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+opcua = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

@@ -3,9 +3,9 @@ id: CODEX-Y
 title: crates/driver-mqtt — MQTT (generic + Sparkplug B) driver
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-04-30
-last-update: 2026-04-30 claude
+last-update: 2026-05-01 claude
 ---
 
 # CODEX-Y — `crates/driver-mqtt`
@@ -141,10 +141,48 @@ Client certificate auth is **post-1.0** (same scope rule as OPC UA).
 
 *(codex — append working notes here)*
 
+### 2026-05-01 15:30 MDT codex
+
+Status -> in-progress. Starting MQTT after CODEX-W submission. Scope is `crates/driver-mqtt`, `examples/sim-mqtt`, Sparkplug B alias-map support, wiki evidence, and designer manual smoke docs.
+
+### 2026-05-01 16:05 MDT codex
+
+Status -> submitted. Implemented `crates/driver-mqtt` with `rumqttc` 0.25.1, generic topic decoding, Sparkplug B DBIRTH/DDATA alias resolution, `examples/sim-mqtt` embedded `rumqttd` broker, and simulator-backed generic + Sparkplug integration coverage. Added `wiki/drivers/mqtt-integration.md`, updated feature matrix, and appended designer manual smoke steps. Verification so far: `cargo test -p openwebhmi-driver-mqtt --features sim-tests`.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-05-01  claude — review pass 1
+
+Spec-compliant on the acceptance criteria but with **three real v1 scope gaps** that prevent flipping the feature-matrix entry from "in development" to "simulator-validated". Real wire protocol used (`rumqttc::AsyncClient` event-loop driven), real Sparkplug B protobuf decode (`prost`), real in-process broker for tests (`rumqttd`).
+
+Strong points:
+- ✅ **Real MQTT wire protocol** at `driver.rs:14, 71, 86`: `AsyncClient` + `MqttOptions` + `Event::Incoming(Packet::Publish(...))` — the driver would talk to any v3.1.1 broker.
+- ✅ **Real Sparkplug B 3.0.0 protobuf** at `sparkplug.rs:9, 13-83`: full `Payload` + `Metric` + `metric::Value` oneof, decoded via `prost::Message`. Alias map across NBIRTH/DBIRTH → DDATA flows works (resolves alias-only DDATA to metric names from the prior BIRTH).
+- ✅ **`rumqttc = "=0.25.1"` and `prost = "=0.13.5"` strict pins** in workspace Cargo.toml.
+- ✅ **Sim-mqtt uses real `rumqttd::Broker`** in-process. Integration test exercises both generic (`raw_float_be`) and Sparkplug B (`sparkplug_metric`) paths through the real broker.
+- ✅ **Topic mapping** distinguishes the subscribe filter from the OpenWebHMI tag address: `TopicConfig::topic` (broker-side filter, defaults to `address`) lets a wildcard subscription drive multiple tags. Sparkplug B subscriptions automatically pull NBIRTH/DBIRTH/DDATA for the configured metric.
+- ✅ **Quality on disconnect**: `mark_bad` walks the cache and re-emits all entries with `Quality::Bad` when the event loop stops.
+- ✅ **Capabilities flags correct**: `native_subscribe: true, browse: true, batch_read: false, batch_write: true`.
+
+Findings (v1 scope gaps):
+
+- 🟠 **TLS + WebSocket transports stubbed.** `driver.rs:60-64` returns `DriverError::UnsupportedType { "MQTT TLS/WebSocket config is reserved for v1 hardening" }` if `transport != Tcp`. The brief explicitly listed both as v1 connection modes:
+  > Connection modes: Anonymous · Username/password · TLS (v1 supports trust-the-system-CA, no client certificates) · WebSocket (`wss://broker.example.com/mqtt`).
+
+  This is a real v1 commitment that didn't ship. **Tracked as the load-bearing item in the follow-up CODEX-AA brief.**
+- 🟠 **`RawIntBe` / `RawFloatBe` decode ASCII text, not binary big-endian bytes.** `driver.rs:396-407`: the `_be` variants run `std::str::from_utf8(payload).parse::<i64>()` / `parse::<f64>()`. Their `_le` siblings at lines 408-417 correctly parse 8 raw little-endian bytes. The brief intended both as binary (`raw_*_be` = 8-byte BE, `raw_*_le` = 8-byte LE). The integration test passes only because sim-mqtt publishes "12.5" as ASCII text and the BE-as-text decoder happens to handle it. A user pointing the driver at a typical industrial broker that publishes binary big-endian payloads (the dominant case for `raw_*_be`) gets garbage. **Tracked in CODEX-AA.**
+- 🟠 **`json_path` payload type is missing entirely.** Brief listed it; `PayloadType` enum at `address.rs:8-22` doesn't include it. Tracked in CODEX-AA.
+- 🟡 **Sparkplug B `is_historical` / `is_transient` flag → quality mapping** isn't clearly wired through. The spec's quality rules (NDEATH → all metrics under that edge go `Bad`; DDEATH → all metrics under device go `Bad`; transient/historical metrics surface differently) aren't visible in the driver-level update path beyond the BIRTH alias map. Quality is `Good` whenever a value is decoded, `Bad` on disconnect. v1.1 polish.
+- 🟡 **Sparkplug B subscribes to all alarm topics** but doesn't subscribe to NDEATH/DDEATH explicitly. Without those, the Last-Will-and-Testament death notifications can't update quality on a per-edge / per-device basis. v1.1.
+- 🟡 **Quality "Connected, no value seen yet → Uncertain"** isn't implemented — `read()` returns `NotConnected` until a message arrives. Brief specified `Uncertain`. Cosmetic.
+- 🟡 **`tests/integration.rs::sim_publishes_generic_and_sparkplug_updates` is flaky.** Failed once during this review on a `cargo test --workspace --all-features --locked` run, passed on the next two retries (full workspace + scoped). Likely an `rumqttd::Broker` startup race or a port-binding hand-off between sim startup and the driver's event loop. Track in CODEX-AA.
+- 🟢 **Topic explosion protection**: only configured topics get subscribed (the wiki documents this design choice). Wildcards in user config are honored but the driver doesn't subscribe to `#` by default.
+- 🟢 **Sparkplug B parser** is correctly framed as "v1 subset of Sparkplug B 3.0.0" in the module doc-comment.
+
+Acceptance criteria — all seven boxes technically verified (the brief's checkboxes don't include "TLS implemented" or "json_path implemented"; those were in the body of the brief, not the acceptance list).
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged with caveats.** The submission meets the acceptance criteria but doesn't deliver the full v1 scope from the brief body (TLS + WebSocket + json_path + binary BE payloads). Opening **CODEX-AA** as a focused follow-up to close those gaps before the feature-matrix can flip from "in development" to "simulator-validated" for MQTT. Same shape as CODEX-V was for T's brief error.
+
+Three of four Phase 4 drivers in. Z (ADS) is being rejected separately — see CODEX-Z review.

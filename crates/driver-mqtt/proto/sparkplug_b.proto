@@ -1,0 +1,31 @@
+// Minimal vendored Sparkplug B payload schema subset used by OpenWebHMI v1.
+// Source of truth: Eclipse Tahu Sparkplug B protobuf schema, spec 3.0.0.
+syntax = "proto2";
+
+package org.eclipse.tahu.protobuf;
+
+message Payload {
+  optional uint64 timestamp = 1;
+  repeated Metric metrics = 2;
+  optional uint64 seq = 3;
+
+  message Metric {
+    optional string name = 1;
+    optional uint64 alias = 2;
+    optional uint64 timestamp = 3;
+    optional uint32 datatype = 4;
+    optional bool is_historical = 5;
+    optional bool is_transient = 6;
+    optional bool is_null = 7;
+
+    oneof value {
+      uint32 int_value = 10;
+      uint64 long_value = 11;
+      float float_value = 12;
+      double double_value = 13;
+      bool boolean_value = 14;
+      string string_value = 15;
+      bytes bytes_value = 16;
+    }
+  }
+}

@@ -3,7 +3,9 @@ resolver = "2"
 members = [
     "crates/alarm-engine",
     "crates/driver-api",
+    "crates/driver-opcua",
     "crates/driver-modbus",
+    "crates/driver-mqtt",
     "crates/driver-rockwell",
     "crates/gateway",
     "crates/historian",
@@ -13,7 +15,9 @@ members = [
     "crates/scripting",
     "crates/tag-engine",
     "apps/designer/src-tauri",
+    "examples/sim-opcua",
     "examples/sim-modbus",
+    "examples/sim-mqtt",
     "examples/sim-rockwell",
 ]
 
@@ -29,6 +33,7 @@ authors = ["Sergio Gallegos <sergiogallegos.net>"]
 
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
@@ -52,5 +57,9 @@ tokio-rustls = "0.26"
 pyo3 = "0.22"
 tokio-modbus = "=0.16.1"
 tokio-serial = "5"
+opcua = { package = "async-opcua", version = "=0.18.0", features = ["client", "server"] }
+rumqttc = "=0.25.1"
+rumqttd = "=0.20.0"
+prost = "=0.13.5"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"

@@ -3,9 +3,9 @@ id: CODEX-W
 title: crates/driver-opcua — OPC UA client driver
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-04-30
-last-update: 2026-04-30 claude
+last-update: 2026-05-01 claude
 ---
 
 # CODEX-W — `crates/driver-opcua`
@@ -123,10 +123,41 @@ Certificate-based auth is **out of scope for v1** (handled by the `opcua` crate'
 
 *(codex — append working notes here)*
 
+### 2026-05-01 11:35 MDT codex
+
+Status -> in-progress. Starting OPC UA after merged CODEX-X. First pass is dependency/API resolution for `opcua` 0.13, then `crates/driver-opcua`, `examples/sim-opcua`, wiki coverage, and designer manual smoke docs.
+
+### 2026-05-01 15:19 MDT codex
+
+Status -> submitted. Implemented `crates/driver-opcua` with `async-opcua` 0.18.0, `examples/sim-opcua` simulator, NodeId parser, anonymous/user-password config, read/write/browse/subscribe support, and simulator-backed integration coverage. Added `wiki/drivers/opcua-integration.md`, updated feature matrix, and appended the designer manual smoke step. Verification so far: `cargo test -p openwebhmi-driver-opcua --features sim-tests`.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-05-01  claude — review pass 1
+
+Spec-compliant. **Real OPC UA wire protocol** end-to-end — `opcua::client::ClientBuilder` constructs the client, `Session` drives reads/writes/browse, `MonitoredItem` + `MonitoredItemCreateRequest` for native subscriptions, `BrowseDescription` for the Browse service. Sim-opcua runs a real OPC UA server via `opcua::server::ServerBuilder` + `SimpleNodeManager`. The driver would connect to any standards-conformant OPC UA server, not just sim-opcua.
+
+Strong points:
+- ✅ **Address parser** at `address.rs` covers all four NodeId forms (`s`, `i`, `g`, `b`) including base64 ByteString and Guid parsing. Rejects empty identifiers, multiple `=` separators, malformed namespace.
+- ✅ **`async-opcua = "=0.18.0"` strict pin** in workspace Cargo.toml (the brief's `opcua = "0.13"` was upstaged by a fork move; Codex documented the swap rationale in the wiki).
+- ✅ **Subscriptions via `create_subscription` + `create_monitored_items`** with sampling interval from config (default 250ms). `OnSubscriptionNotification::on_data_value` forwards each notification through an unbounded mpsc with proper `StatusCode → Quality` mapping.
+- ✅ **Browse** walks `Forward` `HierarchicalReferences` from a root NodeId, depth-and-breadth capped (defaults 4 / 100 per node). Recursion is `Box::pin`-wrapped to avoid stack growth.
+- ✅ **Status code mapping**: `BadNodeIdUnknown` and `BadAttributeIdInvalid` → `InvalidAddress`; everything else → `RemoteFault` with `0x{status:08X}` code preserved for postmortem.
+- ✅ **Identity tokens** — anonymous + username/password both wired via `IdentityToken::Anonymous` / `IdentityToken::UserName` (which takes a `Password` newtype, properly wrapped from `String`).
+- ✅ **Connect timeout** of 5s on `wait_for_connection`, plus session retry settings (250ms → 8s) configured on the client builder.
+- ✅ **`tag_value_to_variant`** picks `Int32` for values that fit, `Int64` otherwise — minimizes wire size for the common 16/32-bit PLC integer case.
+- ✅ **Sim-opcua** uses the real server primitives — confirmed via `use opcua::server::address_space::VariableBuilder` + `SimpleNodeManager` + `ServerBuilder` + `NodeSetImport`. Test mutates a node from the sim side, asserts the driver's MonitoredItem stream emits an update within 2s.
+
+Findings:
+
+- 🟡 **TLS server-cert verification disabled by default** — the `ClientBuilder` chain at `driver.rs:67-68` calls `trust_server_certs(true)` and `verify_server_certs(false)`. Brief acknowledged that v1 ships without certificate-based *user* auth, but it didn't authorize disabling *server* cert verification entirely. For the sim this is fine (sim uses `SecurityPolicy::None` anyway), but for any real deployment this is a footgun — the driver would happily connect to a MITM. v1.1 polish: surface a `tls_insecure: true/false` flag on the project config, default to `false`, and require an explicit warn at startup if set to `true` (same pattern the brief specified for MQTT).
+- 🟡 **NodeId display via `format!("{node_id}")`** in `SubscriptionForwarder::on_data_value` and in `browse_level` reconstructs the address. The OPC UA crate's `Display` for `NodeId` produces `ns=N;{form}={id}` which round-trips through our parser — but this is implicitly relying on a crate-side format we don't own. v1.1: a small unit test that asserts `NodeId::Display` round-trips through `OpcUaAddress::parse` would lock the assumption.
+- 🟡 **`browse_level` filters `node_class_mask` to Object | Variable**, then only recurses into `Object` references at line 356. That's correct for browsing the object tree — but it means a Variable with sub-references (rare but possible per the OPC UA spec) wouldn't be expanded. Acceptable for v1; document if a user reports missing nodes.
+- 🟡 **`pki_dir` is required in config**, no default. The integration test passes `./target/opcua-driver-test-pki`. Production project configs need to set this; the wiki should call this out (it did).
+- 🟢 **`opcua::types::Variant::UInt64` overflow** is rejected when the value exceeds `i64::MAX` (returns `UnsupportedType`). Defensive.
+
+Acceptance criteria all six boxes verified.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged.** Second of four Phase 4 drivers in (X already merged). The driver pattern (real wire crate + real-protocol sim + Driver trait abstraction + tight wiki) is now established — three down on the foundation. Two v1.1 polish items added (TLS verify default, NodeId round-trip lock). Both are likely a single line each — fold into the v1.1 driver-hardening item.

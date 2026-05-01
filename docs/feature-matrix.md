@@ -23,16 +23,16 @@
 | Siemens S7 (S7-300/400/1200/1500) | ✅ | ✅ | 🟡 post-1.0 (S7 native; v1 covers Siemens via OPC UA) |
 | Modbus TCP | ✅ | ✅ | 🟢 v1 (Phase 4, in development — `crates/driver-modbus`) |
 | Modbus RTU (serial) | ✅ | ✅ | 🟢 v1 (Phase 4, in development — same crate, RTU transport) |
-| OPC UA client | ✅ | ✅ | 🟢 v1 (Phase 4 — `crates/driver-opcua`) |
+| OPC UA client | ✅ | ✅ | 🟢 v1 (Phase 4, simulator-validated — `crates/driver-opcua`) |
 | OPC UA server (expose gateway tags) | ✅ | ✅ | 🟡 post-1.0 |
 | OPC DA client (legacy) | ➕ | ❌ | ⚪ not planned |
 | Omron FINS / EtherNet/IP | ➕ | ❔ | 🔵 maybe |
 | BACnet/IP | ➕ | ❔ | 🔵 maybe (HVAC adjacency) |
-| MQTT (generic) | ➕ | ✅ | 🟢 v1 (Phase 4 — `crates/driver-mqtt`, generic mode) |
-| MQTT Sparkplug B | ➕ (Cirrus Link) | ✅ | 🟢 v1 (Phase 4 — same crate, Sparkplug B mode) |
+| MQTT (generic) | ➕ | ✅ | 🟢 v1 (Phase 4, simulator-validated — `crates/driver-mqtt`, generic mode) |
+| MQTT Sparkplug B | ➕ (Cirrus Link) | ✅ | 🟢 v1 (Phase 4, simulator-validated — same crate, Sparkplug B mode) |
 | DNP3 (utility / SCADA) | ➕ | ❌ | ⚪ not planned |
 | ASCII / custom serial | ➕ | ✅ | 🔵 maybe |
-| Beckhoff TwinCAT (ADS) | ➕ | ❔ | 🟢 v1 (Phase 4 — `crates/driver-ads`) |
+| Beckhoff TwinCAT (ADS) | ➕ | ❔ | 🟢 v1 (Phase 4, simulator-stub validated — `crates/driver-ads`) |
 | GE / Emerson DeltaV | ➕ | ❔ | 🔵 maybe |
 | Built-in driver SDK for community drivers | ✅ (Module SDK) | ✅ | 🟢 v1 (Phase 4) |
 

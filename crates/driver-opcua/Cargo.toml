@@ -1,0 +1,33 @@
+[package]
+name = "openwebhmi-driver-opcua"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "OPC UA client driver for OpenWebHMI."
+
+[features]
+default = []
+sim-tests = []
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures-util = { workspace = true }
+opcua = { workspace = true }
+openwebhmi-driver-api = { path = "../driver-api" }
+openwebhmi-protocol = { path = "../protocol" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+sim-opcua = { path = "../../examples/sim-opcua" }
