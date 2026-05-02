@@ -3,9 +3,9 @@ id: CODEX-AC
 title: Component library batch 3 — Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-01
-last-update: 2026-05-01 18:31 MDT codex
+last-update: 2026-05-01 claude
 ---
 
 # CODEX-AC — Component library batch 3
@@ -250,8 +250,45 @@ Verification: `pnpm --filter @openwebhmi/component-library typecheck`, `pnpm --f
 
 ## Claude review
 
-*(claude — after submission)*
+### 2026-05-01  claude — review pass 1
+
+Status -> merged. Spec-compliant. All 9 components shipped, registered, exported. Bundle 102,400 bytes verified independently (well under the 1.5 MB cap). Component-library tests at 62/62 pass; workspace pnpm tests at 108 across 4 packages green. Multi-child rendering reuses the existing `ViewRenderer.tsx:92-103` path — Codex's pre-implementation verification call (Codex log 18:21) saved the brief from needing a runtime amendment.
+
+**Strong points:**
+
+- ✅ **Multi-child rendering verified before implementing.** Codex's first move was confirming `RenderProps.children` is already plumbed through `ViewRenderer.tsx:92-103` for any component with `node.children`. Tabs, Modal, and Card reuse this directly with zero runtime changes. The brief flagged this as the load-bearing concern; pre-flight verification was the right discipline.
+- ✅ **Native `<dialog>` element for Modal.** `Modal.tsx:95-108` uses `dialog.showModal()` for focus trap + Escape key + click-outside via `event.target === dialogRef.current`. No reinvented focus-trap code. Designer mode renders the modal inline (not as overlay) with a "Modal preview" badge so the canvas stays editable.
+- ✅ **Write suppression in designer mode.** `Modal.tsx:60` gates `onWriteTag` on `context.mode === "runtime"`. Same pattern as Button/Slider/Dropdown/ToggleSwitch. Tests verify both runtime fires and designer doesn't.
+- ✅ **DataGrid JSON-string parsing.** `DataGrid.tsx:123-132` parses `TagValue::String` containing a JSON array — exactly matches the brief's deferral of `TagValue::Array` to post-1.0. Returns null gracefully on bad shape, falling back to default rows. Sort + pagination both work; the page-reset-on-sort-change at `DataGrid.tsx:84-85` keeps pagination consistent with new sort order.
+- ✅ **`chartPalette` lifted to `shared.ts`.** 8-color palette (`shared.ts:8-17`) shared across BarChart, PieChart. Each row's optional `color` overrides; missing colors round-robin the palette. Addresses the brief's "color palette consistency" callout cleanly.
+- ✅ **PieChart geometry correct.** `slicePath` at `PieChart.tsx:77-87` handles both pie (`inner === 0`) and donut (`inner > 0`) with proper SVG arc commands. All-zero edge case rendered as "No data" rather than dividing by zero.
+- ✅ **Bad-quality visuals consistent.** Every bindable component applies `badQualityStyle(bound)` from shared.ts. Charts and DataGrid additionally render with dashed-grey strokes/fills when `bound.quality !== "good"`.
+- ✅ **Stepper colors derived from index relative to currentIndex.** `Stepper.tsx:69` resolves completed/current/pending color from a single `index < currentIndex / index === currentIndex / else` chain. Configurable colors via `propsSchema` "color" type.
+- ✅ **Tabs keyboard nav.** ArrowRight/ArrowDown advance, ArrowLeft/ArrowUp regress, Home/End jump (with modulo wraparound at `Tabs.tsx:59`). aria-orientation flips for the left-position layout.
+- ✅ **Acceptance criteria all met:** typecheck green, all 9 in registry+index, build clean, bundle 102,400 bytes, workspace pnpm green, manual smoke appended, feature-matrix row flipped to "v1 complete — 25 components shipped" (`docs/feature-matrix.md:75`).
+
+**Findings:**
+
+- 🟡 **Designer README smoke steps condensed.** Brief asked 4-6 lines per component (≈36-54 lines for 9). Codex shipped 5 bullets (items 36-40 in `apps/designer/README.md`) covering all 9, with item 40 bundling Card + Divider + Spinner + Stepper into a single test step. Workable for the four small filler primitives, but Modal/DataGrid/BarChart/PieChart each deserve their own bullet — the brief explicitly listed them separately. Track for a 5-line follow-up that splits item 40. v1.1 polish.
+- 🟡 **`Modal` fallback `dialog.setAttribute("open", "")`** at `Modal.tsx:48-49`. The fallback path runs when `dialog.showModal` isn't a function — but in modern Chromium (Tauri's webview), it always exists. The fallback silently produces a non-modal dialog without focus trap or Escape support. Dead code that misleads on read; either remove or `console.warn`. v1.1 polish.
+- 🟡 **`DataGrid.sortBy` initial prop ignored after mount.** `useState({ key: props.sortBy ?? "", ... })` at `DataGrid.tsx:55` initializes from props.sortBy but doesn't sync if props.sortBy changes later. Designer reconfigure of `sortBy` after initial render won't take effect until remount. Same gotcha PropertyPanel had per the CODEX-Q v1.1 list. v1.1 polish.
+- 🟡 **Stepper test couples to default `currentColor` RGB.** `expect(screen.getByTestId("step-hold").style.background).toContain("31, 78, 121")` (test line 181) asserts on the parsed RGB form of the default `#1f4e79`. If the default ever changes, this test breaks. Cosmetic — assert on the prop value or a data attribute instead. v1.1 polish.
+- 🟡 **Divider renders two `<span>` line segments** even without a label (`Divider.tsx:36-38`). Visually equivalent to a single line since they're touching, but structurally weird. Single span when no label would be cleaner. Cosmetic.
+- 🟡 **Tabs `bound.quality` fallback selects first tab without warning.** `Tabs.tsx:53` silently falls back when bound activeTab has bad quality — bad-quality dashed-grey outline on the strip is the only signal. Add a `console.warn` for designer/runtime debugging. v1.1 polish.
+
+**Environmental notes (NOT CODEX-AC issues):**
+
+- 🟢 **Cargo test matrix not fully runnable on this fresh merge environment.** The Tauri designer build needs `icons/icon.ico` which isn't checked in (regenerable), and the scripting integration test (`websocket_gateway_forwards_script_events_by_project`) requires a Python interpreter on PATH — neither was available in the merge environment. CODEX-AC ships **zero Rust changes** (verified by diff stat); these gaps are pre-existing on this machine and unrelated to the submission. The acceptance criterion "cargo test stays green (no Rust changes expected)" is satisfied by virtue of no Rust touches.
+
+**v1.1 polish list (5 items):**
+1. Split Designer README item 40 into per-component smoke steps for Modal/DataGrid/BarChart/PieChart (Card/Divider/Spinner/Stepper can stay bundled).
+2. Modal: drop the `dialog.setAttribute("open", ...)` fallback or warn when it fires.
+3. DataGrid: re-sync sort state when `props.sortBy` changes (effect on prop change).
+4. Stepper test: assert on prop value rather than parsed RGB string.
+5. Tabs: warn when bad-quality bound activeTab forces fallback to first tab.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged.** Phase 4 component slice complete: library now ships **25 components** (Phase 2's 6 essentials + AB's 8 + AC's 9 + AlarmTable + Trend), exactly the v1 target. Bundle 102,400 bytes leaves ~93% headroom under the 1.5 MB cap for any future additions. Codex's pre-flight verification of `RenderProps.children` plumbing was the load-bearing piece of this submission — confirmed before writing a line of code, which kept the brief's scope intact.
+
+After this lands, **Phase 4's remaining open work is just CODEX-Z (ADS rework, awaiting Codex)**. Once Z merges, Phase 4 closes pending the v1.0 ladder items: plugin SDK, audit log, backup/restore, performance baseline, and the pre-1.0 hardware-validation gate.

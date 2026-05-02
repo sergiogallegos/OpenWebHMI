@@ -9,16 +9,14 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
-| CODEX-AC | Component library batch 3 — 9 components to hit v1 25+ target (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper) | codex | submitted | 2026-05-01 18:31 MDT codex | [tasks/CODEX-AC-component-batch-3.md](tasks/CODEX-AC-component-batch-3.md) |
 
 ### Phase 4 dependency graph
 
 ```
 CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS protocol; brief amended (=0.4.4 + use ads crate)
-CODEX-AC  (component batch 3)      ← unblocked — closes v1 25+ component target
 ```
 
-**Two open tasks: Z (driver rework) and AC (component batch 3).** Independent — Z is wire-protocol Rust, AC is pure TS+SVG. Can run in parallel. AC adds the v1 25+ target's final 9 components: layout (Tabs, Card, Divider), operator dialog (Modal), tabular history (DataGrid), categorical charts (BarChart, PieChart), and indicators (Spinner, Stepper). Once both land plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate), Phase 4 closes.
+**One open task: Z (driver rework).** AC merged 2026-05-01: 9 new components (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper), 102,400-byte bundle, library at 25 components total. After Z lands plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate), Phase 4 closes.
 
 ## Phase 3 — Core SCADA features
 
@@ -69,6 +67,7 @@ CODEX-AC  (component batch 3)      ← unblocked — closes v1 25+ component tar
 | CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | `6a8c2e2` | 4 |
 | CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | `560227e` | 4 |
 | CODEX-AB | Component library batch 2 — 8 new components (Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner) | codex | `3e88046` | 4 |
+| CODEX-AC | Component library batch 3 — 9 new components (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper); v1 25-component target met | codex | _backfill_ | 4 |
 
 ## Conventions
 
