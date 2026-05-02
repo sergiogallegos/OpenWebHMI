@@ -110,7 +110,7 @@ Deliverables:
 
 **Goal:** a small real plant could deploy this. Plugin SDK is real. Docs cover everything a contributor needs. **Picks up any Phase 2 stretch deliverables that slipped** (visual canvas, snap/undo/redo, the remaining 4 components, theme editor) before tagging 1.0.
 
-> **Driver scope expansion (2026-04-30).** The original Phase 4 plan listed OPC UA as the only second driver. Per user direction, Phase 4 now ships **four new drivers** alongside Rockwell: OPC UA, Modbus (TCP+RTU), MQTT (generic + Sparkplug B), and Beckhoff ADS. Each lands as a real driver crate + simulator harness + simulator-driven CI integration tests + wiki entry + designer manual smoke step. Real-hardware validation remains the pre-1.0 gate for `driver-rockwell` only; the simulator-validation bar is the merge gate for the others. Drivers are independent — they can land in any order in parallel.
+> **Driver scope expansion (2026-04-30).** The original Phase 4 plan listed OPC UA as the only second driver. Per maintainer direction, Phase 4 now ships **four new drivers** alongside Rockwell: OPC UA, Modbus (TCP+RTU), MQTT (generic + Sparkplug B), and Beckhoff ADS. Each lands as a real driver crate + simulator harness + simulator-driven CI integration tests + wiki entry + designer manual smoke step. Real-hardware validation remains the pre-1.0 gate for `driver-rockwell` only; the simulator-validation bar is the merge gate for the others. Drivers are independent — they can land in any order in parallel.
 
 Deliverables:
 - **Four new drivers** (committed v1 scope, tracked separately):

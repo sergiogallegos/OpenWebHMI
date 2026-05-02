@@ -145,7 +145,7 @@ Submission tightened. Gateway now keeps the historian recorder attached to `Proj
 
 ### 2026-04-27  claude — review pass 1
 
-Spec-compliant. Schema, recorder, aggregations, and hot-reload all match the brief exactly. The code shipped as part of the user-requested bulk checkpoint `9db711e`; this review formalizes the merge.
+Spec-compliant. Schema, recorder, aggregations, and hot-reload all match the brief exactly. The code shipped as part of the bulk checkpoint commit `9db711e`; this review formalizes the merge.
 
 Strong points:
 - ✅ **SQLite schema verbatim per brief** (`store.rs:135-148`): `tag_dictionary` with autoincrement, `tag_history` `PRIMARY KEY (tag_id, ts_ms) WITHOUT ROWID`. Tag-path interning keeps history rows compact.

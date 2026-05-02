@@ -12,7 +12,7 @@ last-update: 2026-05-01 claude
 
 ## Brief
 
-> **Phase 4 scope expansion (2026-04-30).** Per user direction, the v1 second-driver scope expands from OPC UA-only to **{OPC UA, Modbus TCP/RTU, MQTT incl. Sparkplug B, Beckhoff ADS}**. Each driver ships with: real driver crate + simulator harness + simulator-driven integration tests + wiki entry + manual smoke step. Real-hardware validation remains the pre-1.0 gate.
+> **Phase 4 scope expansion (2026-04-30).** Per maintainer direction, the v1 second-driver scope expands from OPC UA-only to **{OPC UA, Modbus TCP/RTU, MQTT incl. Sparkplug B, Beckhoff ADS}**. Each driver ships with: real driver crate + simulator harness + simulator-driven integration tests + wiki entry + manual smoke step. Real-hardware validation remains the pre-1.0 gate.
 
 ### Goal
 

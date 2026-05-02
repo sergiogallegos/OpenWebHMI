@@ -40,7 +40,7 @@ Add to workspace `members`.
 
 ### Wire crate
 
-**`ads = "=0.4.4"`** (https://crates.io/crates/ads, https://github.com/birkenfeld/ads-rs). The original brief named `0.7`; that version doesn't exist on crates.io — `0.4.4` is current at 2026-05-01 (brief error mine). Sync API; the driver wraps blocking calls in `tokio::task::spawn_blocking`. Includes both client and server primitives; v1 uses only client.
+**`ads = "=0.4.4"`** (https://crates.io/crates/ads, https://github.com/birkenfeld/ads-rs). The original brief named `0.7`; that version doesn't exist on crates.io — `0.4.4` is current at 2026-05-01 (brief error in the original brief, owned by Claude). Sync API; the driver wraps blocking calls in `tokio::task::spawn_blocking`. Includes both client and server primitives; v1 uses only client.
 
 **Required: actually use the `ads` crate's wire API end-to-end.** The first CODEX-Z submission stubbed this out with a custom JSON-line protocol over plain TCP — that doesn't speak ADS to a real Beckhoff TwinCAT runtime. The driver MUST:
 - Use `ads::Client::new(...)` (or `ads::tcp::Connection`) for the TCP+AMS layer.
@@ -164,7 +164,7 @@ Compare to the other Phase 4 drivers:
 
 Codex's wiki note acknowledges part of this honestly: *"The driver currently validates OpenWebHMI ADS semantics but does not yet exercise the `ads` crate against a real ADS router."* That's an understatement — the driver doesn't implement ADS at all.
 
-Brief error mine: my original brief pinned `ads = "0.7"`, which doesn't exist on crates.io. Latest is `0.4.4` (verified by `cargo search ads`). Codex flagged the version delta but landed an ads-shaped *façade* rather than asking for a brief amendment. Either path would have been fine; the chosen path produced something that can't merge.
+Brief error owned by Claude: the original brief pinned `ads = "0.7"`, which doesn't exist on crates.io. Latest is `0.4.4` (verified by `cargo search ads`). Codex flagged the version delta but landed an ads-shaped *façade* rather than asking for a brief amendment. Either path would have been fine; the chosen path produced something that can't merge.
 
 **Salvageable from this submission:**
 - `crates/driver-ads/src/address.rs` — `<port>:<symbol>` parser is correct; reuse as-is.

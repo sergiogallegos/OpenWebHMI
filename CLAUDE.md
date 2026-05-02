@@ -4,11 +4,11 @@ OpenWebHMI is an open-source SCADA/HMI platform — Rust gateway + Tauri designe
 
 ## Division of labor
 
-The user explicitly framed it: *"i want to codex for development, and you for check what he develop."*
+OpenWebHMI uses a two-agent collaboration model:
 
 - **Codex** writes the code.
 - **Claude** authors task briefs, reviews submissions, merges, and updates the bookkeeping.
-- **The user** routes messages between the two agents, makes strategic decisions, and runs manual smoke validations.
+- **Maintainer** routes messages between the two agents, makes strategic decisions, and runs manual smoke validations.
 
 ## How to resume any session
 
@@ -48,9 +48,9 @@ When Codex submits (status `submitted` in the task frontmatter):
 Document Claude-applied fixes transparently in the verdict.
 
 **Always flag honestly:**
-- Brief errors mine — when a brief I wrote was wrong (e.g. CODEX-T's "system.tag.write calls TagStore::publish directly", CODEX-Z's `ads = "0.7"` pin that doesn't exist on crates.io).
-- Verification mismatches — Codex's environment vs the user's (Node version drift, missing system deps).
-- Don't undersell load-bearing items as "polish" — if a "v1.1 polish" actually breaks the demo HMI's headline behavior, it's a closeout blocker, not polish. The user catches this and is right to push back.
+- Brief errors — when a Claude-authored brief was wrong (e.g. CODEX-T's "system.tag.write calls TagStore::publish directly", CODEX-Z's `ads = "0.7"` pin that doesn't exist on crates.io). Own them in the verdict.
+- Verification mismatches — Codex's environment vs the local merge environment (Node version drift, missing system deps).
+- Don't undersell load-bearing items as "polish" — if a "v1.1 polish" actually breaks the demo HMI's headline behavior, it's a closeout blocker, not polish.
 
 ## Brief authoring conventions
 
@@ -74,7 +74,7 @@ When the task is opened, also: add a row to `board.md`'s phase table, append a o
 
 ## Hand-off message format for Codex
 
-After opening or amending a task brief, write a hand-off message the user can paste to Codex. Format:
+After opening or amending a task brief, write a hand-off message the maintainer can paste to Codex. Format:
 - Task ID + path to task file
 - 2-3 sentence summary of what's required and why
 - Specific constraints (pinned versions, scope limits, "don't shortcut X")
@@ -93,7 +93,7 @@ After Phase 4 driver + component slices complete, the remaining v1.0 ladder: plu
 
 ## Project-specific gotchas
 
-- **Codex's verification claims often don't reproduce on the user's Node 25.** Track environment drift; recommend `.nvmrc` / pinned CI Node for v1.1.
+- **Codex's verification claims often don't reproduce on Node 25.** Track environment drift; recommend `.nvmrc` / pinned CI Node for v1.1.
 - **CODEX-V plumbing**: `system.tag.write` from Python scripts routes through `GatewayTagWriteSink` (driver-prefixed paths → per-driver write mpsc; memory-tag paths → `TagStore::publish`). When briefing Python-related tasks, don't say "publish directly" — that's the v1.0 brief error that prompted CODEX-V.
 - **Read/write asymmetry in components**: bindings give the read path but not the write path. Write-back inputs need a separate `tagPath` config prop (NumericInput / Slider / Dropdown / ToggleSwitch all follow this). v1.1 architectural fix: extend the binding system to expose the bound path for write-back use.
 - **MQTT TLS in CI**: `rumqttd 0.20.0` is plaintext-only. Real TLS testing uses an external Mosquitto-with-CA fixture (manual smoke step #27 in designer README).

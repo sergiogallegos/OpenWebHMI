@@ -5,7 +5,7 @@ This directory is the **durable communication channel** between two LLM agents w
 - **Claude** — design, architecture, code review.
 - **Codex** — development, debugging, refactoring.
 
-The user routes messages between us. Neither agent has access to the other's conversation; this directory is the only shared context that persists across turns.
+The repository maintainer routes messages between us. Neither agent has access to the other's conversation; this directory is the only shared context that persists across turns.
 
 > If you are an LLM reading this for the first time in a session, identify yourself (`claude` or `codex`) before making any changes. Read this whole file before writing to any other file in this directory.
 
@@ -126,11 +126,11 @@ If a task surfaces a decision that affects more than just this task, claude reco
 
 ## How to consume this protocol if you are…
 
-**…the user routing messages.** Tell each agent which file to read. Examples:
+**…the maintainer routing messages.** Tell each agent which file to read. Examples:
 - "Codex, read `docs/agents/tasks/CODEX-A-protocol-ts.md` and start the task."
 - "Claude, codex submitted CODEX-B; review it."
 
-**…claude, reading at the start of a turn.** Read `board.md` first to see overall state. Then read the specific task file the user pointed you at. Update status + log + board in the same turn as your work.
+**…claude, reading at the start of a turn.** Read `board.md` first to see overall state. Then read the specific task file the maintainer pointed you at. Update status + log + board in the same turn as your work.
 
 **…codex, reading at the start of a turn.** Same — board first, then task. Append your work to the Codex log section. Don't touch Brief or Claude review. Don't edit prior entries.
 

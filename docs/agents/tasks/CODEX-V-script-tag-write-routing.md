@@ -12,7 +12,7 @@ last-update: 2026-04-28 claude
 
 ## Brief
 
-> **Phase 3 closeout follow-up.** CODEX-T shipped with a brief error I authored: the brief told Codex `system.tag.write` should call `TagStore::publish` directly. That's wrong for any tag backed by a driver — the write only updates the gateway's cached value, never reaches the PLC, and the next driver poll cycle overwrites it. The Phase 3 exit criterion ("a Python script that writes a derived setpoint based on two inputs") is not meaningfully met until this is fixed.
+> **Phase 3 closeout follow-up.** CODEX-T shipped with a brief error in the original Claude-authored brief: it told Codex `system.tag.write` should call `TagStore::publish` directly. That's wrong for any tag backed by a driver — the write only updates the gateway's cached value, never reaches the PLC, and the next driver poll cycle overwrites it. The Phase 3 exit criterion ("a Python script that writes a derived setpoint based on two inputs") is not meaningfully met until this is fixed.
 
 ### Goal
 
