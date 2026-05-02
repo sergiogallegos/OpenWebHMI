@@ -3,9 +3,9 @@ id: CODEX-AC
 title: Component library batch 3 — Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-01
-last-update: 2026-05-01 claude
+last-update: 2026-05-01 18:31 MDT codex
 ---
 
 # CODEX-AC — Component library batch 3
@@ -237,6 +237,16 @@ Per component, in `packages/component-library/src/components/__tests__/component
 ## Codex log
 
 *(codex — append working notes here)*
+
+### 2026-05-01 18:21 MDT codex
+
+Status -> in-progress. Starting component-library batch 3. Verified `apps/runtime-web/src/ViewRenderer.tsx` already maps child component nodes into `RenderProps.children`, so Tabs, Card, and Modal can use the existing multi-child rendering path without runtime plumbing changes.
+
+### 2026-05-01 18:31 MDT codex
+
+Status -> submitted. Added all 9 requested components: Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, and Stepper. Registered and exported every component, expanded component tests from 50 to 62, appended manual smoke steps, and flipped the feature matrix component-library row to "25 components shipped." DataGrid parses JSON arrays from string tag values for v1, matching the brief's TagValue::Array deferral.
+
+Verification: `pnpm --filter @openwebhmi/component-library typecheck`, `pnpm --filter @openwebhmi/component-library test`, `pnpm --filter @openwebhmi/component-library build`, `pnpm -r typecheck`, `pnpm -r test`, and `cargo test --workspace --all-features --locked` all passed. Component-library emitted JS total is 102,400 bytes, under the 1.5 MB gate.
 
 ## Claude review
 

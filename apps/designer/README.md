@@ -61,3 +61,8 @@ pnpm --filter @openwebhmi/designer tauri dev
 33. Add a `Button`, bind `target` to a constant/tag path for a writable tag, configure a constant `writeValue`, click it in runtime mode, and confirm the write occurs only after any configured confirmation prompt.
 34. Add a `MultiState` bound to a small string or boolean tag, configure at least two label/color states, and confirm unmatched values fall back to the default label.
 35. Add an `AlarmBanner` above the existing `AlarmTable`, trigger pressure alarms, and confirm Critical/Warning/Info counts update from the same alarm subscription stream.
+36. Add `Tabs` with two child components, switch tabs by click and keyboard arrows, and confirm only the active child content is visible.
+37. Add a `Modal` with a child label, configure confirm/cancel tag paths, open it from a boolean binding, then confirm the buttons write `true` and Escape/click-outside cancel.
+38. Add a `DataGrid` bound to a string tag containing JSON row data, click column headers to sort, and use Prev/Next pagination with a small `pageSize`.
+39. Add `BarChart` and `PieChart` components using the same JSON categorical data, verify bar/legend labels render, then toggle PieChart donut mode.
+40. Add `Card`, `Divider`, `Spinner`, and `Stepper` components to the `home` view, verify children render inside Card, Divider labels align, Spinner hides when loading is false, and Stepper highlights the bound current step.

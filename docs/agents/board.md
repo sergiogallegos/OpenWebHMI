@@ -9,7 +9,7 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
-| CODEX-AC | Component library batch 3 — 9 components to hit v1 25+ target (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper) | codex | open | 2026-05-01 claude | [tasks/CODEX-AC-component-batch-3.md](tasks/CODEX-AC-component-batch-3.md) |
+| CODEX-AC | Component library batch 3 — 9 components to hit v1 25+ target (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper) | codex | submitted | 2026-05-01 18:31 MDT codex | [tasks/CODEX-AC-component-batch-3.md](tasks/CODEX-AC-component-batch-3.md) |
 
 ### Phase 4 dependency graph
 

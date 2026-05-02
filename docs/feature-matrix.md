@@ -72,7 +72,7 @@
 | Themes (project-level) | ✅ | ✅ | 🟢 v1 (Phase 2) |
 | Styles / style classes | ✅ | ✅ | 🟢 v1 (Phase 2) |
 | Templates / reusable view fragments | ✅ Templates / Embedded views | ✅ Widgets | 🟢 v1 (Phase 2) |
-| Component library (built-in) | ✅ (large) | ✅ (large) | 🟢 v1 — 25+ components target |
+| Component library (built-in) | ✅ (large) | ✅ (large) | 🟢 v1 complete — 25 components shipped |
 | Custom component plugins | ✅ Module SDK | ✅ | 🟢 v1 (Phase 4 SDK) |
 | Embedded views / containers | ✅ | ✅ | 🟢 v1 |
 | Multi-monitor / multi-window | ✅ Vision | ✅ | 🟡 post-1.0 |

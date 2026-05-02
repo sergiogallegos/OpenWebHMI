@@ -6,17 +6,26 @@ import type { TagValue } from "@openwebhmi/protocol";
 import { componentRegistry } from "../../registry";
 import type { AlarmEvent, BoundValue, DesignerContext, RuntimeContext } from "../../types";
 import { AlarmBanner } from "../AlarmBanner";
+import { BarChart } from "../BarChart";
 import { Button } from "../Button";
+import { Card } from "../Card";
 import { Container } from "../Container";
+import { DataGrid } from "../DataGrid";
+import { Divider } from "../Divider";
 import { Dropdown } from "../Dropdown";
 import { Gauge } from "../Gauge";
 import { Image } from "../Image";
 import { Indicator } from "../Indicator";
 import { Label } from "../Label";
+import { Modal } from "../Modal";
 import { MultiState } from "../MultiState";
 import { NumericInput } from "../NumericInput";
+import { PieChart } from "../PieChart";
 import { ProgressBar } from "../ProgressBar";
 import { Slider } from "../Slider";
+import { Spinner } from "../Spinner";
+import { Stepper } from "../Stepper";
+import { Tabs } from "../Tabs";
 import { ToggleSwitch } from "../ToggleSwitch";
 import { ValueDisplay } from "../ValueDisplay";
 
@@ -46,21 +55,130 @@ describe("componentRegistry", () => {
     expect(Object.keys(componentRegistry).sort()).toEqual([
       "AlarmBanner",
       "AlarmTable",
+      "BarChart",
       "Button",
+      "Card",
       "Container",
+      "DataGrid",
+      "Divider",
       "Dropdown",
       "Gauge",
       "Image",
       "Indicator",
       "Label",
+      "Modal",
       "MultiState",
       "NumericInput",
+      "PieChart",
       "ProgressBar",
       "Slider",
+      "Spinner",
+      "Stepper",
+      "Tabs",
       "ToggleSwitch",
       "Trend",
       "ValueDisplay",
     ]);
+  });
+});
+
+describe("Tabs", () => {
+  it("renders active child and supports keyboard navigation", async () => {
+    const user = userEvent.setup();
+    render(
+      <Tabs.Render props={Tabs.defaultProps} bindings={{}} context={runtimeContext}>
+        <span>Overview child</span>
+        <span>Details child</span>
+      </Tabs.Render>,
+    );
+    expect(screen.getByText("Overview child")).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("tablist"), { key: "ArrowRight" });
+    expect(screen.getByText("Details child")).toBeTruthy();
+  });
+
+  it("uses bad-quality activeTab fallback", () => {
+    render(<Tabs.Render props={{ ...Tabs.defaultProps, activeTab: "details" }} bindings={{ activeTab: badString }} context={runtimeContext} />);
+    expectBadQuality(screen.getByLabelText("Tabs"));
+  });
+});
+
+describe("Modal", () => {
+  it("renders inline in designer mode", () => {
+    render(<Modal.Render props={{ ...Modal.defaultProps, open: true }} bindings={{}} context={designerContext}>Body</Modal.Render>);
+    expect(screen.getByText("Modal preview")).toBeTruthy();
+  });
+
+  it("writes confirm and suppresses designer writes", async () => {
+    const user = userEvent.setup();
+    const onWriteTag = vi.fn();
+    render(<Modal.Render props={{ ...Modal.defaultProps, open: true, confirmTagPath: "confirm" }} bindings={{}} context={{ mode: "runtime", onWriteTag }}>Body</Modal.Render>);
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+    expect(onWriteTag).toHaveBeenCalledWith("confirm", { type: "bool", value: true });
+  });
+});
+
+describe("DataGrid", () => {
+  it("sorts rows by column and paginates", async () => {
+    const user = userEvent.setup();
+    render(<DataGrid.Render props={{ ...DataGrid.defaultProps, pageSize: 1 }} bindings={{}} context={runtimeContext} />);
+    expect(screen.getByText("Pressure")).toBeTruthy();
+    await user.click(screen.getByText(/Value/));
+    expect(screen.getByText("Counter")).toBeTruthy();
+    await user.click(screen.getByText("Next"));
+    expect(screen.getByText("Pressure")).toBeTruthy();
+  });
+
+  it("parses rows from string tag and renders bad quality", () => {
+    render(<DataGrid.Render props={DataGrid.defaultProps} bindings={{ rows: bound({ type: "string", value: '[{"tag":"A","value":1,"state":"Good"}]' }, "bad") }} context={runtimeContext} />);
+    expect(screen.getByText("A")).toBeTruthy();
+    expectBadQuality(screen.getByLabelText("Data grid"));
+  });
+});
+
+describe("BarChart", () => {
+  it("renders with bound JSON data", () => {
+    render(<BarChart.Render props={BarChart.defaultProps} bindings={{ data: bound({ type: "string", value: '[{"label":"Pump","value":5}]' }, "good") }} context={runtimeContext} />);
+    expect(screen.getByRole("img", { name: "Bar chart graphic" })).toBeTruthy();
+    expect(screen.getByText("Pump")).toBeTruthy();
+  });
+});
+
+describe("PieChart", () => {
+  it("renders legend and handles bad quality", () => {
+    render(<PieChart.Render props={PieChart.defaultProps} bindings={{ data: bound({ type: "string", value: '[{"label":"Run","value":5}]' }, "bad") }} context={runtimeContext} />);
+    expect(screen.getByRole("img", { name: "Pie chart graphic" })).toBeTruthy();
+    expectBadQuality(screen.getByLabelText("Pie chart"));
+  });
+});
+
+describe("Card", () => {
+  it("renders children", () => {
+    render(<Card.Render props={Card.defaultProps} bindings={{}} context={designerContext}><span>Card child</span></Card.Render>);
+    expect(screen.getByText("Card child")).toBeTruthy();
+  });
+});
+
+describe("Spinner", () => {
+  it("renders when loading and hides when false", () => {
+    render(<Spinner.Render props={Spinner.defaultProps} bindings={{ loading: goodBool }} context={runtimeContext} />);
+    expect(screen.getByRole("img", { name: "Loading spinner" })).toBeTruthy();
+    cleanup();
+    render(<Spinner.Render props={Spinner.defaultProps} bindings={{ loading: bound({ type: "bool", value: false }, "good") }} context={runtimeContext} />);
+    expect(screen.getByLabelText("Spinner hidden")).toBeTruthy();
+  });
+});
+
+describe("Divider", () => {
+  it("renders label", () => {
+    render(<Divider.Render props={{ ...Divider.defaultProps, label: "Section" }} bindings={{}} context={designerContext} />);
+    expect(screen.getByText("Section")).toBeTruthy();
+  });
+});
+
+describe("Stepper", () => {
+  it("highlights current step from binding", () => {
+    render(<Stepper.Render props={Stepper.defaultProps} bindings={{ currentStep: bound({ type: "string", value: "hold" }, "good") }} context={runtimeContext} />);
+    expect(screen.getByTestId("step-hold").style.background).toContain("31, 78, 121");
   });
 });
 

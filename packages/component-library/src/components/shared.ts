@@ -5,6 +5,17 @@ import type { TagValue } from "@openwebhmi/protocol";
 export const baseFont =
   'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
+export const chartPalette = [
+  "#2563eb",
+  "#dc2626",
+  "#059669",
+  "#7c3aed",
+  "#d97706",
+  "#0891b2",
+  "#4f46e5",
+  "#be123c",
+];
+
 export function isBadQuality(bound: BoundValue | undefined): boolean {
   return bound !== undefined && bound.quality !== "good";
 }
