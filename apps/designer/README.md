@@ -53,3 +53,11 @@ pnpm --filter @openwebhmi/designer tauri dev
 25. Configure an MQTT driver pointed at `127.0.0.1:1883`, subscribe to `factory/line1/temperature`, `factory/line1/count`, `factory/line1/json`, and `spB/v1.0/group/DDATA/edge/device/Pressure`, and confirm generic plus Sparkplug B values update in the runtime.
 26. Reconfigure the same MQTT driver with `transport="websocket"` and `host="ws://127.0.0.1:1884/mqtt"` (the simulator logs the WebSocket address on start), then confirm `factory/line1/temperature` continues updating.
 27. TLS smoke uses an external TLS broker such as Mosquitto because the embedded `rumqttd` fixture is kept plaintext for deterministic CI. Start Mosquitto with a server cert signed by a local CA, set `transport="tls"`, `host`/`port` to the TLS listener, and `ca_cert_path` to that CA PEM; confirm the driver connects without setting `tls_insecure`.
+28. Add a `Gauge` bound to `rockwell-1/Pressure`, set units to `PSI`, set warn/alarm thresholds around the simulator's live range, and confirm the SVG needle and colored bands render in the runtime preview.
+29. Add a `ProgressBar` bound to `rockwell-1/Pressure`, try both horizontal and vertical orientations, and confirm the fill percentage tracks the live pressure value.
+30. Add a `Slider` bound to a writable numeric tag such as `rockwell-1/Setpoint`, keep `commitMode=release`, drag and release the thumb, and confirm the tag write loops through the gateway.
+31. Add a `Dropdown` with Auto/Manual options, bind `value` to a string memory tag, change the selected option in runtime mode, and confirm the selected primitive is written.
+32. Add a `ToggleSwitch` bound to a boolean tag, click it in runtime mode, and confirm it writes the inverse boolean while designer mode suppresses live writes.
+33. Add a `Button`, bind `target` to a constant/tag path for a writable tag, configure a constant `writeValue`, click it in runtime mode, and confirm the write occurs only after any configured confirmation prompt.
+34. Add a `MultiState` bound to a small string or boolean tag, configure at least two label/color states, and confirm unmatched values fall back to the default label.
+35. Add an `AlarmBanner` above the existing `AlarmTable`, trigger pressure alarms, and confirm Critical/Warning/Info counts update from the same alarm subscription stream.

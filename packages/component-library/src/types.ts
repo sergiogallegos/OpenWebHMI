@@ -2,7 +2,14 @@ import type React from "react";
 import type { HistoryPoint, Quality, ServerMessage, TagValue } from "@openwebhmi/protocol";
 
 export type PropSchemaField = {
-  type: "string" | "number" | "boolean" | "color" | "select" | "stringList";
+  type:
+    | "string"
+    | "number"
+    | "boolean"
+    | "color"
+    | "select"
+    | "stringList"
+    | "objectList";
   label?: string;
   options?: string[];
   default?: unknown;

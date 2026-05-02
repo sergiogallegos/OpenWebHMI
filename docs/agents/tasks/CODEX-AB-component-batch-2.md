@@ -3,7 +3,7 @@ id: CODEX-AB
 title: Component library batch 2 — Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-01
 last-update: 2026-05-01 claude
 ---
@@ -215,10 +215,48 @@ The Trend/AlarmTable test pattern (`MockEditor`-style stubs, synthetic events) i
 
 *(codex — append working notes here)*
 
+### 2026-05-01 17:14 MDT codex
+
+Status -> in-progress. Starting component-library batch 2 first. Plan: mirror existing NumericInput/Trend/AlarmTable patterns, use the existing schema surface unless an object-list editor is already present, then run component package checks and workspace smoke.
+
+### 2026-05-01 17:27 MDT codex
+
+Status -> submitted. Added all 8 requested components: Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, and AlarmBanner. Registered and exported every component, added `objectList` schema support in the designer property panel for Dropdown options / MultiState states / Button writeValue, expanded component tests to 50 total, and appended manual smoke steps for each component.
+
+Verification: `pnpm --filter @openwebhmi/component-library typecheck`, `pnpm --filter @openwebhmi/component-library test`, `pnpm --filter @openwebhmi/component-library build`, `pnpm -r typecheck`, `pnpm -r test`, and `cargo test --workspace --all-features --locked` all passed. Component-library emitted JS total is 67,720 bytes, under the 1.5 MB gate.
+
 ## Claude review
 
-*(claude — after submission)*
+### 2026-05-01  claude — review pass 1
+
+Eight components shipped, library doubled from 8 → 16. Bundle 67,720 bytes (well under the 1.5 MB gate). 50 tests green, +15 new for the batch. **Caught one real bug during review and applied a small fix during merge** (see Findings).
+
+Strong points:
+- ✅ **Gauge SVG arc math** is clean (`polar` + `arcPath` helpers, 270° SWEEP starting at -225°). Layered band rendering: green base → yellow warn overlays → red alarm overlays via `strokeLinecap="round"` so the segments visually compose.
+- ✅ **AlarmBanner** subscribes via `context.onSubscribeAlarms` only in runtime mode, falls back to `context.projectId` when `projectId` prop is blank, counts active+acked alarms by priority band (≤2 critical / =3 warning / ≥4 info), respects `showZero` for empty bands, click-to-scroll uses `[aria-label='Alarms']` selector that matches AlarmTable's section.
+- ✅ **Slider live-mode rate limit**: 33ms throttle via `lastLiveWrite` ref + Date.now() guard at `Slider.tsx:86-90`. Release mode uses `onMouseUp`/`onTouchEnd` (covers desktop + touch).
+- ✅ **Button** correctly handles all three disable cases: no target, bad-quality bound target, designer mode. `disabled` flag drives the visual; `onClick` double-checks `context.mode !== "runtime" || disabled` before writing. `confirmPrompt` via `window.confirm()` works as briefed.
+- ✅ **`objectList` schema variant added** at `types.ts:12` and `PropertyPanel.tsx:203` — the new schema type the brief flagged as needing to be invented. Powers Dropdown's `options` and MultiState's `states` arrays.
+- ✅ **Designer-mode write suppression** consistent across all four inputs (Slider, Dropdown, ToggleSwitch, Button). Each guards `context.mode !== "runtime"` before calling `onWriteTag`.
+- ✅ **Bad-quality visuals** consistent — `badQualityStyle(bound)` from `shared.ts` applied across the new components; matches existing Trend/AlarmTable patterns.
+- ✅ **Codex correctly held the line** on CODEX-Z: didn't try to two-shot the ADS rework alongside AB. Discipline note appreciated.
+
+Findings:
+
+- 🟠 **Bug — write-back hardcoded to literal `"value"` path** in Slider, Dropdown, ToggleSwitch. `Slider.tsx:62` was `context.onWriteTag("value", ...)`; same in Dropdown.tsx:63 and ToggleSwitch.tsx:42. None of the three could write to a real PLC tag — they'd all hit the gateway's memory-tag fallback (CODEX-V's `split_once('/')` → `None` → publish path) regardless of binding configuration. **Fix applied during review** mirroring `NumericInput`'s existing pattern: added a `tagPath?: string` prop with default `""` and `props.tagPath || "value"` write expression. Tests already assert against the default fallback so they stayed green; verified 50/50 still passing post-fix. Button is the only correctly-shaped one of the four — its `target` prop is bindable from the start.
+- 🟡 **Read/write asymmetry is the deeper issue.** The component model handles the read direction via the binding system (`bindings.value` is a `BoundValue` resolved from the bound tag path) but exposes only the *value* to components, not the *path*. Write-back therefore needs a separate, manually-configured `tagPath` string. Designers will commonly forget to set it; result: writes go to a memory tag silently. v1.1 architectural fix: extend the binding system or runtime context to expose the bound path so write-back can use it automatically. Tracked.
+- 🟡 **`Button.writeValue` typed as `TagValue | TagValue[]`** to accommodate the `objectList` editor (which always stores values as arrays). `normalizeWriteValue` picks the first element. Works but is awkward — the brief said singular `TagValue`. v1.1: a proper TagValue picker with type+value selectors, no array.
+- 🟡 **`AlarmBanner.mergeEvent` doesn't bound the events array** at `AlarmBanner.tsx:89-91`. Cleared alarms remain in the array (`countBands` correctly skips them so the displayed count is right). Memory grows unbounded over a long-running session with high alarm churn. AlarmTable bounds at 500 by default; AlarmBanner should adopt the same cap. v1.1.
+- 🟡 **Gauge color bands don't dim on bad quality.** Only the needle goes dashed-grey; the background arc and warn/alarm bands stay full color. Inconsistent with how other components handle bad quality. Cosmetic; v1.1.
+- 🟢 **Test coverage** is comprehensive: every component has a "renders default props", "writes on user action in runtime", "doesn't write in designer", and "renders bad quality" combination as applicable. AlarmBanner has a synthetic-events branch like AlarmTable does.
+- 🟢 **Component bundle 67.7kB uncompressed** for 16 components — about 4.2kB per component. Plenty of headroom for the v1 25+ target.
+
+Acceptance criteria — all eight boxes verified after the Claude-applied write-target fix.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged with a Claude-applied fix.** Applied during review: added `tagPath` props to Slider/Dropdown/ToggleSwitch matching NumericInput's existing pattern so write-back actually targets a configurable tag path instead of the literal `"value"` string. The fix is mechanical (3 prop declarations + 3 schema entries + 3 fallback expressions); tests stayed green because they exercised the default fallback path.
+
+Library now at **16 components** (up from 8). v1 target is 25+. Five v1.1 polish items added (write-target asymmetry, Button writeValue array shape, AlarmBanner unbounded events, Gauge bad-quality bands, plus the architectural extend-the-binding-system follow-up).
+
+Codex's discipline note worth flagging: explicitly held off on Z's rework rather than landing another stub. Same posture from CODEX-AA. That's the right pattern.

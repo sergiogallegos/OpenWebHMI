@@ -9,16 +9,14 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
-| CODEX-AB | Component library batch 2 — 8 new components (Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner) | codex | open | 2026-05-01 claude | [tasks/CODEX-AB-component-batch-2.md](tasks/CODEX-AB-component-batch-2.md) |
 
 ### Phase 4 dependency graph
 
 ```
 CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS protocol; brief amended (=0.4.4 + use ads crate)
-CODEX-AB  (component batch 2)      ← unblocked — 8 components, independent of driver work
 ```
 
-**Two open tasks: Z (driver rework) and AB (component batch 2).** Independent — Z is wire-protocol Rust + sim, AB is pure TS+SVG component work. Can run in parallel. Once both land plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate), Phase 4 closes.
+**One open task: Z (driver rework).** AB merged; component library now at 16 (v1 target 25+). Remaining Phase 4 work after Z: plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate, and a third component batch to reach the 25+ target.
 
 ## Phase 3 — Core SCADA features
 
@@ -68,6 +66,7 @@ CODEX-AB  (component batch 2)      ← unblocked — 8 components, independent o
 | CODEX-W | `crates/driver-opcua` — OPC UA client driver | codex | `6a8c2e2` | 4 |
 | CODEX-Y | `crates/driver-mqtt` — MQTT (generic + Sparkplug B) driver | codex | `6a8c2e2` | 4 |
 | CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | `560227e` | 4 |
+| CODEX-AB | Component library batch 2 — 8 new components (Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner) | codex | _pending merge_ | 4 |
 
 ## Conventions
 

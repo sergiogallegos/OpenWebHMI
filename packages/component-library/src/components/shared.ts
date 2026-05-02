@@ -57,3 +57,26 @@ export function tagValueFromNumber(value: number): TagValue {
     ? { type: "int", value }
     : { type: "real", value };
 }
+
+export function tagValueToPrimitive(
+  value: TagValue | undefined,
+): string | number | boolean | undefined {
+  return value?.value;
+}
+
+export function primitiveToTagValue(value: string | number | boolean): TagValue {
+  if (typeof value === "boolean") {
+    return { type: "bool", value };
+  }
+  if (typeof value === "number") {
+    return tagValueFromNumber(value);
+  }
+  return { type: "string", value };
+}
+
+export function clampNumber(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.min(max, Math.max(min, value));
+}

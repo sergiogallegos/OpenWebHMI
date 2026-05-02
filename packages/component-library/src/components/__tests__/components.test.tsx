@@ -1,15 +1,23 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TagValue } from "@openwebhmi/protocol";
 import { componentRegistry } from "../../registry";
-import type { BoundValue, DesignerContext, RuntimeContext } from "../../types";
+import type { AlarmEvent, BoundValue, DesignerContext, RuntimeContext } from "../../types";
+import { AlarmBanner } from "../AlarmBanner";
+import { Button } from "../Button";
 import { Container } from "../Container";
+import { Dropdown } from "../Dropdown";
+import { Gauge } from "../Gauge";
 import { Image } from "../Image";
 import { Indicator } from "../Indicator";
 import { Label } from "../Label";
+import { MultiState } from "../MultiState";
 import { NumericInput } from "../NumericInput";
+import { ProgressBar } from "../ProgressBar";
+import { Slider } from "../Slider";
+import { ToggleSwitch } from "../ToggleSwitch";
 import { ValueDisplay } from "../ValueDisplay";
 
 const runtimeContext: RuntimeContext = {
@@ -36,15 +44,160 @@ afterEach(() => {
 describe("componentRegistry", () => {
   it("exports the registered components by kind", () => {
     expect(Object.keys(componentRegistry).sort()).toEqual([
+      "AlarmBanner",
       "AlarmTable",
+      "Button",
       "Container",
+      "Dropdown",
+      "Gauge",
       "Image",
       "Indicator",
       "Label",
+      "MultiState",
       "NumericInput",
+      "ProgressBar",
+      "Slider",
+      "ToggleSwitch",
       "Trend",
       "ValueDisplay",
     ]);
+  });
+});
+
+describe("Gauge", () => {
+  it("renders with default props and a bound value", () => {
+    render(<Gauge.Render props={Gauge.defaultProps} bindings={{ value: goodNumber }} context={runtimeContext} />);
+    expect(screen.getByRole("img", { name: "Gauge chart" })).toBeTruthy();
+    expect(screen.getByText("12.3")).toBeTruthy();
+  });
+
+  it("renders the bad-quality visual", () => {
+    render(<Gauge.Render props={Gauge.defaultProps} bindings={{ value: badNumber }} context={runtimeContext} />);
+    expectBadQuality(screen.getByLabelText("Gauge"));
+  });
+});
+
+describe("ProgressBar", () => {
+  it("renders fill from bound value", () => {
+    render(<ProgressBar.Render props={ProgressBar.defaultProps} bindings={{ value: goodNumber }} context={runtimeContext} />);
+    expect(screen.getByTestId("progress-fill").style.width).toBe("12.345%");
+  });
+
+  it("renders bad quality", () => {
+    render(<ProgressBar.Render props={ProgressBar.defaultProps} bindings={{ value: badNumber }} context={runtimeContext} />);
+    expectBadQuality(screen.getByLabelText("Progress bar"));
+  });
+});
+
+describe("Slider", () => {
+  it("writes on release in runtime mode", async () => {
+    const onWriteTag = vi.fn();
+    render(<Slider.Render props={Slider.defaultProps} bindings={{}} context={{ mode: "runtime", onWriteTag }} />);
+    const input = screen.getByLabelText("Slider input");
+    fireEvent.change(input, { target: { value: "75" } });
+    fireEvent.mouseUp(input);
+    expect(onWriteTag).toHaveBeenCalledWith("value", { type: "int", value: 75 });
+  });
+
+  it("does not write in designer mode", async () => {
+    const user = userEvent.setup();
+    const onWriteTag = vi.fn();
+    render(<Slider.Render props={Slider.defaultProps} bindings={{}} context={designerContext} />);
+    await user.type(screen.getByLabelText("Slider input"), "75");
+    expect(onWriteTag).not.toHaveBeenCalled();
+  });
+});
+
+describe("Dropdown", () => {
+  it("writes selected option in runtime mode", async () => {
+    const user = userEvent.setup();
+    const onWriteTag = vi.fn();
+    render(<Dropdown.Render props={Dropdown.defaultProps} bindings={{}} context={{ mode: "runtime", onWriteTag }} />);
+    await user.selectOptions(screen.getByLabelText("Dropdown"), "string:manual");
+    expect(onWriteTag).toHaveBeenCalledWith("value", { type: "string", value: "manual" });
+  });
+
+  it("renders bad quality", () => {
+    render(<Dropdown.Render props={Dropdown.defaultProps} bindings={{ value: badString }} context={runtimeContext} />);
+    expectBadQuality(screen.getByLabelText("Dropdown"));
+  });
+});
+
+describe("ToggleSwitch", () => {
+  it("writes inverse boolean in runtime mode", async () => {
+    const user = userEvent.setup();
+    const onWriteTag = vi.fn();
+    render(<ToggleSwitch.Render props={ToggleSwitch.defaultProps} bindings={{ value: goodBool }} context={{ mode: "runtime", onWriteTag }} />);
+    await user.click(screen.getByLabelText("Toggle switch"));
+    expect(onWriteTag).toHaveBeenCalledWith("value", { type: "bool", value: false });
+  });
+
+  it("does not write in designer mode", async () => {
+    const user = userEvent.setup();
+    const onWriteTag = vi.fn();
+    render(<ToggleSwitch.Render props={ToggleSwitch.defaultProps} bindings={{}} context={designerContext} />);
+    await user.click(screen.getByLabelText("Toggle switch"));
+    expect(onWriteTag).not.toHaveBeenCalled();
+  });
+});
+
+describe("Button", () => {
+  it("writes configured value to bound target", async () => {
+    const user = userEvent.setup();
+    const onWriteTag = vi.fn();
+    render(
+      <Button.Render
+        props={{ ...Button.defaultProps, writeValue: { type: "int", value: 7 } }}
+        bindings={{ target: bound({ type: "string", value: "pump/start" }, "good") }}
+        context={{ mode: "runtime", onWriteTag }}
+      />,
+    );
+    await user.click(screen.getByLabelText("Button"));
+    expect(onWriteTag).toHaveBeenCalledWith("pump/start", { type: "int", value: 7 });
+  });
+
+  it("does not write in designer mode", async () => {
+    const user = userEvent.setup();
+    const onWriteTag = vi.fn();
+    render(<Button.Render props={{ ...Button.defaultProps, target: "pump/start" }} bindings={{}} context={designerContext} />);
+    await user.click(screen.getByLabelText("Button"));
+    expect(onWriteTag).not.toHaveBeenCalled();
+  });
+});
+
+describe("MultiState", () => {
+  it("renders matching state label", () => {
+    render(<MultiState.Render props={MultiState.defaultProps} bindings={{ value: bound({ type: "string", value: "stop" }, "good") }} context={runtimeContext} />);
+    expect(screen.getByText("Stopped")).toBeTruthy();
+  });
+
+  it("renders bad quality", () => {
+    render(<MultiState.Render props={MultiState.defaultProps} bindings={{ value: badString }} context={runtimeContext} />);
+    expectBadQuality(screen.getByLabelText("MultiState"));
+  });
+});
+
+describe("AlarmBanner", () => {
+  it("subscribes and counts active alarm bands", async () => {
+    let callback: ((event: any) => void) | undefined;
+    const onSubscribeAlarms = vi.fn((_options, next) => {
+      callback = next;
+      return vi.fn();
+    });
+    render(
+      <AlarmBanner.Render
+        props={{ ...AlarmBanner.defaultProps, showZero: true }}
+        bindings={{}}
+        context={{ mode: "runtime", onWriteTag: vi.fn(), projectId: "phase1-demo", onSubscribeAlarms }}
+      />,
+    );
+    callback?.(alarmEvent({ alarm_id: "a1", priority: 2, state: "active" }));
+    callback?.(alarmEvent({ alarm_id: "a2", priority: 3, state: "acked" }));
+    expect(onSubscribeAlarms).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "critical alarms" }).textContent).toContain("1"),
+    );
+    expect(screen.getByRole("button", { name: "warning alarms" }).textContent).toContain("1");
   });
 });
 
@@ -334,6 +487,23 @@ function bound(value: TagValue, quality: BoundValue["quality"]): BoundValue {
     value,
     quality,
     ts: 1_714_000_000_000,
+  };
+}
+
+function alarmEvent(overrides: Partial<AlarmEvent>): AlarmEvent {
+  return {
+    kind: "alarm.event",
+    alarm_id: "alarm",
+    label: "Alarm",
+    priority: 2,
+    state: "active",
+    tag_path: "rockwell-1/Pressure",
+    value: { type: "real", value: 100 },
+    quality: "good",
+    activated_at_ms: 1,
+    transitioned_at_ms: 1,
+    message: "Alarm",
+    ...overrides,
   };
 }
 

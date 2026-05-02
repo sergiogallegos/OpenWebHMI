@@ -200,6 +200,22 @@ function PropInput({
       />
     );
   }
+  if (type === "objectList") {
+    return (
+      <textarea
+        value={JSON.stringify(value ?? [], null, 2)}
+        onChange={(event) => {
+          try {
+            const parsed = JSON.parse(event.currentTarget.value);
+            onChange(Array.isArray(parsed) ? parsed : []);
+          } catch {
+            onChange(value);
+          }
+        }}
+        style={{ ...styles.input, minHeight: 110, resize: "vertical", fontFamily: "monospace" }}
+      />
+    );
+  }
   return (
     <input
       type={type === "number" ? "number" : type === "color" ? "color" : "text"}
