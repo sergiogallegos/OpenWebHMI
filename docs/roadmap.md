@@ -117,7 +117,7 @@ Deliverables:
   - `crates/driver-opcua` — [CODEX-W](agents/tasks/CODEX-W-driver-opcua.md). Validates the `Driver` trait against a fundamentally different protocol from EtherNet/IP. Opens up Siemens / Schneider / Beckhoff via OPC UA endpoints.
   - `crates/driver-modbus` — [CODEX-X](agents/tasks/CODEX-X-driver-modbus.md). TCP + RTU in one crate. The most common legacy protocol — every Schneider, Eaton, AB Micro, GE Versamax speaks it.
   - `crates/driver-mqtt` — [CODEX-Y](agents/tasks/CODEX-Y-driver-mqtt.md). Generic topic-to-tag mapping + Sparkplug B (the IIoT MQTT spec used in cloud-deployed Ignition). Includes vendored Sparkplug B protobuf schema.
-  - `crates/driver-ads` — [CODEX-Z](agents/tasks/CODEX-Z-driver-ads.md). Beckhoff TwinCAT (PLC + NC + I/O symbols). Unlocks the dominant non-Rockwell PLC platform in motion control.
+  - `crates/driver-ads` — [CODEX-Z](agents/tasks/CODEX-Z-driver-ads.md). Beckhoff TwinCAT (PLC + NC + I/O symbol access via ADS device notifications).
 - **More components** (target: 25+ total): `Gauge, Pie/Bar/Line charts, AlarmBanner, MultiState, ProgressBar, Slider, Dropdown, Tabs, DataGrid`, etc.
 - **Plugin SDK** (`packages/sdk` + Rust crate templates):
   - `cargo generate` template for a new driver crate.
@@ -146,7 +146,7 @@ After 1.0, sequencing is community-driven. Likely directions:
 - **MES capabilities:** recipe management, batch execution (ISA-88-inspired), OEE calculation, traceability records.
 - **Mobile / responsive runtime:** layouts that adapt; PWA for tablet.
 - **Redundancy:** primary/backup gateway with state replication.
-- **More drivers:** Siemens S7, Sparkplug B / MQTT, BACnet, EtherNet/IP for non-Rockwell, Modbus RTU.
+- **More drivers:** Siemens S7, BACnet, additional EtherNet/IP-speaking vendors (Omron, Schneider, Bosch), and any community-contributed protocols beyond the five v1 drivers.
 - **Pluggable historian backends:** Timescale, Influx, Parquet/DuckDB.
 - **Cloud-managed option:** hosted gateway service for those who don't want self-hosting.
 - **AI assistance:** in-designer AI that suggests components, writes scripts, or auto-builds views from a tag list.

@@ -16,7 +16,7 @@ last-update: 2026-05-01 claude
 
 ### Goal
 
-Connect to **Beckhoff TwinCAT** runtimes via ADS (Automation Device Specification — Beckhoff's proprietary-but-documented protocol). Surfaces TwinCAT symbols (PLC + NC + I/O variables) as OpenWebHMI tags. Beckhoff is the dominant non-Rockwell PLC platform in motion control and high-precision automation; ADS unlocks that segment.
+Connect to **Beckhoff TwinCAT** runtimes via ADS (Automation Device Specification — Beckhoff's proprietary-but-documented protocol). Surfaces TwinCAT symbols (PLC + NC + I/O variables) as OpenWebHMI tags. ADS is the native protocol for Beckhoff motion-control and high-precision automation deployments.
 
 ### Context to read first
 

@@ -191,7 +191,7 @@ The supervisor **does not** protect against:
 
 Any of those will terminate the gateway process. **In-process restart-on-Rust-panic is a best-effort mitigation, not a containment guarantee.** Production deployments must rely on an OS-level supervisor (systemd, Docker `restart: always`, Kubernetes liveness probe) for whole-process crash recovery. *Community drivers must be vetted for memory safety, FFI hygiene, and resource discipline before being recommended in the registry.*
 
-**v1 drivers (Phase 4):** Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS). **Future drivers (post-1.0):** Siemens S7, BACnet, Ethernet/IP for non-Rockwell devices.
+**v1 drivers (Phase 4):** Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS). **Future drivers (post-1.0):** Siemens S7, BACnet, additional EtherNet/IP-speaking vendors (Omron, Schneider, Bosch).
 
 ### 4.5 Alarm Engine (`crates/alarm-engine`)
 
