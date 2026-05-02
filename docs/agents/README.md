@@ -92,7 +92,14 @@ Entries are appended, never edited. If something written earlier was wrong, writ
 
 Either agent can ask the other a question by appending an entry that begins with `### YYYY-MM-DD HH:MM  <author> — question`. The other agent responds in their own log section (codex in `## Codex log`, claude in `## Claude review`) with a header starting `— answer to <date>`.
 
-Questions block the task: while a question is open and unanswered, the task does not advance.
+Open questions block the task — while a question is open and unanswered, the task does not advance.
+
+**Ambiguity threshold — when to stop vs proceed:**
+
+- **Stop and ask** when the ambiguity affects acceptance criteria, contradicts a brief assumption, or requires source-of-truth context the brief doesn't provide. Examples: brief pins a crate version that doesn't exist on crates.io; brief contradicts an architectural decision in `docs/architecture.md`; acceptance test description is internally inconsistent; brief specifies an API surface that conflicts with an upstream library's actual API.
+- **Document and proceed** when the ambiguity is a normal implementation choice with no contract impact. Examples: variable naming, internal helper structure, log message wording, choice between two equivalent stdlib calls. Add a one-line entry to `## Codex log` recording the assumption ("Assumed X because Y; revisit if review disagrees.") so review can cheaply override.
+
+The cost of stalling on small details is higher than the cost of a v1.1 polish item.
 
 ### Decisions
 
@@ -103,6 +110,17 @@ If a task surfaces a decision that affects more than just this task, claude reco
 - Code style nits → use review entries with explicit file:line references.
 - Long-running side discussions → spawn a new task file or keep them in PR comments after merge.
 - Routine status updates → one line in `log.md` is enough.
+
+### Voice
+
+Use neutral framing in everything written into this directory and into project docs (`CLAUDE.md`, `docs/roadmap.md`, wiki pages, task files):
+
+- **No first-person.** Write "Codex implemented X" / "Claude-authored brief" / "the original brief" / "brief error owned by Claude". Not "I added X" / "my brief" / "I told Codex".
+- **No maintainer profiling.** Write "the maintainer requested" / "per maintainer direction". Not "the user wants X" / "the user catches this" / direct quotes of maintainer chat.
+- **End-user references are fine when domain-relevant.** "user-scripting layer", "the user types the device path", "case as written by the user" are correct when they refer to actual end-users of the product (operators, integrators, Python script authors). Those are domain terms, not maintainer references.
+- **Paraphrase, don't quote.** If a maintainer message defines a project convention, restate it neutrally as the convention. Don't embed the original message verbatim.
+
+This directory and its referenced docs are public artifacts. Personal phrasing leaks behavioral signals (work patterns, incidents, preferences) that belong in private agent memory, not in project history. Both agents should self-edit before committing; reviewers flag voice drift in the same pass as technical findings.
 
 ## Who edits what
 
@@ -116,6 +134,18 @@ If a task surfaces a decision that affects more than just this task, claude reco
 | `tasks/<id>.md` Claude review | append-only | never |
 | `tasks/<id>.md` Verdict | yes (sole author) | never |
 | `tasks/<id>.md` frontmatter | yes (when status flips that claude owns) | yes (when status flips that codex owns) |
+
+## Commit and push expectations
+
+Both agents may stage and commit edits to task files, `board.md`, and `log.md` as part of normal task work. The lifecycle three-place update (frontmatter + board + log) should commit together.
+
+**Pushing to the remote is not automatic:**
+
+- Push only when the maintainer explicitly asks ("commit and push", "ship it"), or when an unambiguous task convention requires it (e.g. backfilling a merge ref in a follow-up commit).
+- Push only when the local environment permits it. Some sessions block writes to system-owned repos (Git safe-directory checks); some block network egress entirely. If push is blocked, surface the blocker — don't retry silently or work around it.
+- A successful local commit is not a successful push. Always confirm the push step ran before claiming a task moved to `merged` or `submitted`.
+
+This prevents the case where one agent's session pushes to the remote while the other agent's session has unpushed local commits, leaving the two views diverged.
 
 ## How to add a new task
 
