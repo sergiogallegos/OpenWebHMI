@@ -13,10 +13,12 @@ last-update: 2026-05-01 claude
 ## Brief
 
 > **CODEX-Z closeout follow-up.** CODEX-Z merged the `crates/driver-ads` implementation against the real `ads = "=0.4.4"` wire client. What it could NOT prove: the driver actually talks to a TwinCAT 3 runtime, sumup-batched reads stay performant at scale, and the `ads-rs` upstream is healthy enough to pin v1 on. CODEX-AD owns the validation work that turns "implementation-merged" into "production-validated." Without this, ADS is a v1 listing that hasn't been exercised against the protocol it claims to speak.
+>
+> **Scope expansion 2026-05-02.** First-contact attempt against a real CX (TwinCAT 3.1.4024.44) surfaced **TLS-wrapped ADS as a v1.0 blocker, not a v1.1 polish item.** The CX rejected plain-TCP frames because the route was TLS-wrapped (XAE's default for added routes). The `ads = 0.4.4` crate is plain-TCP only. Manually editing routes to remove TLS is operationally fragile (route-cache desync, "an item with the same key has already added" errors). See `wiki/drivers/ads-integration.md` "Hardware validation log" for the session detail. CODEX-AD now owns the **TLS support decision** in addition to the validation runbook: fork/contribute upstream, hand-roll an AMS/ADS frame layer, or accept the workaround with documentation. This decision must precede the runbook; without TLS support, the runbook's first step is "manually break TwinCAT's default route configuration" which is unacceptable customer guidance.
 
 ### Goal
 
-Decide simulator strategy, write the TwinCAT 3 smoke runbook, run that runbook against the maintainer's local TwinCAT 3 install, and track two open risks (sumup performance, `ads-rs` upstream maintenance) as v1.1 scope items. **No driver code changes are expected** unless the validation surfaces a real bug — in which case fix it.
+Decide TLS-wrapped ADS support strategy (NEW v1.0 scope), decide simulator strategy, write the TwinCAT 3 smoke runbook, run that runbook against a non-TLS test target, and track two open risks (sumup performance, `ads-rs` upstream maintenance) — both elevated to v1.0 scope items as of 2026-05-02. **Driver code changes are now expected** for the TLS support work in scope item 0 below.
 
 ### Context to read first
 
@@ -27,6 +29,22 @@ Decide simulator strategy, write the TwinCAT 3 smoke runbook, run that runbook a
 - Comparable runbooks: `apps/designer/README.md` manual smoke steps for Modbus / OPC UA / MQTT — same shape applies to TwinCAT.
 
 ### Scope
+
+#### 0. TLS-wrapped ADS support decision (NEW — added 2026-05-02 after first-contact session)
+
+Spike: how should `crates/driver-ads` speak TLS-wrapped ADS to a TwinCAT 3.1.4024+ CX whose routes were added via XAE (the enterprise default)?
+
+- Investigate the `ads-rs` crate's roadmap and any open PRs related to TLS. The ADS Secure protocol is documented; the wire format wraps AMS frames in TLS using a self-signed CA exchanged at route-registration time.
+- Investigate the cost of contributing TLS support upstream to `birkenfeld/ads-rs`: rustls vs native-tls, certificate handling for the self-signed CA stored in `StaticRoutes.xml`, scope of test coverage needed.
+- Investigate the cost of forking and maintaining a tls-fork until upstream catches up.
+- Investigate the cost of hand-rolling a thin AMS/ADS frame layer with TLS in the `driver-ads` crate (bypass `ads-rs` for the wire layer; reuse it only for type definitions and constants if at all).
+
+**Output:** `wiki/drivers/ads-tls-decision.md` with the spike result + recommendation. Three possible outcomes:
+- 🟢 **Contribute upstream** — open a PR adding TLS support to `birkenfeld/ads-rs` with an `enable-tls` feature flag. Estimated 1-3 weeks of work. Pros: clean dependency story; cons: gated on upstream review velocity.
+- 🟡 **Fork** — maintain a tls-supporting fork at `sergiogallegos/ads-rs` until upstream catches up. Pros: full control; cons: maintenance burden, security update lag.
+- 🔵 **Hand-roll** — implement TLS-wrapped AMS frame handling directly in `crates/driver-ads`. Pros: no upstream dependency; cons: more code to maintain in-tree, duplicates ads-rs logic.
+
+**Acceptance for this scope item:** the decision is documented in `wiki/drivers/ads-tls-decision.md` with rationale; the chosen path has an open PR / fork / commit demonstrating progress. Full TLS support implementation can land in a separate task (CODEX-AE-equivalent for ADS-TLS) — this task only owns the decision and first-step execution.
 
 #### 1. Simulator feasibility decision (decision-then-implement, wiki-first)
 
