@@ -9,14 +9,16 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
+| CODEX-AC | Component library batch 3 — 9 components to hit v1 25+ target (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper) | codex | open | 2026-05-01 claude | [tasks/CODEX-AC-component-batch-3.md](tasks/CODEX-AC-component-batch-3.md) |
 
 ### Phase 4 dependency graph
 
 ```
 CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS protocol; brief amended (=0.4.4 + use ads crate)
+CODEX-AC  (component batch 3)      ← unblocked — closes v1 25+ component target
 ```
 
-**One open task: Z (driver rework).** AB merged; component library now at 16 (v1 target 25+). Remaining Phase 4 work after Z: plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate, and a third component batch to reach the 25+ target.
+**Two open tasks: Z (driver rework) and AC (component batch 3).** Independent — Z is wire-protocol Rust, AC is pure TS+SVG. Can run in parallel. AC adds the v1 25+ target's final 9 components: layout (Tabs, Card, Divider), operator dialog (Modal), tabular history (DataGrid), categorical charts (BarChart, PieChart), and indicators (Spinner, Stepper). Once both land plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate), Phase 4 closes.
 
 ## Phase 3 — Core SCADA features
 
