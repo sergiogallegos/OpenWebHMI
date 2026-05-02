@@ -9,14 +9,16 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-AD | ADS validation hardening — CI sim feasibility, TwinCAT 3 smoke runbook, sumup + upstream risk tracking | codex | open | 2026-05-01 claude | [tasks/CODEX-AD-ads-validation.md](tasks/CODEX-AD-ads-validation.md) |
+| CODEX-AE | `crates/audit-log` — security event journal + query/subscribe wire protocol | codex | open | 2026-05-02 claude | [tasks/CODEX-AE-audit-log.md](tasks/CODEX-AE-audit-log.md) |
 
 ### Phase 4 dependency graph
 
 ```
 CODEX-AD  (ADS validation hardening)  ← unblocked — closeout follow-up after CODEX-Z merge
+CODEX-AE  (audit log backend)         ← unblocked — independent of AD; can run in parallel
 ```
 
-**One open task: AD (ADS validation hardening).** Z merged 2026-05-01: real `ads` 0.4.4 wire-client implementation, but no CI sim and no real-TwinCAT validation yet — both deferred to AD. AC merged 2026-05-01: 9 new components, library at 25 components total (v1 target met). After AD's TwinCAT 3 smoke passes plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes.
+**Two open tasks: AD (ADS validation) and AE (audit log).** Independent — AD is hardware/runbook validation (partly blocked on maintainer's TwinCAT 3 access), AE is pure backend (Rust crate + SQLite + protocol additions). Codex can pick whichever first. After both land plus the remaining v1 items (plugin SDK, backup/restore, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
 
 ## Phase 3 — Core SCADA features
 
