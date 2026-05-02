@@ -28,7 +28,7 @@ Planned high-value pages:
 - [drivers/modbus-integration.md](drivers/modbus-integration.md) — How `driver-modbus` wraps `tokio-modbus` 0.16.1 for Modbus TCP/RTU client mode, address syntax, datatype mapping, simulator validation, and limitations. `active`
 - [drivers/opcua-integration.md](drivers/opcua-integration.md) — How `driver-opcua` wraps `async-opcua` 0.18.0 for OPC UA client mode, NodeId syntax, simulator validation, and limitations. `active`
 - [drivers/mqtt-integration.md](drivers/mqtt-integration.md) — How `driver-mqtt` wraps `rumqttc` 0.25.1 for generic MQTT and Sparkplug B data-feed mode, alias-map handling, simulator validation, and limitations. `active`
-- [drivers/ads-integration.md](drivers/ads-integration.md) — How `driver-ads` maps Beckhoff ADS-style addresses and symbol metadata, current `ads` 0.4.4 crate status, simulator-stub validation, and limitations. `active`
+- [drivers/ads-integration.md](drivers/ads-integration.md) — How `driver-ads` uses the native Rust `ads` 0.4.4 client for Beckhoff ADS addresses, AMS configuration, symbol metadata, primitive values, and pending TwinCAT validation. `needs-review`
 
 ## Designer
 

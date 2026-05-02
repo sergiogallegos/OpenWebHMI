@@ -8,15 +8,15 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver | codex | rejected — needs rework | 2026-05-01 claude | [tasks/CODEX-Z-driver-ads.md](tasks/CODEX-Z-driver-ads.md) |
+| CODEX-AD | ADS validation hardening — CI sim feasibility, TwinCAT 3 smoke runbook, sumup + upstream risk tracking | codex | open | 2026-05-01 claude | [tasks/CODEX-AD-ads-validation.md](tasks/CODEX-AD-ads-validation.md) |
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS protocol; brief amended (=0.4.4 + use ads crate)
+CODEX-AD  (ADS validation hardening)  ← unblocked — closeout follow-up after CODEX-Z merge
 ```
 
-**One open task: Z (driver rework).** AC merged 2026-05-01: 9 new components (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper), 102,400-byte bundle, library at 25 components total. After Z lands plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, hardware-validation gate), Phase 4 closes.
+**One open task: AD (ADS validation hardening).** Z merged 2026-05-01: real `ads` 0.4.4 wire-client implementation, but no CI sim and no real-TwinCAT validation yet — both deferred to AD. AC merged 2026-05-01: 9 new components, library at 25 components total (v1 target met). After AD's TwinCAT 3 smoke passes plus the remaining v1 items (plugin SDK, audit log, backup/restore, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes.
 
 ## Phase 3 — Core SCADA features
 
@@ -68,6 +68,7 @@ CODEX-Z   (ADS rework)             ← rejected — driver didn't speak ADS prot
 | CODEX-AA | Close v1 scope gaps in `driver-mqtt` (TLS + WS + json_path + binary BE) | codex | `560227e` | 4 |
 | CODEX-AB | Component library batch 2 — 8 new components (Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner) | codex | `3e88046` | 4 |
 | CODEX-AC | Component library batch 3 — 9 new components (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper); v1 25-component target met | codex | `6bff505` | 4 |
+| CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver; implementation-merged but not production-validated (see CODEX-AD) | codex | _backfill_ | 4 |
 
 ## Conventions
 

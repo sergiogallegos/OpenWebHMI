@@ -32,7 +32,7 @@
 | MQTT Sparkplug B | ➕ (Cirrus Link) | ✅ | 🟢 v1 (Phase 4, simulator-validated — same crate, Sparkplug B mode) |
 | DNP3 (utility / SCADA) | ➕ | ❌ | ⚪ not planned |
 | ASCII / custom serial | ➕ | ✅ | 🔵 maybe |
-| Beckhoff TwinCAT (ADS) | ➕ | ❔ | 🟢 v1 (Phase 4, simulator-stub validated — `crates/driver-ads`) |
+| Beckhoff TwinCAT (ADS) | ➕ | ❔ | 🟢 v1 (Phase 4, native Rust client in development — `crates/driver-ads`; TwinCAT validation pending) |
 | GE / Emerson DeltaV | ➕ | ❔ | 🔵 maybe |
 | Built-in driver SDK for community drivers | ✅ (Module SDK) | ✅ | 🟢 v1 (Phase 4) |
 

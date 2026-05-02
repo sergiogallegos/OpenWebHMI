@@ -66,3 +66,8 @@ pnpm --filter @openwebhmi/designer tauri dev
 38. Add a `DataGrid` bound to a string tag containing JSON row data, click column headers to sort, and use Prev/Next pagination with a small `pageSize`.
 39. Add `BarChart` and `PieChart` components using the same JSON categorical data, verify bar/legend labels render, then toggle PieChart donut mode.
 40. Add `Card`, `Divider`, `Spinner`, and `Stepper` components to the `home` view, verify children render inside Card, Divider labels align, Spinner hides when loading is false, and Stepper highlights the bound current step.
+41. In TwinCAT 3, create a small PLC program with writable primitive symbols such as `MAIN.nCounter : DINT`, `MAIN.fPressure : REAL`, and `MAIN.bRun : BOOL`; activate configuration and start the runtime.
+42. Confirm the OpenWebHMI machine has an AMS route to the TwinCAT target, then configure an ADS driver with `host`, six-octet `ams_net_id`, `source="request"` or `source="auto"`, and `ports=[851]`.
+43. Browse ADS symbols and bind runtime components to `851:MAIN.nCounter`, `851:MAIN.fPressure`, and `851:MAIN.bRun`; confirm live values arrive through ADS notifications.
+44. Write to `851:MAIN.bRun` from a `ToggleSwitch` and to a numeric primitive from `NumericInput`; confirm TwinCAT Online view reflects the writes.
+45. Stop the TwinCAT runtime or remove the AMS route, confirm bad-quality updates or connection errors surface, then restore the runtime and confirm the driver can be reconnected.

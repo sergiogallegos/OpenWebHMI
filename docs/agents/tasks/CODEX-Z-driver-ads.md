@@ -3,7 +3,7 @@ id: CODEX-Z
 title: crates/driver-ads — Beckhoff TwinCAT (ADS) client driver
 owner: codex
 phase: 4
-status: rejected
+status: merged
 created: 2026-04-30
 last-update: 2026-05-01 claude
 ---
@@ -137,6 +137,24 @@ Status -> in-progress. Starting ADS after CODEX-Y submission. Crates.io currentl
 
 Status -> submitted. Implemented `crates/driver-ads` with `<port>:<symbol>` parser, AMS config, symbol table, primitive decoding, cached read/write/subscribe support, and `examples/sim-ads` stub responder. Added `wiki/drivers/ads-integration.md`, updated feature matrix, and appended designer manual smoke steps. Verification so far: `cargo test -p openwebhmi-driver-ads --features sim-tests`. Caveat: this validates the OpenWebHMI ADS driver contract against a stub responder; real ADS wire compatibility is still pending because crates.io exposes `ads` 0.4.4 and no ready server harness.
 
+### 2026-05-01 21:43 MDT codex
+
+Status -> in-progress. Reworking CODEX-Z from an empty tree after rejection. The implementation will use the `ads` 0.4.4 client/device/symbol/notification API for the production path and will not reintroduce the rejected JSON-line simulator protocol. Beckhoff official ADS documentation and `ads` crate API docs are being used as source material before file edits.
+
+### 2026-05-01 22:30 MDT codex
+
+Status -> submitted. Implemented `crates/driver-ads` as a native Rust ADS client on `ads = "=0.4.4"` with `<port>:<symbol>` parsing, AMS NetId/source config, configurable browsed ADS ports, symbol upload mapping, primitive encode/decode, read/write by ADS handle, and ADS device notifications with handle cleanup on stream drop. Replaced stale simulator-stub wiki evidence with native-client status and TwinCAT validation-pending checklist; updated feature matrix and designer manual smoke steps for real TwinCAT 3 validation.
+
+Verification:
+- `cargo fmt --all --check` passed.
+- `cargo test -p openwebhmi-driver-ads` passed: 13 tests.
+- `cargo clippy -p openwebhmi-driver-ads --all-targets -- -D warnings` passed.
+- `cargo clippy --workspace --all-targets --all-features --locked --exclude openwebhmi-designer -- -D warnings` passed.
+- `cargo test --workspace --all-features --locked` blocked before ADS by existing Tauri Windows resource requirement: `apps/designer/src-tauri/icons/icon.ico` missing.
+- `cargo test --workspace --all-features --locked --exclude openwebhmi-designer` ran ADS and other driver tests, then blocked in `openwebhmi-gateway --test integration` because Python is not on `PATH` for the scripting worker.
+
+Caveat: the real ADS client APIs compile and are unit-covered through mock boundaries, but TwinCAT 3 route negotiation, symbol upload, notification delivery, and write round-trip still require the maintainer's local TwinCAT runtime validation.
+
 ## Claude review
 
 ### 2026-05-01  claude — review pass 1 — REJECTED
@@ -175,8 +193,50 @@ Brief error owned by Claude: the original brief pinned `ads = "0.7"`, which does
 - `driver.rs` — needs full rewrite using the `ads` crate's wire API.
 - `examples/sim-ads/src/lib.rs` — needs to speak real ADS frames (or be replaced by an `ads::server::Server`-based harness if 0.4.4 supports it; otherwise hand-roll the AMS/ADS frames the driver exercises).
 
+### 2026-05-01  claude — review pass 2 — MERGED
+
+Status -> merged. Codex's rework correctly resolved the rejection rationale: the driver now uses the real `ads = "=0.4.4"` wire API end-to-end. Verified independently: `cargo test -p openwebhmi-driver-ads --all-features --locked` → 13/13 pass; `cargo clippy -p openwebhmi-driver-ads --all-targets --all-features -- -D warnings` clean; `cargo fmt --check` clean.
+
+**Strong points:**
+
+- ✅ **Real ads crate usage end-to-end.** `driver.rs:50-166` uses `ads::Client::new`, `Client::device`, `ads::Handle::new`, `Handle::read`, `Handle::write`, `ads::symbol::get_symbol_info`, `Device::add_notification`, and `Device::delete_notification`. No dead-code marker function; the dependency is load-bearing on the read/write/notification path. This is the substantive resolution of the previous rejection.
+- ✅ **Notification handle leak addressed.** `SubscriptionGuard::Drop` at `driver.rs:340-356` explicitly calls `device.delete_notification(handle)` for every active subscription on disconnect. The brief flagged this as the dominant ADS gotcha (the runtime has a finite handle pool, and a leak crashes it after a few hours); Codex got it right.
+- ✅ **Sync-API-in-async wrapper is correct.** Every `ads` call goes through `tokio::task::spawn_blocking` (`driver.rs:393-402`); the gateway's tokio runtime never blocks on ADS I/O. Same pattern Modbus uses.
+- ✅ **AmsClientLike trait abstraction lets unit tests run mock-driven.** `driver.rs:27-37` defines the trait; `MockAdsClient` in tests covers read/write/subscribe paths against in-memory state. The 13 unit tests don't prove ADS wire correctness, but they do prove the OpenWebHMI wrapper logic.
+- ✅ **AMS NetId parser correctly enforces 6 octets.** `connection.rs:81-95` rejects 4-octet IPv4 inputs with a clear error message — addresses the brief's "AMS NetId formatting is the dominant new-user trap" gotcha.
+- ✅ **Source AMS policy supports all three modes** (Auto / Request / Explicit). `driver.rs:382-391`. `Auto` derives source NetId from local IPv4 via `ads::Source::Auto`; `Request` delegates to the local AMS router; `Explicit` takes a configured pair.
+- ✅ **Primitive type coverage is broad.** `symbols.rs:8-35` enumerates 12 ADS primitives (BOOL, SINT/USINT, INT/UINT, DINT/UDINT, LINT/ULINT, REAL, LREAL, STRING). Encode/decode round-trip with little-endian byte ordering matches TwinCAT.
+- ✅ **Symbol table caches per-port.** `driver.rs:236-244` issues one symbol upload per configured ADS port (default `[851]`) on connect; subsequent reads use the cached `(handle, type, size)` triplet. Avoids a symbol upload per tag.
+- ✅ **Honest wiki entry.** `wiki/drivers/ads-integration.md` explicitly splits "CI/unit verified" from "compile verified" from "not yet real-hardware verified." The reviewer can see exactly what's been proven and what hasn't. This is the right discipline given what's still missing (see findings).
+
+**Findings:**
+
+- 🟠 **No `examples/sim-ads/` and no `crates/driver-ads/tests/integration.rs`.** Brief required both as deliverables. Codex's reasoning for skipping (Codex log 2026-05-01 22:30 + wiki Open Question 5): the `ads` 0.4.4 crate's server primitives are too thin for a deterministic CI fixture, and a hand-rolled fake-ADS responder would re-introduce exactly the dialect-mismatch problem that got CODEX-Z rejected the first time. Defensible, but the asymmetry vs Modbus/OPC UA/MQTT (which all shipped sims) is real. **Tracked as the primary scope for CODEX-AD validation hardening; this merge does NOT close the v1 hardware-validation gate for ADS.**
+- 🟠 **No real-TwinCAT validation yet.** Codex acknowledges this directly. Browse, symbol upload, notification delivery, and write round-trip all still need to run against a real TwinCAT 3 runtime before ADS counts as production-validated. CODEX-AD owns this.
+- 🟡 **Cyclic-fallback notification mode not implemented.** Brief specified "v1 uses **on-change** ... with a fallback to cyclic at the configured `poll_rate_ms` for symbols that don't support on-change." `driver.rs:130` uses `ServerOnChange` only. For the HMI use case this is fine (most TwinCAT symbols emit on-change events); the cyclic fallback matters for symbols whose values rarely change but need refresh-anyway behavior. v1.1 polish.
+- 🟡 **Sumup batch read/write not exercised.** `Capabilities { batch_read: true, batch_write: true }` is declared (`driver.rs:227-228`) but the driver currently issues sequential `Handle::read` / `Handle::write` calls per tag. The wiki Open Question 3 acknowledges this. For an HMI with 50+ tags this is the difference between 50 round trips and 1 — meaningful at 100ms poll rates. CODEX-AD should track as v1.1 risk per the maintainer's direction.
+- 🟡 **Route-table discovery not implemented.** Brief allowed best-effort discovery from `/etc/TwinCAT3/StaticRoutes.xml` or Windows registry; v1 ships explicit-pair config only. Acceptable per the brief. Polish for v1.1.
+- 🟡 **`map_ads_error` substring match for "symbol".** `driver.rs:408-418` heuristically maps any error string containing "symbol" to `InvalidAddress`. Fragile — a localized error or wording change would mis-classify. Better: match on `ads::Error` variants explicitly. v1.1 polish.
+- 🟡 **`SubscriptionGuard::Drop` spawns an OS thread.** Cleanup of notification handles fires from a `std::thread::spawn` rather than the tokio runtime (because `Drop` can't be async). Works fine; the spawned thread holds the mutex briefly and exits. Documented for future reviewers.
+
+**Environmental notes (NOT CODEX-Z issues):**
+
+- 🟢 **Workspace cargo test still has the same gaps** as during CODEX-AC review: missing `apps/designer/src-tauri/icons/icon.ico` (Tauri Windows resource); Python not on PATH for the `websocket_gateway_forwards_script_events_by_project` integration test. Codex confirmed the same in their verification log. Pre-existing on this fresh machine, unrelated to ADS.
+
+**v1.1 polish list (5 items):**
+
+1. Cyclic-fallback notification mode for symbols where ServerOnChange isn't sufficient.
+2. ADS sumup batched read/write to reduce round trips at scale (CODEX-AD will track as v1.1 risk).
+3. Route-table discovery (Windows registry + Linux StaticRoutes.xml).
+4. `map_ads_error` should match on `ads::Error` variants, not error-string substrings.
+5. Document the `SubscriptionGuard::Drop` OS-thread cleanup pattern in module-level rustdoc.
+
 ## Verdict
 
-**REJECTED.** Status returned to `open` for rework. Brief amended above with corrected `=0.4.4` version pin and explicit "use ads crate wire API" requirement.
+**Merged with explicit validation gate.** The implementation direction is now correct: the driver speaks real ADS via `ads = "=0.4.4"`, addresses the notification-handle-leak gotcha, and has a wiki entry that's honest about what's been proven. This resolves the rejection rationale.
 
-The work isn't wasted — the salvageable pieces (address parser, symbol table data structure, manual smoke step, wiki scaffold) are a real head start for the rework. But the driver impl and the simulator harness need real ADS protocol implementation before this lands.
+What's NOT yet proven: ADS wire correctness against a real TwinCAT 3 runtime, sim-based CI coverage, and at-scale performance. Those are not blockers for landing the implementation — they're scope for **CODEX-AD (ADS validation hardening)** which opens immediately and gates ADS being called "production-validated." The pre-1.0 hardware-validation gate (per `docs/roadmap.md`) explicitly covers ADS via TwinCAT 3 smoke + soak tests.
+
+Per maintainer direction (2026-05-01 23:55): merge the implementation now because the previous failure mode was "doesn't speak ADS" and that's resolved; do NOT block on a fake simulator (which would reintroduce the same dialect-mismatch failure mode); track simulator feasibility, hardware validation, sumup performance, and ads-rs upstream risk as explicit follow-up scope under CODEX-AD.
+
+ADS is **implementation-merged** but **not yet production-validated**. The distinction matters until CODEX-AD's TwinCAT 3 smoke passes.

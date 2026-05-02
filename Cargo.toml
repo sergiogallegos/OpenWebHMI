@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/alarm-engine",
     "crates/driver-api",
+    "crates/driver-ads",
     "crates/driver-opcua",
     "crates/driver-modbus",
     "crates/driver-mqtt",
@@ -62,5 +63,6 @@ rumqttc = { version = "=0.25.1", features = ["websocket"] }
 rumqttd = "=0.20.0"
 prost = "=0.13.5"
 jsonpath-rust = "=1.0.4"
+ads = "=0.4.4"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "0.7"
