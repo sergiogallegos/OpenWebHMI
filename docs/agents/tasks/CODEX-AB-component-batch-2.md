@@ -255,7 +255,7 @@ Acceptance criteria — all eight boxes verified after the Claude-applied write-
 
 ## Verdict
 
-**Merged with a Claude-applied fix.** Applied during review: added `tagPath` props to Slider/Dropdown/ToggleSwitch matching NumericInput's existing pattern so write-back actually targets a configurable tag path instead of the literal `"value"` string. The fix is mechanical (3 prop declarations + 3 schema entries + 3 fallback expressions); tests stayed green because they exercised the default fallback path.
+**Merged at `3e88046` with a Claude-applied fix.** Applied during review: added `tagPath` props to Slider/Dropdown/ToggleSwitch matching NumericInput's existing pattern so write-back actually targets a configurable tag path instead of the literal `"value"` string. The fix is mechanical (3 prop declarations + 3 schema entries + 3 fallback expressions); tests stayed green because they exercised the default fallback path.
 
 Library now at **16 components** (up from 8). v1 target is 25+. Five v1.1 polish items added (write-target asymmetry, Button writeValue array shape, AlarmBanner unbounded events, Gauge bad-quality bands, plus the architectural extend-the-binding-system follow-up).
 
