@@ -4,7 +4,7 @@
 
 ## 1. Mission
 
-Open-source, web-first **SCADA / HMI** platform for small and mid-size industrial systems, of comparable capability to Inductive Automation **Ignition**, with **FactoryTalk Optix** as a secondary reference. Cross-platform desktop designer, gateway-centric runtime, plant-floor connectivity starting with Rockwell EtherNet/IP and OPC UA. Designed so the community can extend drivers, components, and scripting libraries without forking.
+Open-source, web-first **SCADA / HMI** platform for small and mid-size industrial systems, of comparable capability to Inductive Automation **Ignition**, with **FactoryTalk Optix** as a secondary reference. Cross-platform desktop designer, gateway-centric runtime, plant-floor connectivity via five v1 drivers: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), and Beckhoff TwinCAT (ADS). Designed so the community can extend drivers, components, and scripting libraries without forking.
 
 **Primary v1 target:** parity with a meaningful subset of Ignition Edge / Standard, bounded by the v1.0 scope envelope below.
 
@@ -17,7 +17,7 @@ Open-source, web-first **SCADA / HMI** platform for small and mid-size industria
 | Topology | **Single gateway per deployment** (no clustering, federation, or gateway network) |
 | Live tag count | **≤ 10,000** simultaneously subscribed/polled tags per gateway |
 | Concurrent runtime clients | **≤ 50** browser sessions per gateway |
-| Drivers shipped | Rockwell EtherNet/IP, OPC UA (committed); others post-1.0 |
+| Drivers shipped | Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS); others post-1.0 |
 | Runtime surfaces | Web (browser) only; Tauri desktop runtime is post-1.0 |
 | Designer surfaces | Tauri desktop on Windows and macOS; Linux is post-1.0 |
 | Gateway platforms | Linux, macOS, Windows |
@@ -191,7 +191,7 @@ The supervisor **does not** protect against:
 
 Any of those will terminate the gateway process. **In-process restart-on-Rust-panic is a best-effort mitigation, not a containment guarantee.** Production deployments must rely on an OS-level supervisor (systemd, Docker `restart: always`, Kubernetes liveness probe) for whole-process crash recovery. *Community drivers must be vetted for memory safety, FFI hygiene, and resource discipline before being recommended in the registry.*
 
-**Future drivers (Phase 4+):** OPC UA, Modbus TCP, MQTT (Sparkplug B), Siemens S7, BACnet, Ethernet/IP for non-Rockwell devices.
+**v1 drivers (Phase 4):** Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS). **Future drivers (post-1.0):** Siemens S7, BACnet, Ethernet/IP for non-Rockwell devices.
 
 ### 4.5 Alarm Engine (`crates/alarm-engine`)
 

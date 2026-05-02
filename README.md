@@ -9,7 +9,7 @@
 
 <p align="center">
   <strong>Open-source, web-first SCADA / HMI platform</strong> for small and mid-size industrial systems.<br />
-  Starts with Rockwell EtherNet/IP and OPC UA. MIT-licensed, community-extensible.
+  Five v1 drivers: <strong>Rockwell EtherNet/IP</strong>, <strong>OPC UA</strong>, <strong>Modbus TCP/RTU</strong>, <strong>MQTT</strong> (incl. Sparkplug B), and <strong>Beckhoff TwinCAT (ADS)</strong>. MIT-licensed, community-extensible.
 </p>
 
 <p align="center">
@@ -23,14 +23,14 @@
 
 OpenWebHMI is an **open-source alternative to Inductive Automation Ignition** (with Rockwell FactoryTalk Optix as a secondary reference). Self-hosted, gateway-centric, web-first runtime, cross-platform desktop designer. Built for plant-floor SCADA and HMI on **small and mid-size industrial systems**.
 
-A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Win + Mac) connect to it. Plant-floor connectivity ships with a Rockwell EtherNet/IP driver (CompactLogix, ControlLogix) backed by the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate; OPC UA is the committed second driver for v1.
+A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Win + Mac) connect to it. Plant-floor connectivity ships **five v1 drivers** spanning the dominant protocol families: Rockwell EtherNet/IP (CompactLogix, ControlLogix) via the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate, OPC UA for vendor-neutral integration (Siemens / Schneider / Yokogawa endpoints), Modbus TCP/RTU for legacy + small device coverage, MQTT with Sparkplug B for IIoT broker patterns, and **Beckhoff TwinCAT via ADS** for the dominant non-Rockwell motion-control platform.
 
 ### v1.0 target scope
 
 - **Single gateway** per deployment (no clustering / federation).
 - **≤ 10,000 live tags** under one gateway.
 - **≤ 50 concurrent runtime clients** per gateway.
-- **Two drivers shipped**: Rockwell EtherNet/IP and OPC UA.
+- **Five drivers shipped**: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser); Tauri desktop runtime is post-1.0.
 - **Linux + macOS + Windows** for the gateway and designer.
 
@@ -47,7 +47,7 @@ OpenWebHMI's goal is a credible open-source platform a small or mid-size plant c
 ## Stack
 
 - **Gateway**: Rust + Tokio (single binary, embedded SQLite)
-- **Drivers**: Rust, in-process plugin model (first driver wraps `rust-ethernet-ip`)
+- **Drivers**: Rust, in-process plugin model. Five v1 drivers: Rockwell EtherNet/IP (via `rust-ethernet-ip`), OPC UA (via `async-opcua`), Modbus TCP/RTU (via `tokio-modbus`), MQTT incl. Sparkplug B (via `rumqttc` + `prost`), and Beckhoff TwinCAT ADS (via `ads`).
 - **Designer / IDE**: Tauri (Rust shell) + React + TypeScript (Win + Mac)
 - **HMI runtime**: React + TypeScript in the browser
 - **Scripting**: Python 3.11+ via PyO3, run in worker subprocesses for crash isolation
@@ -89,7 +89,7 @@ The CPython 3 scripting layer is the headline differentiator: `numpy`, `pandas`,
 - **Phase 1** — Vertical slice: Rockwell driver wired end-to-end, validated against an EtherNet/IP simulator (no physical PLC available yet). *(~2 months)*
 - **Phase 2** — Designer MVP: visual drag/drop authoring, 10 standard components, hot reload. *(~3 months)*
 - **Phase 3** — Core SCADA: alarms, historian + trends, auth + roles, Python scripting. *(~3 months)*
-- **Phase 4** — 1.0: second driver, plugin SDK, 25+ components, real-hardware validation gate, public release. *(~3 months)*
+- **Phase 4** — 1.0: four new drivers (OPC UA, Modbus TCP/RTU, MQTT/Sparkplug B, Beckhoff ADS) alongside Rockwell, plugin SDK, 25 components, real-hardware validation gate, public release. *(~3 months)*
 - **Phase 5+** — MES (recipes, OEE, traceability), redundancy, mobile, more drivers.
 
 Full detail: [`docs/roadmap.md`](docs/roadmap.md).
