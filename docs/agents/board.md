@@ -11,16 +11,18 @@
 | CODEX-AD | ADS validation hardening — CI sim feasibility, TwinCAT 3 smoke runbook, sumup + upstream risk tracking | codex | open | 2026-05-01 claude | [tasks/CODEX-AD-ads-validation.md](tasks/CODEX-AD-ads-validation.md) |
 | CODEX-AE | `crates/audit-log` — security event journal + query/subscribe wire protocol | codex | open | 2026-05-02 claude | [tasks/CODEX-AE-audit-log.md](tasks/CODEX-AE-audit-log.md) |
 | CODEX-AF | `crates/backup` — project export/import + gateway-level backup with historian and alarm journal | codex | open | 2026-05-02 claude | [tasks/CODEX-AF-backup-restore.md](tasks/CODEX-AF-backup-restore.md) |
+| CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 (land first, rebase AD/AE/AF onto it) | codex | open | 2026-05-02 claude | [tasks/CODEX-AG-toolchain-edition-2024.md](tasks/CODEX-AG-toolchain-edition-2024.md) |
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-AD  (ADS validation hardening)  ← unblocked — closeout follow-up after CODEX-Z merge; runbook execution waits on hardware
-CODEX-AE  (audit log backend)         ← unblocked — independent of AD/AF; pure Rust + SQLite
-CODEX-AF  (backup / restore)          ← unblocked — independent of AD/AE; depends only on shipped project-store/historian/alarm-engine
+CODEX-AG  (toolchain → 1.95 + edition 2024)  ← LAND FIRST — workspace-global; AD/AE/AF rebase onto its tip after merge
+CODEX-AD  (ADS validation hardening)         ← unblocked — closeout follow-up after CODEX-Z merge; runbook execution waits on hardware
+CODEX-AE  (audit log backend)                ← unblocked — independent of AD/AF; pure Rust + SQLite
+CODEX-AF  (backup / restore)                 ← unblocked — independent of AD/AE; depends only on shipped project-store/historian/alarm-engine
 ```
 
-**Three open tasks: AD (ADS validation), AE (audit log), AF (backup/restore).** All independent — Codex can pick whichever first. AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. After all three land plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
+**Four open tasks: AG (toolchain), AD (ADS validation), AE (audit log), AF (backup/restore).** AG lands first to give every other in-flight task a single, modern toolchain to rebase onto; the other three are independent and can land in any order after AG merges. AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. After all four land plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
 
 ## Phase 3 — Core SCADA features
 
