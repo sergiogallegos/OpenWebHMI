@@ -72,8 +72,8 @@ CODEX-AI  (historian/alarm import for backup)  ← AF closeout follow-up; mechan
 | CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 | codex | `9a96871` | 4 |
 | CODEX-AD | ADS validation hardening — TwinCAT-router FFI backend + hardware-validated against CX-23F092 | codex | `54ec808` | 4 |
 | CODEX-AH | Native ADS device notifications via TcAdsDll FFI — closes AD's polling regression | codex | `2be075e` | 4 |
-| CODEX-AE | `crates/audit-log` — SQLite security event journal + query/subscribe wire protocol + gateway hooks | codex | _pending_ | 4 |
-| CODEX-AF | `crates/backup` — project export/import + gateway HTTP side-channel; historian/alarm import deferred to CODEX-AI | codex | _pending_ | 4 |
+| CODEX-AE | `crates/audit-log` — SQLite security event journal + query/subscribe wire protocol + gateway hooks | codex | `83aac91` | 4 |
+| CODEX-AF | `crates/backup` — project export/import + gateway HTTP side-channel; historian/alarm import deferred to CODEX-AI | codex | `83aac91` | 4 |
 
 ## Conventions
 
