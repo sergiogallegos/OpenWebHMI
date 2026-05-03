@@ -74,7 +74,7 @@
 | CODEX-AH | Native ADS device notifications via TcAdsDll FFI — closes AD's polling regression | codex | `2be075e` | 4 |
 | CODEX-AE | `crates/audit-log` — SQLite security event journal + query/subscribe wire protocol + gateway hooks | codex | `83aac91` | 4 |
 | CODEX-AF | `crates/backup` — project export/import + gateway HTTP side-channel; historian/alarm import deferred to CODEX-AI | codex | `83aac91` | 4 |
-| CODEX-AI | Historian + alarm-journal import path in `crates/backup` — closes AF's v1.0 gap | codex | _pending_ | 4 |
+| CODEX-AI | Historian + alarm-journal import path in `crates/backup` — closes AF's v1.0 gap | codex | `79e0ec4` | 4 |
 
 ## Conventions
 
