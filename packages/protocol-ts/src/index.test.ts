@@ -126,6 +126,51 @@ describe("ClientMessage wire form", () => {
     expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
   });
 
+  it("serializes audit.query exactly like Rust serde", () => {
+    const message: ClientMessage = {
+      kind: "audit.query",
+      request_id: "audit-r1",
+      query: {
+        from_ts_ms: 10,
+        to_ts_ms: null,
+        user: "admin",
+        kinds: ["AuthLogin"],
+        limit: 50,
+        offset: 0,
+      },
+    };
+
+    expect(JSON.stringify(message)).toBe(
+      '{"kind":"audit.query","request_id":"audit-r1","query":{"from_ts_ms":10,"to_ts_ms":null,"user":"admin","kinds":["AuthLogin"],"limit":50,"offset":0}}',
+    );
+    expect(isClientMessage(JSON.parse(JSON.stringify(message)))).toBe(true);
+  });
+
+  it("serializes project export/import exactly like Rust serde", () => {
+    const exportMessage: ClientMessage = {
+      kind: "project.export",
+      request_id: "backup-r1",
+      project_id: "demo",
+      include_historian: true,
+      include_alarm_journal: false,
+    };
+    expect(JSON.stringify(exportMessage)).toBe(
+      '{"kind":"project.export","request_id":"backup-r1","project_id":"demo","include_historian":true,"include_alarm_journal":false}',
+    );
+    expect(isClientMessage(JSON.parse(JSON.stringify(exportMessage)))).toBe(true);
+
+    const importMessage: ClientMessage = {
+      kind: "project.import",
+      request_id: "restore-r1",
+      project_id: "demo",
+      mode: "replace",
+    };
+    expect(JSON.stringify(importMessage)).toBe(
+      '{"kind":"project.import","request_id":"restore-r1","project_id":"demo","mode":"replace"}',
+    );
+    expect(isClientMessage(JSON.parse(JSON.stringify(importMessage)))).toBe(true);
+  });
+
   it("serializes tag values and quality exactly like Rust serde", () => {
     expect(JSON.stringify({ type: "real", value: 2.5 })).toBe(
       '{"type":"real","value":2.5}',
@@ -225,6 +270,55 @@ describe("ServerMessage parsing", () => {
         activated_at_ms: 10,
         transitioned_at_ms: 10,
         message: "Pressure high: 250",
+      }),
+    ).toBe(true);
+  });
+
+  it("parses audit events and query results into typed values", () => {
+    const entry = {
+      id: 1,
+      ts_ms: 10,
+      user: "admin",
+      session_id: null,
+      source_ip: "127.0.0.1:8080",
+      kind: "AuthLogin",
+      payload: { type: "AuthLogin", username: "admin", success: true, reason: null },
+    };
+
+    expect(isServerMessage({ kind: "audit.event", entry })).toBe(true);
+    expect(
+      isServerMessage({
+        kind: "audit.query_result",
+        request_id: "audit-r1",
+        entries: [entry],
+        total: 1,
+      }),
+    ).toBe(true);
+  });
+
+  it("parses project backup server messages into typed values", () => {
+    expect(
+      isServerMessage({
+        kind: "project.export_ready",
+        request_id: "backup-r1",
+        download_url: "/api/projects/demo/backup/token",
+        size_bytes: 42,
+      }),
+    ).toBe(true);
+    expect(
+      isServerMessage({
+        kind: "project.import_progress",
+        request_id: "restore-r1",
+        phase: "importing",
+        percent: 50,
+      }),
+    ).toBe(true);
+    expect(
+      isServerMessage({
+        kind: "project.import_result",
+        request_id: "restore-r1",
+        ok: true,
+        error: null,
       }),
     ).toBe(true);
   });

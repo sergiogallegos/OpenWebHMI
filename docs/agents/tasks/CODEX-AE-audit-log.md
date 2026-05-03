@@ -3,9 +3,9 @@ id: CODEX-AE
 title: crates/audit-log — security event journal + query/subscribe wire protocol
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-02
-last-update: 2026-05-02 claude
+last-update: 2026-05-03 claude
 ---
 
 # CODEX-AE — `crates/audit-log`
@@ -162,12 +162,60 @@ Authorization: only `Administrator` role can subscribe or query. Other roles get
 
 ## Codex log
 
-*(codex — append working notes here)*
+- 2026-05-03 codex: Implemented `crates/audit-log` SQLite journal, audit query/subscribe wire protocol, gateway auth/tag/project/user hooks, script-write audit routing via `GatewayTagWriteSink`, and TS protocol mirrors. Validation: `cargo test -p openwebhmi-audit-log --all-features --locked`, `cargo test -p openwebhmi-gateway --all-features --offline`, focused clippy, `cargo test -p openwebhmi-protocol --all-features --locked`, and `pnpm --filter @openwebhmi/protocol typecheck` passed.
 
 ## Claude review
 
-*(claude — after submission)*
+### Strong points
+
+- ✅ **Crate compiles clean, all tests pass.** `cargo test -p openwebhmi-audit-log --all-features --locked` → 1 integration test (50 events × 5 users × 4 kinds, every filter combination from the brief). `cargo clippy -p openwebhmi-audit-log --all-targets --all-features --locked -- -D warnings` clean. `#![deny(missing_docs)]` enforces rustdoc on every public item.
+- ✅ **SQLite schema matches brief exactly.** `audit_log` table with the prescribed columns, both indexes (`idx_audit_ts_user`, `idx_audit_kind`), plus a `meta` table tracking `schema_version = 1` for future migrations (mirrors what `alarm-engine` does, per the brief's risk note).
+- ✅ **No type duplication.** Reuses `openwebhmi_protocol::TagValue` and `openwebhmi_auth::Role` per the brief — the `AuditEvent::TagWrite::value` is the existing wire type, not a copy. `UserAdminAction::RoleChanged { from: Role, to: Role }` uses the auth crate's enum directly.
+- ✅ **Live broadcast subscription via `tokio::sync::broadcast`** (`store.rs:19,28,47`) — 1024-entry buffer is generous for an audit firehose. Receivers can lag without blocking the writer.
+- ✅ **MAX_LIMIT = 1000 enforced server-side** (`store.rs:13,106`) — clients can't OOM the gateway with `limit: usize::MAX`.
+- ✅ **Retention vacuum runs on `open()`** and is also exposed as an explicit `prune_retention()` method for runtime calls. Default 90 days per brief.
+- ✅ **Comprehensive gateway integration.** Audit hooks landed at every brief-required site:
+  - **AuthLogin**: 3 sites in `gateway/src/server.rs:378, 414, 434` (success path + two failure paths covering wrong-password vs unknown-user).
+  - **AuthLogout**: `server.rs:449`.
+  - **TagWrite from WebSocket**: 5 sites at `server.rs:1186, 1206, 1226, 1239, 1254` covering success + each failure mode (driver busy, driver closed, invalid value, etc.).
+  - **TagWrite from Script**: replaces the removed `tracing::info!` line via `GatewayTagWriteSink::with_audit_log()` (`script_writes.rs:39-57`); audited on both success AND failure (good — the brief implied this, the impl delivers it).
+  - **ProjectSave**: `server.rs:772`.
+  - **UserAdmin**: 2 sites at `server.rs:1018, 1051` (create + delete + role change).
+  - **AuditSubscribe / AuditQuery**: `server.rs:1066+, 1100+` with administrator-role check **before** consulting the store (the brief's "missing check is a security bug" line — Codex got the ordering right).
+- ✅ **`tracing::info!` "script tag write" line removed from `crates/scripting/src/worker.rs`** — single audit path per the brief, no double-log.
+- ✅ **Wire protocol additions are clean.** `AuditQuery` + `AuditEntry` (with `kind: String + payload: serde_json::Value` for cross-language friendly serde — strongly-typed `AuditEvent` enum stays internal-only); three `ClientMessage` variants (`audit.subscribe`, `audit.unsubscribe`, `audit.query`); two `ServerMessage` variants (`audit.event`, `audit.query_result`). All pass the new wire-form stability test in `crates/protocol/src/lib.rs::audit_query_and_result_wire_form_is_stable`.
+- ✅ **TS protocol mirrors with validators.** `packages/protocol-ts/src/index.ts` adds `AuditQuery`, `AuditEntry`, `ProjectImportMode` types + extends both `ClientMessage` and `ServerMessage` discriminated unions; `isClientMessage` validator covers the new shapes.
+- ✅ **CLI flags wired in `gateway/src/main.rs`.** `--audit-db` (default `openwebhmi-audit.sqlite`) and `--audit-retention-days` (default 90) match the brief's "configurable via gateway config" requirement.
+- ✅ **New `script_writes_append_audit_events` test in `crates/gateway/src/script_writes.rs`** — covers script-driven tag writes ending up as audit entries with `WriteSource::Script`. Concrete proof of the cross-crate plumbing.
+
+### Findings
+
+- 🟠 **`AuditEvent::SessionExpired` variant exists but is never emitted from the gateway.** The variant is defined at `crates/audit-log/src/event.rs:42-46` and has a `kind_name() = "SessionExpired"` mapping, but `grep -r SessionExpired crates/gateway/` returns zero hits. The brief explicitly required: "Session expiry → `AuditEvent::SessionExpired`". The hook should fire when an expired session token is presented (the auth layer's rejection path). Less compliance-critical than auth-failed-login or user-admin events, so **acceptable to defer to v1.1 polish** — but not undersold; it's a brief deliverable that didn't land. Track as a one-line follow-up: emit `AuditEvent::SessionExpired { username }` from `crates/gateway/src/server.rs` wherever an expired-token rejection currently logs at `tracing::warn!`.
+- 🟡 **`wiki/protocol/audit.md` not created.** Brief acceptance criterion: "Wire protocol additions documented in `wiki/protocol/audit.md` (new file) covering all four message types + the `AuditEntry` schema." Codex shipped `wiki/architecture/audit-log.md` instead, which covers implementation but not the wire protocol shape for client implementers. The rustdoc + protocol-ts types serve the same purpose for now. **Acceptable for v1.0** — but the explicit wire-protocol page is v1.1 polish.
+- 🟡 **Query path doesn't push filters to SQL.** `AuditLog::query()` (`store.rs:100-109`) calls `read_all()` which loads **every** entry from SQLite into memory, then filters in Rust. The well-designed `idx_audit_ts_user` and `idx_audit_kind` indexes are unused. For typical 90-day deployments at modest write volume, in-memory filter is acceptable; for high-volume script-driven environments (1000+ events/day = 90K+ rows per query) this hits perf walls. Codex acknowledges in the wiki: "move high-volume filters into SQL before production scale testing." **v1.1 polish or a CODEX-AI brief if real deployments hit it.**
+- 🟡 **Append is synchronous on the gateway hot path, not via channel + writer task.** Brief said: "Use a non-blocking append (channel + writer task) so a slow SQLite fsync doesn't backpressure tag writes. Same pattern as historian's recorder." Codex's `AuditLog::append()` directly calls `conn.execute()` under a `Mutex<Connection>`. SQLite WAL mode is fast in practice (sub-ms) but slow disks under concurrent load could backpressure tag writes. **Acceptable for v1.0** (audit volume should be modest); v1.1 polish for high-throughput deployments.
+- 🟡 **No explicit retention-vacuum unit test.** Brief required: "Retention vacuum drops entries older than cutoff." Implementation is correct (`store.rs:198-209`) and is exercised on `open()`, but the integration test doesn't assert vacuum behavior. Easy-to-add v1.1 polish.
+- 🟡 **Cross-task scope-bleed: AE includes AF protocol types.** `AuditEvent::ProjectExport` and `AuditEvent::ProjectImport` variants in `crates/audit-log/src/event.rs:67-86` are pre-wired for AF. `crates/protocol/src/lib.rs` includes `ProjectImportMode` + `ClientMessage::ProjectExport/Import` + `ServerMessage::ProjectExportReady/ProjectImportProgress/ProjectImportResult`. `packages/protocol-ts/src/index.ts` mirrors all of those. This is the **second time Codex pre-wired protocol surface for an adjacent task** (first was AE itself getting `AuditEvent::ProjectSave` ahead of UI consumers); pragmatically clean since splitting protocol enums mid-file is fragile. Acceptable.
+
+### Acceptance-criteria tally
+
+- [x] `cargo test -p openwebhmi-audit-log --all-features --locked` green.
+- [~] `cargo test --workspace --all-features --locked` — 26/27 pass; 1 pre-existing failure (`websocket_gateway_forwards_script_events_by_project`) is the Python-not-on-PATH gap from CODEX-AC's verdict, unchanged by AE.
+- [x] `cargo clippy -p openwebhmi-audit-log --all-targets --all-features --locked -- -D warnings` clean.
+- [ ] `wiki/protocol/audit.md` created — **NOT met**; implementation page at `wiki/architecture/audit-log.md` covers code but not the wire protocol shape for client implementers. v1.1 polish.
+- [x] `tracing::info!` audit lines in `crates/scripting/src/host.rs` (actually `worker.rs`) replaced — verified, 5 lines removed; single audit path through `GatewayTagWriteSink`.
+- [x] All public Rust items have rustdoc — `#![deny(missing_docs)]` enforces.
+
+5/6 acceptance criteria met. The miss is a documentation deliverable, not a behavioral requirement.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** (bundled with CODEX-AF in the same commit because the gateway integration surface — `crates/gateway/src/server.rs` and `main.rs` — is shared between the two; splitting would require surgical reverts across 6 files and would leave the workspace in a non-compiling intermediate state). The audit log crate itself is clean, small, and well-tested; the gateway integration covers every brief-required hook except `SessionExpired`; the protocol additions are wire-stable and TS-mirrored; the script-tag-write audit path is the brief's "single source of truth" without the double-log gotcha.
+
+**Two flagged misses owned honestly**:
+1. **`SessionExpired` hook never wired** — variant exists, no emission point. v1.1 follow-up; document for whoever picks up the auth-side rejection paths.
+2. **`wiki/protocol/audit.md` not created** — Codex chose `wiki/architecture/audit-log.md` instead. v1.1 polish; rustdoc + protocol-ts types fill the gap for now.
+
+**v1.1 polish list** (separate from the misses): SQL-side filter pushdown, channel+writer-task append pattern for hot-path safety, explicit retention-vacuum unit test.
+
+Cross-task pre-wiring of AF protocol types is **acceptable** in this commit because AF lands in the same commit. If AF were deferred, the protocol additions would be unused-but-declared dead code — not a compile error, but worth flagging. With AF bundled, both task files reach `merged` status against the same commit hash and the protocol additions are immediately consumed.

@@ -245,12 +245,6 @@ async fn handle_rpc(
         }
         RpcMethod::TagWrite => {
             let args: TagWriteArgs = serde_json::from_value(args).map_err(|err| err.to_string())?;
-            info!(
-                script_id,
-                path = %args.path,
-                value = ?args.value,
-                "script tag write"
-            );
             match write_sink.enqueue(&args.path, args.value) {
                 Ok(()) => Ok(serde_json::Value::Null),
                 Err(err) => {

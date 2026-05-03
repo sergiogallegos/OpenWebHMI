@@ -49,6 +49,53 @@ pub struct HistoryPoint {
     pub quality: Quality,
 }
 
+/// Audit query filter sent over the wire.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuditQuery {
+    /// Inclusive lower timestamp bound.
+    pub from_ts_ms: Option<u64>,
+    /// Inclusive upper timestamp bound.
+    pub to_ts_ms: Option<u64>,
+    /// Actor username filter.
+    pub user: Option<String>,
+    /// Event kinds, empty for all.
+    #[serde(default)]
+    pub kinds: Vec<String>,
+    /// Maximum entries.
+    pub limit: usize,
+    /// Offset into matching entries.
+    pub offset: usize,
+}
+
+/// Audit entry sent to clients.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuditEntry {
+    /// Entry id.
+    pub id: u64,
+    /// Unix epoch milliseconds.
+    pub ts_ms: u64,
+    /// Actor username.
+    pub user: Option<String>,
+    /// Session id.
+    pub session_id: Option<String>,
+    /// Source peer address.
+    pub source_ip: Option<String>,
+    /// Event kind name.
+    pub kind: String,
+    /// Event payload.
+    pub payload: serde_json::Value,
+}
+
+/// Backup import mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectImportMode {
+    /// Replace artifacts present in the archive.
+    Replace,
+    /// Merge archive artifacts into the target project.
+    Merge,
+}
+
 /// A tag's current value.
 ///
 /// The runtime carries quality + timestamp alongside this value via
@@ -226,6 +273,28 @@ pub enum ClientMessage {
         /// Artifact to delete.
         artifact: ArtifactKind,
     },
+    /// Request creation of a one-shot project backup download.
+    #[serde(rename = "project.export")]
+    ProjectExport {
+        /// Request id echoed in the result.
+        request_id: String,
+        /// Project id.
+        project_id: String,
+        /// Include historian snapshot.
+        include_historian: bool,
+        /// Include alarm journal snapshot.
+        include_alarm_journal: bool,
+    },
+    /// Request project import using the HTTP restore side-channel.
+    #[serde(rename = "project.import")]
+    ProjectImport {
+        /// Request id echoed in progress/result events.
+        request_id: String,
+        /// Project id.
+        project_id: String,
+        /// Import conflict mode.
+        mode: ProjectImportMode,
+    },
     /// Open a view and request its current definition.
     #[serde(rename = "view.open")]
     ViewOpen {
@@ -261,6 +330,26 @@ pub enum ClientMessage {
     UserDelete {
         /// User id.
         user_id: String,
+    },
+    /// Subscribe to audit events.
+    #[serde(rename = "audit.subscribe")]
+    AuditSubscribe {
+        /// Request/subscription id.
+        request_id: String,
+    },
+    /// Unsubscribe from audit events.
+    #[serde(rename = "audit.unsubscribe")]
+    AuditUnsubscribe {
+        /// Request/subscription id.
+        request_id: String,
+    },
+    /// Query audit entries.
+    #[serde(rename = "audit.query")]
+    AuditQuery {
+        /// Request id echoed in the result.
+        request_id: String,
+        /// Query filter.
+        query: AuditQuery,
     },
     /// Run a script entry point from the designer.
     #[serde(rename = "script.run")]
@@ -409,6 +498,36 @@ pub enum ServerMessage {
         /// Artifact deleted.
         artifact: ArtifactKind,
     },
+    /// Backup archive is ready for HTTP download.
+    #[serde(rename = "project.export_ready")]
+    ProjectExportReady {
+        /// Request id.
+        request_id: String,
+        /// One-shot download URL.
+        download_url: String,
+        /// Archive size in bytes.
+        size_bytes: u64,
+    },
+    /// Restore progress update.
+    #[serde(rename = "project.import_progress")]
+    ProjectImportProgress {
+        /// Request id.
+        request_id: String,
+        /// Current phase.
+        phase: String,
+        /// Completion estimate, 0-100.
+        percent: u8,
+    },
+    /// Restore completion result.
+    #[serde(rename = "project.import_result")]
+    ProjectImportResult {
+        /// Request id.
+        request_id: String,
+        /// Whether import completed.
+        ok: bool,
+        /// Error text when `ok` is false.
+        error: Option<String>,
+    },
     /// View definition for an opened view.
     #[serde(rename = "view.definition")]
     ViewDefinition {
@@ -462,6 +581,22 @@ pub enum ServerMessage {
         /// Optional message for `log` and `error` events.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         message: Option<String>,
+    },
+    /// Live audit event.
+    #[serde(rename = "audit.event")]
+    AuditEvent {
+        /// Audit entry.
+        entry: AuditEntry,
+    },
+    /// Audit query result.
+    #[serde(rename = "audit.query_result")]
+    AuditQueryResult {
+        /// Request id.
+        request_id: String,
+        /// Matching entries.
+        entries: Vec<AuditEntry>,
+        /// Total matches before pagination.
+        total: u64,
     },
 }
 
@@ -591,6 +726,49 @@ mod tests {
     }
 
     #[test]
+    fn audit_query_and_result_wire_form_is_stable() {
+        let query = ClientMessage::AuditQuery {
+            request_id: "audit-r1".into(),
+            query: AuditQuery {
+                from_ts_ms: Some(10),
+                to_ts_ms: None,
+                user: Some("admin".into()),
+                kinds: vec!["AuthLogin".into()],
+                limit: 50,
+                offset: 0,
+            },
+        };
+        assert_eq!(
+            serde_json::to_string(&query).unwrap(),
+            r#"{"kind":"audit.query","request_id":"audit-r1","query":{"from_ts_ms":10,"to_ts_ms":null,"user":"admin","kinds":["AuthLogin"],"limit":50,"offset":0}}"#
+        );
+
+        let result = ServerMessage::AuditQueryResult {
+            request_id: "audit-r1".into(),
+            entries: vec![AuditEntry {
+                id: 1,
+                ts_ms: 10,
+                user: Some("admin".into()),
+                session_id: None,
+                source_ip: Some("127.0.0.1:8080".into()),
+                kind: "AuthLogin".into(),
+                payload: serde_json::json!({
+                    "type": "AuthLogin",
+                    "username": "admin",
+                    "success": true,
+                    "reason": null
+                }),
+            }],
+            total: 1,
+        };
+        assert_eq!(
+            serde_json::from_str::<ServerMessage>(&serde_json::to_string(&result).unwrap())
+                .unwrap(),
+            result
+        );
+    }
+
+    #[test]
     fn server_tag_update_round_trips() {
         let m = ServerMessage::TagUpdate {
             path: "system/sim/sin".into(),
@@ -701,6 +879,40 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&result).unwrap(),
             r#"{"kind":"project.artifact","request_id":"script-r1","project_id":"demo","artifact":{"kind":"script_source","id":"derived-setpoint"},"body":{"source":"import system\n"}}"#
+        );
+    }
+
+    #[test]
+    fn project_backup_wire_form_is_stable() {
+        let export = ClientMessage::ProjectExport {
+            request_id: "backup-r1".into(),
+            project_id: "demo".into(),
+            include_historian: true,
+            include_alarm_journal: false,
+        };
+        assert_eq!(
+            serde_json::to_string(&export).unwrap(),
+            r#"{"kind":"project.export","request_id":"backup-r1","project_id":"demo","include_historian":true,"include_alarm_journal":false}"#
+        );
+
+        let import = ClientMessage::ProjectImport {
+            request_id: "restore-r1".into(),
+            project_id: "demo".into(),
+            mode: ProjectImportMode::Replace,
+        };
+        assert_eq!(
+            serde_json::to_string(&import).unwrap(),
+            r#"{"kind":"project.import","request_id":"restore-r1","project_id":"demo","mode":"replace"}"#
+        );
+
+        let ready = ServerMessage::ProjectExportReady {
+            request_id: "backup-r1".into(),
+            download_url: "/api/projects/demo/backup/token".into(),
+            size_bytes: 42,
+        };
+        assert_eq!(
+            serde_json::to_string(&ready).unwrap(),
+            r#"{"kind":"project.export_ready","request_id":"backup-r1","download_url":"/api/projects/demo/backup/token","size_bytes":42}"#
         );
     }
 

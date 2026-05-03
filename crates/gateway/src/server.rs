@@ -1,20 +1,27 @@
 //! WebSocket server for the Phase 0 gateway.
 
 use std::collections::HashMap;
+use std::net::IpAddr;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use futures_util::{SinkExt, StreamExt};
-use openwebhmi_alarm_engine::{AlarmEngineHandle, AlarmEvent};
+use openwebhmi_alarm_engine::{AlarmEngineHandle, AlarmEvent, AlarmJournal};
+use openwebhmi_audit_log::{
+    AuditEntry as StoredAuditEntry, AuditEvent, AuditLog, AuditQuery as StoredAuditQuery,
+    UserAdminAction, WriteSource,
+};
 use openwebhmi_auth::{Permission, Role, SessionManager, UserPatch, UserStore, VerifiedSession};
+use openwebhmi_backup::{BackupOptions, ImportMode, RestoreOptions};
 use openwebhmi_historian::{Aggregation, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
 use openwebhmi_protocol::{AlarmState, ArtifactKind, AuthUser, ClientMessage, ServerMessage};
 use openwebhmi_scripting::{ScriptEvent, ScriptHost, ScriptStatus};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
-use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc::{self, error::TrySendError};
 use tokio::task::JoinHandle;
@@ -28,8 +35,18 @@ use crate::project::{DriverHandle, DriverHandles, WriteCommand, WriteEnqueueErro
 type OutboundTx = mpsc::Sender<ServerMessage>;
 const OUTBOUND_CAPACITY: usize = 256;
 static DEFAULT_HISTORIAN: OnceLock<HistorianStore> = OnceLock::new();
+static DEFAULT_ALARM_JOURNAL: OnceLock<AlarmJournal> = OnceLock::new();
 static DEFAULT_ALARM_ENGINE: OnceLock<Arc<Mutex<AlarmEngineHandle>>> = OnceLock::new();
 static DEFAULT_SCRIPT_HOST: OnceLock<Arc<ScriptHost>> = OnceLock::new();
+static DEFAULT_AUDIT_LOG: OnceLock<AuditLog> = OnceLock::new();
+static BACKUP_DOWNLOADS: OnceLock<Mutex<HashMap<String, BackupDownload>>> = OnceLock::new();
+
+struct BackupDownload {
+    project_id: String,
+    archive: Vec<u8>,
+    expires_at: Instant,
+    peer_ip: IpAddr,
+}
 
 /// Authentication state shared by websocket connections.
 #[derive(Clone)]
@@ -50,6 +67,11 @@ pub fn set_default_historian(historian: HistorianStore) {
     let _ = DEFAULT_HISTORIAN.set(historian);
 }
 
+/// Set the process-wide alarm journal used by backup export handlers.
+pub fn set_default_alarm_journal(journal: AlarmJournal) {
+    let _ = DEFAULT_ALARM_JOURNAL.set(journal);
+}
+
 /// Set the process-wide alarm engine used by websocket alarm handlers.
 pub fn set_default_alarm_engine(engine: Arc<Mutex<AlarmEngineHandle>>) {
     let _ = DEFAULT_ALARM_ENGINE.set(engine);
@@ -58,6 +80,11 @@ pub fn set_default_alarm_engine(engine: Arc<Mutex<AlarmEngineHandle>>) {
 /// Set the process-wide script host used by websocket script-event handlers.
 pub fn set_default_script_host(host: Arc<ScriptHost>) {
     let _ = DEFAULT_SCRIPT_HOST.set(host);
+}
+
+/// Set the process-wide audit log used by websocket audit handlers.
+pub fn set_default_audit_log(audit_log: AuditLog) {
+    let _ = DEFAULT_AUDIT_LOG.set(audit_log);
 }
 
 /// Bind `addr` and serve WebSocket clients forever.
@@ -150,6 +177,38 @@ pub async fn serve_with_project_store_driver_handles_and_auth(
     auth: AuthContext,
 ) -> anyhow::Result<()> {
     serve_inner(listener, store, project_store, driver_handles, Some(auth)).await
+}
+
+/// Serve backup/restore HTTP side-channel requests from an already-bound listener.
+pub async fn serve_backup_http(
+    listener: TcpListener,
+    project_store: ProjectStore,
+    auth: AuthContext,
+) -> anyhow::Result<()> {
+    let local_addr = listener
+        .local_addr()
+        .context("failed to read backup listener local addr")?;
+    info!(%local_addr, "backup HTTP side-channel listening");
+
+    loop {
+        let (mut stream, peer_addr) = listener.accept().await.context("accept failed")?;
+        let project_store = project_store.clone();
+        let auth = auth.clone();
+        tokio::spawn(async move {
+            if let Err(err) = handle_backup_http(&mut stream, peer_addr, project_store, auth).await
+            {
+                warn!(%peer_addr, error = %err, "backup HTTP request failed");
+                let _ = write_http_response(
+                    &mut stream,
+                    500,
+                    "Internal Server Error",
+                    "text/plain",
+                    b"backup request failed",
+                )
+                .await;
+            }
+        });
+    }
 }
 
 async fn serve_inner(
@@ -259,6 +318,7 @@ where
     let mut project_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
     let mut alarm_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
     let mut script_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
+    let mut audit_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
 
     while let Some(item) = incoming.next().await {
         let message = match item {
@@ -312,6 +372,15 @@ where
                 };
                 match auth.users.authenticate(&username, &password) {
                     Ok(Some(user)) => {
+                        append_audit(
+                            None,
+                            peer_addr,
+                            AuditEvent::AuthLogin {
+                                username: username.clone(),
+                                success: true,
+                                reason: None,
+                            },
+                        );
                         match auth.sessions.issue(&user.id, &user.username, &user.roles) {
                             Ok(token) => {
                                 let roles = user
@@ -338,19 +407,50 @@ where
                             Err(err) => send_error(&out_tx, "auth.session", err.to_string()),
                         }
                     }
-                    Ok(None) => try_send_message(
-                        &out_tx,
-                        ServerMessage::AuthResult {
-                            session_token: None,
-                            user_id: None,
-                            roles: Vec::new(),
-                            error: Some("invalid username or password".into()),
-                        },
-                    ),
-                    Err(err) => send_error(&out_tx, "auth.login", err.to_string()),
+                    Ok(None) => {
+                        append_audit(
+                            None,
+                            peer_addr,
+                            AuditEvent::AuthLogin {
+                                username,
+                                success: false,
+                                reason: Some("invalid username or password".into()),
+                            },
+                        );
+                        try_send_message(
+                            &out_tx,
+                            ServerMessage::AuthResult {
+                                session_token: None,
+                                user_id: None,
+                                roles: Vec::new(),
+                                error: Some("invalid username or password".into()),
+                            },
+                        )
+                    }
+                    Err(err) => {
+                        append_audit(
+                            None,
+                            peer_addr,
+                            AuditEvent::AuthLogin {
+                                username,
+                                success: false,
+                                reason: Some(err.to_string()),
+                            },
+                        );
+                        send_error(&out_tx, "auth.login", err.to_string())
+                    }
                 }
             }
             ClientMessage::AuthLogout => {
+                if let Some(session) = session.as_ref() {
+                    append_audit(
+                        Some(session),
+                        peer_addr,
+                        AuditEvent::AuthLogout {
+                            username: session.username.clone(),
+                        },
+                    );
+                }
                 session = None;
                 try_send_message(
                     &out_tx,
@@ -520,7 +620,14 @@ where
                 ) {
                     continue;
                 }
-                handle_tag_write(&out_tx, &driver_handles, path, value);
+                handle_tag_write(
+                    &out_tx,
+                    &driver_handles,
+                    session.as_ref(),
+                    peer_addr,
+                    path,
+                    value,
+                );
             }
             ClientMessage::Ping => {
                 try_send_message(&out_tx, ServerMessage::Pong);
@@ -656,15 +763,26 @@ where
                     send_unavailable(&out_tx);
                     continue;
                 };
+                let artifact_kind = format!("{artifact:?}");
                 match project_store.save_artifact(&project_id, artifact, body) {
-                    Ok(version) => try_send_message(
-                        &out_tx,
-                        ServerMessage::ProjectSaveResult {
-                            request_id,
-                            project_id,
-                            version,
-                        },
-                    ),
+                    Ok(version) => {
+                        append_audit(
+                            session.as_ref(),
+                            peer_addr,
+                            AuditEvent::ProjectSave {
+                                project_id: project_id.clone(),
+                                artifact_kind,
+                            },
+                        );
+                        try_send_message(
+                            &out_tx,
+                            ServerMessage::ProjectSaveResult {
+                                request_id,
+                                project_id,
+                                version,
+                            },
+                        )
+                    }
                     Err(err) => send_error(&out_tx, "project.save_artifact", err.to_string()),
                 }
             }
@@ -726,6 +844,85 @@ where
                     ),
                     Err(err) => send_error(&out_tx, "project.delete_artifact", err.to_string()),
                 }
+            }
+            ClientMessage::ProjectExport {
+                request_id,
+                project_id,
+                include_historian,
+                include_alarm_journal,
+            } => {
+                if !authorize_admin(&out_tx, auth.as_ref(), session.as_ref()) {
+                    continue;
+                }
+                let Some(project_store) = project_store.as_ref() else {
+                    send_unavailable(&out_tx);
+                    continue;
+                };
+                let options = BackupOptions {
+                    historian_sqlite: None,
+                    alarm_journal_sqlite: None,
+                    historian_store: include_historian
+                        .then(|| DEFAULT_HISTORIAN.get().cloned())
+                        .flatten(),
+                    alarm_journal: include_alarm_journal
+                        .then(|| DEFAULT_ALARM_JOURNAL.get().cloned())
+                        .flatten(),
+                    audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
+                    user: session.as_ref().map(|session| session.username.clone()),
+                };
+                match openwebhmi_backup::export_project(project_store, &project_id, options) {
+                    Ok(archive) => {
+                        let token = uuid::Uuid::new_v4().to_string();
+                        let size_bytes = archive.len() as u64;
+                        let downloads = BACKUP_DOWNLOADS.get_or_init(|| Mutex::new(HashMap::new()));
+                        match downloads.lock() {
+                            Ok(mut downloads) => {
+                                downloads.insert(
+                                    token.clone(),
+                                    BackupDownload {
+                                        project_id: project_id.clone(),
+                                        archive,
+                                        expires_at: Instant::now() + Duration::from_secs(5 * 60),
+                                        peer_ip: peer_addr.ip(),
+                                    },
+                                );
+                                try_send_message(
+                                    &out_tx,
+                                    ServerMessage::ProjectExportReady {
+                                        request_id,
+                                        download_url: format!(
+                                            "/api/projects/{project_id}/backup/{token}"
+                                        ),
+                                        size_bytes,
+                                    },
+                                );
+                            }
+                            Err(_) => send_error(
+                                &out_tx,
+                                "backup.registry",
+                                "backup token registry lock poisoned".into(),
+                            ),
+                        }
+                    }
+                    Err(err) => send_error(&out_tx, "project.export", err.to_string()),
+                }
+            }
+            ClientMessage::ProjectImport {
+                request_id,
+                project_id: _,
+                mode: _,
+            } => {
+                if !authorize_admin(&out_tx, auth.as_ref(), session.as_ref()) {
+                    continue;
+                }
+                try_send_message(
+                    &out_tx,
+                    ServerMessage::ProjectImportProgress {
+                        request_id,
+                        phase: "upload-ready".into(),
+                        percent: 0,
+                    },
+                );
             }
             ClientMessage::ViewOpen {
                 project_id,
@@ -804,12 +1001,28 @@ where
                         continue;
                     }
                 };
+                let target_user = username.clone();
                 match auth.users.upsert_user(UserPatch {
                     username,
                     password,
                     roles,
                 }) {
-                    Ok(_) => send_user_list(&out_tx, auth),
+                    Ok(_) => {
+                        let actor = session
+                            .as_ref()
+                            .map(|session| session.username.clone())
+                            .unwrap_or_else(|| "unknown".into());
+                        append_audit(
+                            session.as_ref(),
+                            peer_addr,
+                            AuditEvent::UserAdmin {
+                                actor,
+                                action: UserAdminAction::Created,
+                                target_user,
+                            },
+                        );
+                        send_user_list(&out_tx, auth)
+                    }
                     Err(err) => send_error(&out_tx, "user.upsert", err.to_string()),
                 }
             }
@@ -827,8 +1040,88 @@ where
                     continue;
                 }
                 match auth.users.delete_user(&user_id) {
-                    Ok(()) => send_user_list(&out_tx, auth),
+                    Ok(()) => {
+                        let actor = session
+                            .as_ref()
+                            .map(|session| session.username.clone())
+                            .unwrap_or_else(|| "unknown".into());
+                        append_audit(
+                            session.as_ref(),
+                            peer_addr,
+                            AuditEvent::UserAdmin {
+                                actor,
+                                action: UserAdminAction::Deleted,
+                                target_user: user_id,
+                            },
+                        );
+                        send_user_list(&out_tx, auth)
+                    }
                     Err(err) => send_error(&out_tx, "user.delete", err.to_string()),
+                }
+            }
+            ClientMessage::AuditSubscribe { request_id } => {
+                if !authorize_admin(&out_tx, auth.as_ref(), session.as_ref()) {
+                    continue;
+                }
+                let Some(audit_log) = DEFAULT_AUDIT_LOG.get() else {
+                    send_error(
+                        &out_tx,
+                        "audit.unavailable",
+                        "audit log is not enabled".into(),
+                    );
+                    continue;
+                };
+                if audit_subscriptions.contains_key(&request_id) {
+                    continue;
+                }
+                let mut rx = audit_log.subscribe();
+                let out = out_tx.clone();
+                let handle = tokio::spawn(async move {
+                    while let Ok(entry) = rx.recv().await {
+                        try_send_message(
+                            &out,
+                            ServerMessage::AuditEvent {
+                                entry: audit_entry_to_wire(entry),
+                            },
+                        );
+                    }
+                });
+                audit_subscriptions.insert(request_id, handle);
+            }
+            ClientMessage::AuditUnsubscribe { request_id } => {
+                if let Some(handle) = audit_subscriptions.remove(&request_id) {
+                    handle.abort();
+                }
+            }
+            ClientMessage::AuditQuery { request_id, query } => {
+                if !authorize_admin(&out_tx, auth.as_ref(), session.as_ref()) {
+                    continue;
+                }
+                let Some(audit_log) = DEFAULT_AUDIT_LOG.get() else {
+                    send_error(
+                        &out_tx,
+                        "audit.unavailable",
+                        "audit log is not enabled".into(),
+                    );
+                    continue;
+                };
+                match audit_log.query(&StoredAuditQuery {
+                    from_ts_ms: query.from_ts_ms,
+                    to_ts_ms: query.to_ts_ms,
+                    user: query.user,
+                    kinds: query.kinds,
+                    limit: query.limit,
+                    offset: query.offset,
+                }) {
+                    Ok((entries, total)) => try_send_message(
+                        &out_tx,
+                        ServerMessage::AuditQueryResult {
+                            request_id,
+                            entries: entries.into_iter().map(audit_entry_to_wire).collect(),
+                            total,
+                        },
+                    ),
+                    Err(err) => send_error(&out_tx, "audit.query", err.to_string()),
                 }
             }
             ClientMessage::ScriptRun {
@@ -868,6 +1161,9 @@ where
     for (_, handle) in script_subscriptions {
         handle.abort();
     }
+    for (_, handle) in audit_subscriptions {
+        handle.abort();
+    }
     drop(out_tx);
     writer.abort();
     info!(%peer_addr, "connection cleanup complete");
@@ -878,10 +1174,23 @@ where
 fn handle_tag_write(
     out_tx: &OutboundTx,
     driver_handles: &DriverHandles,
+    session: Option<&VerifiedSession>,
+    peer_addr: SocketAddr,
     path: String,
     value: openwebhmi_protocol::TagValue,
 ) {
     let Some((driver_id, address)) = split_tag_path(&path) else {
+        append_audit(
+            session,
+            peer_addr,
+            AuditEvent::TagWrite {
+                path: path.clone(),
+                value,
+                success: false,
+                source: WriteSource::WebSocket,
+                error: Some(format!("tag path '{path}' must be '<driver_id>/<address>'")),
+            },
+        );
         send_error(
             out_tx,
             "tag.write.failed",
@@ -891,6 +1200,17 @@ fn handle_tag_write(
     };
 
     let Some(driver) = driver_handles.get(driver_id) else {
+        append_audit(
+            session,
+            peer_addr,
+            AuditEvent::TagWrite {
+                path: path.clone(),
+                value,
+                success: false,
+                source: WriteSource::WebSocket,
+                error: Some(format!("unknown driver '{driver_id}'")),
+            },
+        );
         send_error(
             out_tx,
             "tag.write.unknown_driver",
@@ -899,18 +1219,48 @@ fn handle_tag_write(
         return;
     };
 
-    match try_write(driver, address, value) {
-        Ok(()) => {}
-        Err(WriteEnqueueError::Busy) => send_error(
-            out_tx,
-            "tag.write.busy",
-            format!("driver '{driver_id}' write queue is full"),
+    match try_write(driver, address, value.clone()) {
+        Ok(()) => append_audit(
+            session,
+            peer_addr,
+            AuditEvent::TagWrite {
+                path,
+                value,
+                success: true,
+                source: WriteSource::WebSocket,
+                error: None,
+            },
         ),
-        Err(WriteEnqueueError::Closed) => send_error(
-            out_tx,
-            "tag.write.failed",
-            format!("driver '{driver_id}' write channel is closed"),
-        ),
+        Err(WriteEnqueueError::Busy) => {
+            let error = format!("driver '{driver_id}' write queue is full");
+            append_audit(
+                session,
+                peer_addr,
+                AuditEvent::TagWrite {
+                    path,
+                    value,
+                    success: false,
+                    source: WriteSource::WebSocket,
+                    error: Some(error.clone()),
+                },
+            );
+            send_error(out_tx, "tag.write.busy", error)
+        }
+        Err(WriteEnqueueError::Closed) => {
+            let error = format!("driver '{driver_id}' write channel is closed");
+            append_audit(
+                session,
+                peer_addr,
+                AuditEvent::TagWrite {
+                    path,
+                    value,
+                    success: false,
+                    source: WriteSource::WebSocket,
+                    error: Some(error.clone()),
+                },
+            );
+            send_error(out_tx, "tag.write.failed", error)
+        }
     }
 }
 
@@ -938,6 +1288,319 @@ fn authorize(
         send_error(out_tx, "auth.forbidden", "permission denied".into());
         false
     }
+}
+
+fn authorize_admin(
+    out_tx: &OutboundTx,
+    auth: Option<&AuthContext>,
+    session: Option<&VerifiedSession>,
+) -> bool {
+    if auth.is_none() {
+        return true;
+    }
+    let Some(session) = session else {
+        send_error(out_tx, "auth.required", "authentication required".into());
+        return false;
+    };
+    if session.roles.contains(&Role::Administrator) {
+        true
+    } else {
+        send_error(out_tx, "forbidden", "permission denied".into());
+        false
+    }
+}
+
+fn append_audit(session: Option<&VerifiedSession>, peer_addr: SocketAddr, event: AuditEvent) {
+    let Some(audit_log) = DEFAULT_AUDIT_LOG.get() else {
+        return;
+    };
+    let user = session.map(|session| session.username.clone());
+    let session_id = session.map(|session| session.user_id.clone());
+    if let Err(err) = audit_log.append(user, session_id, Some(peer_addr.ip().to_string()), event) {
+        warn!(error = %err, "failed to append audit event");
+    }
+}
+
+fn audit_entry_to_wire(entry: StoredAuditEntry) -> openwebhmi_protocol::AuditEntry {
+    openwebhmi_protocol::AuditEntry {
+        id: entry.id,
+        ts_ms: entry.ts_ms,
+        user: entry.user,
+        session_id: entry.session_id,
+        source_ip: entry.source_ip,
+        kind: entry.kind.kind_name().to_string(),
+        payload: serde_json::to_value(entry.kind).unwrap_or(serde_json::Value::Null),
+    }
+}
+
+async fn handle_backup_http<S>(
+    stream: &mut S,
+    peer_addr: SocketAddr,
+    project_store: ProjectStore,
+    auth: AuthContext,
+) -> anyhow::Result<()>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    let request = read_http_request(stream).await?;
+    match request.method.as_str() {
+        "GET" => handle_backup_download(stream, peer_addr, &request).await,
+        "POST" => handle_backup_restore(stream, project_store, auth, request).await,
+        _ => {
+            write_http_response(
+                stream,
+                405,
+                "Method Not Allowed",
+                "text/plain",
+                b"method not allowed",
+            )
+            .await;
+            Ok(())
+        }
+    }
+}
+
+async fn handle_backup_download<S>(
+    stream: &mut S,
+    peer_addr: SocketAddr,
+    request: &HttpRequest,
+) -> anyhow::Result<()>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    let Some((project_id, token)) = parse_backup_download_path(&request.path) else {
+        write_http_response(stream, 404, "Not Found", "text/plain", b"not found").await;
+        return Ok(());
+    };
+    let download = {
+        let downloads = BACKUP_DOWNLOADS.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut downloads = downloads
+            .lock()
+            .map_err(|_| anyhow::anyhow!("backup download registry lock poisoned"))?;
+        downloads.remove(token)
+    };
+    let Some(download) = download else {
+        write_http_response(
+            stream,
+            404,
+            "Not Found",
+            "text/plain",
+            b"backup token not found",
+        )
+        .await;
+        return Ok(());
+    };
+    if download.project_id != project_id || download.expires_at <= Instant::now() {
+        write_http_response(stream, 410, "Gone", "text/plain", b"backup token expired").await;
+        return Ok(());
+    }
+    if download.peer_ip != peer_addr.ip() {
+        write_http_response(
+            stream,
+            403,
+            "Forbidden",
+            "text/plain",
+            b"backup token peer mismatch",
+        )
+        .await;
+        return Ok(());
+    }
+    write_http_response(
+        stream,
+        200,
+        "OK",
+        "application/octet-stream",
+        &download.archive,
+    )
+    .await;
+    Ok(())
+}
+
+async fn handle_backup_restore<S>(
+    stream: &mut S,
+    project_store: ProjectStore,
+    auth: AuthContext,
+    request: HttpRequest,
+) -> anyhow::Result<()>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    let Some(project_id) = parse_backup_restore_path(&request.path) else {
+        write_http_response(stream, 404, "Not Found", "text/plain", b"not found").await;
+        return Ok(());
+    };
+    let Some(session) = bearer_session(&auth, &request) else {
+        write_http_response(
+            stream,
+            401,
+            "Unauthorized",
+            "text/plain",
+            b"authentication required",
+        )
+        .await;
+        return Ok(());
+    };
+    if !session.roles.contains(&Role::Administrator) {
+        write_http_response(stream, 403, "Forbidden", "text/plain", b"permission denied").await;
+        return Ok(());
+    }
+    let mode = if request
+        .query
+        .get("mode")
+        .is_some_and(|mode| mode == "merge")
+    {
+        ImportMode::Merge
+    } else {
+        ImportMode::Replace
+    };
+    let manifest = openwebhmi_backup::import_project(
+        &project_store,
+        &request.body,
+        RestoreOptions {
+            mode,
+            audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
+            user: Some(session.username),
+        },
+    )?;
+    if manifest.project_id != project_id {
+        write_http_response(
+            stream,
+            400,
+            "Bad Request",
+            "text/plain",
+            b"project id mismatch",
+        )
+        .await;
+        return Ok(());
+    }
+    let body = serde_json::to_vec(&serde_json::json!({
+        "ok": true,
+        "project_id": manifest.project_id,
+        "schema_version": manifest.schema_version
+    }))?;
+    write_http_response(stream, 200, "OK", "application/json", &body).await;
+    Ok(())
+}
+
+struct HttpRequest {
+    method: String,
+    path: String,
+    query: HashMap<String, String>,
+    headers: HashMap<String, String>,
+    body: Vec<u8>,
+}
+
+async fn read_http_request<S>(stream: &mut S) -> anyhow::Result<HttpRequest>
+where
+    S: AsyncRead + Unpin,
+{
+    let mut bytes = Vec::new();
+    let header_end = loop {
+        let mut chunk = [0u8; 1024];
+        let read = stream.read(&mut chunk).await?;
+        if read == 0 {
+            anyhow::bail!("connection closed before HTTP headers");
+        }
+        bytes.extend_from_slice(&chunk[..read]);
+        if let Some(pos) = find_header_end(&bytes) {
+            break pos;
+        }
+        if bytes.len() > 32 * 1024 {
+            anyhow::bail!("HTTP headers too large");
+        }
+    };
+    let header_text = std::str::from_utf8(&bytes[..header_end])?;
+    let mut lines = header_text.split("\r\n");
+    let request_line = lines
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("missing HTTP request line"))?;
+    let mut request_parts = request_line.split_whitespace();
+    let method = request_parts
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("missing HTTP method"))?
+        .to_string();
+    let target = request_parts
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("missing HTTP target"))?;
+    let (path, query) = split_http_target(target);
+    let mut headers = HashMap::new();
+    for line in lines {
+        if let Some((key, value)) = line.split_once(':') {
+            headers.insert(key.trim().to_ascii_lowercase(), value.trim().to_string());
+        }
+    }
+    let content_length = headers
+        .get("content-length")
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(0);
+    let body_start = header_end + 4;
+    let mut body = bytes.get(body_start..).unwrap_or_default().to_vec();
+    while body.len() < content_length {
+        let mut chunk = vec![0u8; content_length - body.len()];
+        let read = stream.read(&mut chunk).await?;
+        if read == 0 {
+            anyhow::bail!("connection closed before HTTP body completed");
+        }
+        body.extend_from_slice(&chunk[..read]);
+    }
+    body.truncate(content_length);
+    Ok(HttpRequest {
+        method,
+        path,
+        query,
+        headers,
+        body,
+    })
+}
+
+async fn write_http_response<S>(
+    stream: &mut S,
+    status: u16,
+    reason: &str,
+    content_type: &str,
+    body: &[u8],
+) where
+    S: AsyncWrite + Unpin,
+{
+    let headers = format!(
+        "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        body.len()
+    );
+    let _ = stream.write_all(headers.as_bytes()).await;
+    let _ = stream.write_all(body).await;
+    let _ = stream.flush().await;
+}
+
+fn find_header_end(bytes: &[u8]) -> Option<usize> {
+    bytes.windows(4).position(|window| window == b"\r\n\r\n")
+}
+
+fn split_http_target(target: &str) -> (String, HashMap<String, String>) {
+    let (path, raw_query) = target.split_once('?').unwrap_or((target, ""));
+    let query = raw_query
+        .split('&')
+        .filter_map(|part| part.split_once('='))
+        .map(|(key, value)| (key.to_string(), value.to_string()))
+        .collect();
+    (path.to_string(), query)
+}
+
+fn parse_backup_download_path(path: &str) -> Option<(&str, &str)> {
+    let rest = path.strip_prefix("/api/projects/")?;
+    let (project_id, rest) = rest.split_once("/backup/")?;
+    (!project_id.is_empty() && !rest.is_empty()).then_some((project_id, rest))
+}
+
+fn parse_backup_restore_path(path: &str) -> Option<&str> {
+    let rest = path.strip_prefix("/api/projects/")?;
+    let project_id = rest.strip_suffix("/restore")?;
+    (!project_id.is_empty()).then_some(project_id)
+}
+
+fn bearer_session(auth: &AuthContext, request: &HttpRequest) -> Option<VerifiedSession> {
+    let header = request.headers.get("authorization")?;
+    let token = header.strip_prefix("Bearer ")?;
+    auth.sessions.verify(token).ok()
 }
 
 fn authorize_write(

@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use openwebhmi_protocol::{Quality, TagValue};
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, DatabaseName, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
 use crate::aggregations::{Aggregation, aggregate};
@@ -87,6 +87,12 @@ impl HistorianStore {
             aggregation,
             max_points,
         )?)
+    }
+
+    /// Snapshot the live SQLite database to `path` using SQLite's online backup API.
+    pub fn backup_to_path(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        self.lock()?.backup(DatabaseName::Main, path, None)?;
+        Ok(())
     }
 
     fn read_raw_unbounded(

@@ -2,6 +2,8 @@
 resolver = "2"
 members = [
     "crates/alarm-engine",
+    "crates/audit-log",
+    "crates/backup",
     "crates/driver-api",
     "crates/driver-ads",
     "crates/driver-opcua",
@@ -47,11 +49,12 @@ base64 = "0.22"
 bcrypt = "0.15"
 jsonwebtoken = "9"
 futures-util = "0.3"
+flate2 = "1"
 tokio-tungstenite = "0.24"
 clap = { version = "4", features = ["derive", "env"] }
 rand = "0.8"
 toml = "0.8"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.32", features = ["bundled", "backup"] }
 tempfile = "3"
 rustls-pemfile = "2"
 tokio-rustls = "0.26"

@@ -6,6 +6,7 @@ use std::time::Duration;
 use anyhow::Context;
 use clap::Parser;
 use openwebhmi_alarm_engine::{AlarmJournal, spawn_alarm_engine};
+use openwebhmi_audit_log::AuditLog;
 use openwebhmi_auth::{SessionManager, UserStore};
 use openwebhmi_gateway::script_writes::GatewayTagWriteSink;
 use openwebhmi_gateway::{project, server, sim_provider};
@@ -25,6 +26,9 @@ struct Args {
     /// Address the WebSocket gateway binds.
     #[arg(long, default_value = "127.0.0.1:8080")]
     bind: SocketAddr,
+    /// Optional HTTP address for backup/restore archive transfer.
+    #[arg(long)]
+    backup_bind: Option<SocketAddr>,
     /// Log level used when RUST_LOG is not set.
     #[arg(long, default_value = "info")]
     log_level: String,
@@ -37,6 +41,12 @@ struct Args {
     /// SQLite auth database path.
     #[arg(long, default_value = "openwebhmi-auth.sqlite")]
     auth_db: PathBuf,
+    /// SQLite audit journal path.
+    #[arg(long, default_value = "openwebhmi-audit.sqlite")]
+    audit_db: PathBuf,
+    /// Audit event retention window in days.
+    #[arg(long, default_value_t = 90)]
+    audit_retention_days: u64,
     /// JWT signing secret. Defaults to OPENWEBHMI_JWT_SECRET or a dev-only fallback.
     #[arg(long, env = "OPENWEBHMI_JWT_SECRET")]
     jwt_secret: Option<String>,
@@ -59,6 +69,9 @@ async fn main() -> anyhow::Result<()> {
     let store = TagStore::new();
     tokio::spawn(sim_provider::run(store.clone()));
     let auth = init_auth(&args)?;
+    let audit_log = AuditLog::open(&args.audit_db, args.audit_retention_days)
+        .with_context(|| format!("failed to open audit db {:?}", args.audit_db))?;
+    server::set_default_audit_log(audit_log.clone());
     let project_store_root = args.project_store.clone().or_else(|| {
         args.project
             .as_ref()
@@ -81,6 +94,7 @@ async fn main() -> anyhow::Result<()> {
             project_store.clone(),
             &project,
             driver_handles.clone(),
+            Some(audit_log.clone()),
         );
         driver_handles
     } else {
@@ -88,6 +102,23 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // TODO Phase 3 auth/TLS: this Phase 0 endpoint is intentionally unauthenticated WS.
+    let backup_project_store = project_store.clone();
+    let backup_auth = auth.clone();
+    if let (Some(bind), Some(project_store)) = (args.backup_bind, backup_project_store) {
+        tokio::spawn(async move {
+            match tokio::net::TcpListener::bind(bind).await {
+                Ok(listener) => {
+                    if let Err(err) =
+                        server::serve_backup_http(listener, project_store, backup_auth).await
+                    {
+                        warn!(error = %err, "backup HTTP side-channel stopped");
+                    }
+                }
+                Err(err) => warn!(%bind, error = %err, "failed to bind backup HTTP side-channel"),
+            }
+        });
+    }
+
     tokio::select! {
         result = run_server(args.bind, store, project_store, driver_handles, auth, tls_config(&args)?) => result,
         signal = tokio::signal::ctrl_c() => {
@@ -103,6 +134,7 @@ fn spawn_script_runtime(
     project_store: Option<ProjectStore>,
     project: &openwebhmi_project_store::Project,
     driver_handles: project::DriverHandles,
+    audit_log: Option<AuditLog>,
 ) -> Option<Arc<ScriptHost>> {
     let scripts = project
         .scripts
@@ -119,7 +151,11 @@ fn spawn_script_runtime(
         count = scripts.len(),
         "starting project scripts"
     );
-    let write_sink = std::sync::Arc::new(GatewayTagWriteSink::new(driver_handles, store.clone()));
+    let write_sink = std::sync::Arc::new(GatewayTagWriteSink::with_audit_log(
+        driver_handles,
+        store.clone(),
+        audit_log,
+    ));
     let host = Arc::new(ScriptHost::spawn(
         project.id.clone(),
         store,
@@ -173,6 +209,7 @@ fn spawn_alarm_runtime(
     project: &openwebhmi_project_store::Project,
 ) -> anyhow::Result<()> {
     let journal = AlarmJournal::open("openwebhmi-alarms.sqlite")?;
+    server::set_default_alarm_journal(journal.clone());
     let engine = spawn_alarm_engine(store, journal, project::alarm_definitions(project)?);
     let Some(project_store) = project_store else {
         let engine = Arc::new(std::sync::Mutex::new(engine));

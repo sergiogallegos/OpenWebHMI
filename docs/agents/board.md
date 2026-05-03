@@ -8,17 +8,15 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AE | `crates/audit-log` — security event journal + query/subscribe wire protocol | codex | submitted | 2026-05-03 codex | [tasks/CODEX-AE-audit-log.md](tasks/CODEX-AE-audit-log.md) |
-| CODEX-AF | `crates/backup` — project export/import + gateway-level backup with historian and alarm journal | codex | submitted | 2026-05-03 codex | [tasks/CODEX-AF-backup-restore.md](tasks/CODEX-AF-backup-restore.md) |
+| CODEX-AI | Wire historian + alarm-journal import path in `crates/backup` — close CODEX-AF's v1.0 gap | codex | open | 2026-05-03 claude | [tasks/CODEX-AI-backup-historian-import.md](tasks/CODEX-AI-backup-historian-import.md) |
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-AE  (audit log backend)                ← submitted — Codex implementation in flight; review pending
-CODEX-AF  (backup / restore)                 ← submitted — Codex implementation in flight; review pending
+CODEX-AI  (historian/alarm import for backup)  ← AF closeout follow-up; mechanical FFI-style fix; v1.0 closeout blocker
 ```
 
-**Two open tasks under review: AE (audit log) and AF (backup/restore).** Both submitted; reviews in flight. AH merged on the same push as a closeout for AD's polling-vs-native-notifications gap (ADS row in `docs/feature-matrix.md` is now hardware-validated without an asterisk). AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. After both land plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
+**One open task: AI (historian/alarm import for backup).** AE + AF merged together (gateway integration is shared between them; splitting required surgical reverts across 6 files and a non-compiling intermediate). AF's headline gap — historian/alarm-journal data is exported but not imported — is tracked as AI's scope; v1.0 should not tag without AI landed. After AI lands plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
 
 ## Phase 3 — Core SCADA features
 
@@ -74,6 +72,8 @@ CODEX-AF  (backup / restore)                 ← submitted — Codex implementat
 | CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 | codex | `9a96871` | 4 |
 | CODEX-AD | ADS validation hardening — TwinCAT-router FFI backend + hardware-validated against CX-23F092 | codex | `54ec808` | 4 |
 | CODEX-AH | Native ADS device notifications via TcAdsDll FFI — closes AD's polling regression | codex | `2be075e` | 4 |
+| CODEX-AE | `crates/audit-log` — SQLite security event journal + query/subscribe wire protocol + gateway hooks | codex | _pending_ | 4 |
+| CODEX-AF | `crates/backup` — project export/import + gateway HTTP side-channel; historian/alarm import deferred to CODEX-AI | codex | _pending_ | 4 |
 
 ## Conventions
 

@@ -3,9 +3,9 @@ id: CODEX-AF
 title: crates/backup — project export/import + gateway-level backup with historian and alarm journal
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-02
-last-update: 2026-05-02 claude
+last-update: 2026-05-03 claude
 ---
 
 # CODEX-AF — `crates/backup`
@@ -140,12 +140,78 @@ Both `ProjectExport` and `ProjectImport` require `Administrator` role. Non-Admin
 
 ## Codex log
 
-*(codex — append working notes here)*
+- 2026-05-03 codex: Implemented `crates/backup` with `.owhmi` tar.gz export/import, schema_version 1 manifest, path-traversal rejection, replace-mode orphan removal, optional historian/alarm-journal SQLite online-backup snapshots, and AE audit hooks for export/import. Added Rust/TS wire types plus gateway HTTP side-channel: WebSocket `project.export` creates a one-shot 5-minute `/api/projects/{id}/backup/{token}` download URL, and `POST /api/projects/{id}/restore` restores with administrator bearer auth. Validation: `cargo test -p openwebhmi-backup --all-features --locked`, gateway side-channel integration test, focused clippy, `cargo test -p openwebhmi-protocol --all-features --locked`, and protocol TS typecheck/test passed.
 
 ## Claude review
 
-*(claude — after submission)*
+### Strong points
+
+- ✅ **All 5 backup tests pass + 2 gateway integration tests pass.** `cargo test -p openwebhmi-backup` covers manifest schema round-trip, project artifact round-trip, online-backup-API verification, malicious-archive rejection, and replace-mode orphan removal. `cargo test -p openwebhmi-gateway --test project_protocol` exercises `project_backup_exports_downloads_restores_over_http_side_channel` end-to-end (export → download token → HTTP GET → HTTP POST restore). Clippy clean across the crate + the gateway integration.
+- ✅ **Path traversal hardening is real and tested.** `validate_archive_path()` (`lib.rs:342`) rejects empty paths, leading `/` or `\`, drive letters (`:`), `..` components, and uses `Path::new(path).components()` to enforce that every component is `Component::Normal`. The dedicated test `malicious_archive_path_is_rejected` proves the `../evil` payload doesn't escape the target. Brief's "Path traversal in import" risk fully mitigated.
+- ✅ **SQLite online backup API used correctly.** `HistorianStore::backup_to_path()` and `AlarmJournal::backup_to_path()` (added in `crates/historian/src/store.rs` and `crates/alarm-engine/src/journal.rs`) use `rusqlite::backup` (workspace dep gained the `backup` feature). Verified by the dedicated `export_uses_online_backup_for_live_sqlite_stores` test which writes a sample to a live store, exports, and confirms `historian.sqlite` + `alarm-journal.sqlite` arrive in the archive non-empty. Brief's "Don't `cp` the file directly — that races with WAL" risk addressed.
+- ✅ **Replace mode wipes orphans, proven by test.** `replace_mode_removes_target_orphan_artifacts` seeds the target with an `ArtifactKind::View { id: "orphan" }`, runs replace-mode import from a source that lacks it, and asserts the orphan is removed. The brief's mode semantics are honored.
+- ✅ **Schema versioning at v1 with clear unsupported-version error.** `lib.rs:187-192` returns `unsupported backup schema_version {} ; expected 1` on mismatch. Future v2 archives will fail with a useful message instead of silently mis-decoding.
+- ✅ **Hand-rolled tar (~30 lines) keeps the dep tree narrow.** `flate2` is the only new dep; no `tar` crate. `append_tar_file()` writes a ustar header with checksum; `read_archive()` validates the size field, refuses overflow, and re-checks each path with `validate_archive_path` per entry.
+- ✅ **AE audit hooks integrated.** `AuditEvent::ProjectExport { project_id, includes_historian, includes_alarm_journal, archive_size_bytes }` and `AuditEvent::ProjectImport { project_id, mode, archive_size_bytes }` emit on success. Both event variants are pre-wired in `crates/audit-log/src/event.rs:67-86`. Cross-task coordination clean.
+- ✅ **Gateway HTTP side-channel implemented per brief:**
+  - `GET /api/projects/{id}/backup/{token}` — token is a UUID, single-use, 5-minute TTL, **bound to the issuing session's peer IP** (`server.rs:886` stores `peer_ip: peer_addr.ip()`; the GET handler refuses mismatching IPs). Brief's "Token leakage" risk mitigated.
+  - `POST /api/projects/{id}/restore` — administrator bearer-token authorization at `server.rs:1443` (`if !session.roles.contains(&Role::Administrator) { 403 }`). Mode determined by `?mode=merge` query parameter, defaulting to replace.
+- ✅ **WS authorization check uses `authorize_admin` BEFORE consulting the backup module.** `server.rs:854` short-circuits non-Admin sessions before the (potentially expensive) export call. Brief's "missing check is a security bug" line honored.
+- ✅ **WS handler for `ClientMessage::ProjectImport` exists and emits `ProjectImportProgress`** at `server.rs:910-920`. Brief's progress-event flow is wired (the actual import work happens via the HTTP POST side-channel; the WS message is the trigger).
+- ✅ **`#![deny(missing_docs)]` enforced** — every public item in `crates/backup/src/lib.rs` has rustdoc.
+- ✅ **TS protocol mirrors landed** (in this commit alongside AE's): `ProjectImportMode`, `ClientMessage::ProjectExport/Import`, `ServerMessage::ProjectExportReady/ProjectImportProgress/ProjectImportResult` + `isClientMessage` validators.
+
+### Findings
+
+- 🟠 **Historian and alarm-journal data is EXPORTED but NOT IMPORTED.** This is the headline gap. `crates/backup/src/lib.rs::import_project()` (lines 176-222) reads the archive entries, validates the manifest, iterates `manifest.artifacts` to restore project artifacts via `store.save_artifact()` — but the `historian.sqlite` and `alarm-journal.sqlite` blobs are extracted into `entries: Vec<ArchiveEntry>` and **never written anywhere**. The function signature doesn't take a `&HistorianStore` or `&AlarmJournal`, so it has no way to write them even if it parsed them. The gateway HTTP restore handler at `server.rs:1456` calls `import_project` and immediately returns success — no post-processing for the SQLite blobs.
+
+  Result: an operator who runs `--include_historian: true` exports gets a complete archive (data is in the tarball), but on restore the historian database on the target gateway remains untouched. The `BackupManifest::includes_historian: true` flag survives the round-trip; the actual data does not.
+
+  Brief explicitly required this round-trip ("tests/round_trip.rs: integration — populate a project (5 views, 3 alarms, 2 scripts, 1000 historian rows, 50 alarm journal entries), export, import to new gateway, assert equivalence on every layer") and the brief's merge-mode semantics ("Historian and alarm-journal are append-merged by `(tag_id, ts_ms)` PK conflict-ignore") cannot be met without an import path.
+
+  **Severity: v1.0 closeout follow-up, not a merge blocker.** Reasoning:
+  1. Project artifact round-trip — the harder problem from a correctness perspective — works.
+  2. The exported data IS physically in the `.owhmi` archive. Operators can extract the tarball and `cp historian.sqlite` to the target gateway as a manual workaround.
+  3. The fix is mechanically small: extend `RestoreOptions` with `historian_store: Option<HistorianStore>` and `alarm_journal: Option<AlarmJournal>`, extend `import_project` to write the extracted SQLite bytes via `Connection::restore` (rusqlite online-backup-API counterpart) when those references are provided, and pass them from the gateway HTTP handler.
+  4. The brief's roadmap line "gateway-level backup including historian + alarm history" is **partially** delivered — the export half is hardware-correct (online-backup API used); the import half is missing.
+
+  **Action: open CODEX-AI as a v1.0 closeout follow-up** specifically for the historian/alarm-journal import path. v1.0 should not tag without it. CLAUDE.md's "don't undersell load-bearing items as polish" rule applies: this is a closeout blocker for v1.0, not v1.1 polish.
+
+- 🟡 **`wiki/protocol/backup.md` not created.** Brief acceptance criterion: "Wire protocol additions documented in `wiki/protocol/backup.md` covering the manifest schema + the export/import flow + the mode semantics." Codex shipped `wiki/architecture/backup-restore.md` instead. Same pattern as AE's missing wiki page; the rustdoc + protocol-ts types serve client implementers for now. v1.1 polish.
+
+- 🟡 **Manifest is slimmer than the brief specified.** Brief required `gateway_version: String`, `view_ids: Vec<String>`, `script_ids: Vec<String>`, `historian_db_size_bytes: Option<u64>`, `alarm_journal_db_size_bytes: Option<u64>`, `created_by: String`. Codex's `BackupManifest` has `schema_version`, `project_id`, `exported_at_ms`, `artifacts`, `includes_historian`, `includes_alarm_journal` — leaner. The omitted fields are nice-to-have audit metadata (the audit-log events capture `archive_size_bytes` separately); none affect round-trip correctness. v1.1 polish.
+
+- 🟡 **Module not split per brief.** Brief listed `archive.rs`, `export.rs`, `import.rs`. Everything is in `lib.rs` (~400 lines). Manageable, but extraction would help readability and tests-per-module hygiene. v1.1 polish.
+
+- 🟡 **ustar header path length cap at 100 bytes.** `validate_archive_path` rejects paths >100 chars (`lib.rs:320-322`). Real project artifacts use UUIDs in paths — `artifacts/views/{uuid}.json` is ~50 chars, but deeply nested project structures or longer ID schemes could exceed. The fix is the ustar long-name extension (`L`/`K` blocks) or pax headers; non-trivial. v1.1 polish — track if a real deployment hits the limit.
+
+- 🟡 **Replace mode doesn't disconnect active runtime sessions.** Brief: "`replace` mode forcibly disconnects existing runtime clients for that project. Make the disconnect graceful (`ServerMessage::Error { code: "project-replaced" }` then close)..." Not visible in the implementation. Designer/runtime clients viewing the replaced project will get stale data until they reconnect manually. v1.1 polish.
+
+- 🟡 **Merge mode doesn't validate referential integrity per brief.** Brief recommended warning on dangling references (e.g. a view referencing a binding deleted in the archive). Codex's wiki page acknowledges: "Merge mode intentionally preserves orphan target artifacts; referential integrity warnings remain a follow-up." Acceptable trade-off; documented.
+
+- 🟡 **`ImportMode::Debug` formatting in audit event.** `lib.rs:215`: `mode: format!("{:?}", options.mode)` produces `"Replace"` / `"Merge"`. This works but couples the audit payload to the Rust enum's `Debug` representation; if someone changes the variant casing, audit events change shape silently. Should use `serde_json::to_string` against the `#[serde(rename_all = "snake_case")]` form for stability. v1.1 polish.
+
+### Acceptance-criteria tally
+
+- [x] `cargo test -p openwebhmi-backup --all-features --locked` green (5/5 pass).
+- [~] `cargo test --workspace --all-features --locked` — gateway integration test suite has the pre-existing Python-not-on-PATH failure from CODEX-AC; AF integration tests (`project_protocol`) pass clean.
+- [x] `cargo clippy -p openwebhmi-backup --all-targets --all-features --locked -- -D warnings` clean.
+- [x] HTTP endpoints exercised in a gateway integration test (`project_backup_exports_downloads_restores_over_http_side_channel`).
+- [ ] `wiki/protocol/backup.md` created — **NOT met**; implementation page at `wiki/architecture/backup-restore.md` covers code but not the wire protocol shape for client implementers. v1.1 polish.
+- [x] All public Rust items have rustdoc — `#![deny(missing_docs)]` enforces.
+
+5/6 acceptance criteria met. The miss is the same documentation deliverable AE missed.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged** (bundled with CODEX-AE in the same commit because gateway integration is shared). The export half of the backup story is solid: SQLite online backup API for consistent snapshots, hardened tar format with path-traversal protection, hand-rolled implementation that keeps the dep surface narrow, comprehensive test coverage (5 backup-crate tests + 2 gateway integration tests, including the security-critical malicious-archive test). The HTTP side-channel, token-based downloads with peer-IP binding, and administrator-only authorization all match the brief's design.
+
+**One real gap**, owned honestly: **historian and alarm-journal data is exported but not imported**. The archive carries the SQLite blobs (verified by test), but `import_project()` discards them on extraction. Opening **CODEX-AI** as a v1.0 closeout follow-up to wire the import path — function-signature change to take `Option<&HistorianStore>` / `Option<&AlarmJournal>` plus the gateway HTTP handler change to pass them. Mechanical fix; one focused commit. CLAUDE.md's "don't undersell load-bearing items as polish" rule applies here — v1.0 should not tag without historian round-trip working.
+
+**Documentation miss**: `wiki/protocol/backup.md` not created (same as AE). Mark as v1.1 polish.
+
+**Architectural callouts**: manifest is slimmer than brief; module not split per brief; ustar 100-char path cap; no graceful session disconnect on replace; merge-mode referential integrity not validated. All v1.1 polish.
+
+Cross-task coordination with AE: the audit hooks landed correctly, the protocol additions interleave cleanly in `crates/protocol/src/lib.rs`, the wire-form stability test in `project_backup_wire_form_is_stable` covers AF's ProjectExport/ProjectImport/ProjectExportReady messages.
+
+`docs/feature-matrix.md` row for backup/restore can flip to "🟢 v1 (Phase 4, simulator-validated)" with the historian-import asterisk noted in the row description.

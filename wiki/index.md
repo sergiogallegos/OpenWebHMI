@@ -17,6 +17,8 @@ Status values:
 ## Architecture
 
 - [architecture/project-store-on-disk-format.md](architecture/project-store-on-disk-format.md) — Phase 2 project-store directory layout, SQLite metadata role, versioning, and atomic artifact saves. `active`
+- [architecture/audit-log.md](architecture/audit-log.md) — SQLite-backed security audit journal, gateway hooks, administrator-only query/subscribe protocol, and remaining scale questions. `active`
+- [architecture/backup-restore.md](architecture/backup-restore.md) — `.owhmi` archive core, manifest schema, path traversal checks, SQLite online-backup snapshots, audit hooks, and gateway HTTP side-channel flow. `active`
 
 Planned high-value pages:
 - `architecture/protocol-evolution.md` — How the WebSocket message schema is versioned. `seed`

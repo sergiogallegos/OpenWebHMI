@@ -225,6 +225,17 @@ impl ProjectStore {
         Ok(())
     }
 
+    /// Delete all on-disk artifacts and index metadata for a project.
+    pub fn delete_project(&self, project_id: &str) -> anyhow::Result<()> {
+        let project_dir = self.project_dir(project_id);
+        if project_dir.exists() {
+            fs::remove_dir_all(project_dir)?;
+        }
+        self.lock_conn()?
+            .execute("DELETE FROM projects WHERE id = ?1", params![project_id])?;
+        Ok(())
+    }
+
     /// Subscribe to change events for a project, or all projects when `None`.
     pub fn subscribe_changes(
         &self,

@@ -28,6 +28,8 @@ openwebhmi-driver-rockwell = { path = "../driver-rockwell" }
 openwebhmi-historian = { path = "../historian" }
 openwebhmi-auth = { path = "../auth" }
 openwebhmi-alarm-engine = { path = "../alarm-engine" }
+openwebhmi-audit-log = { path = "../audit-log" }
+openwebhmi-backup = { path = "../backup" }
 openwebhmi-project-store = { path = "../project-store" }
 openwebhmi-protocol = { path = "../protocol" }
 openwebhmi-scripting = { path = "../scripting" }

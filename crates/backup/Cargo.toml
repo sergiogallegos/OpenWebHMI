@@ -1,0 +1,23 @@
+[package]
+name = "openwebhmi-backup"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "OpenWebHMI project backup and restore archives."
+
+[dependencies]
+anyhow.workspace = true
+flate2.workspace = true
+openwebhmi-audit-log = { path = "../audit-log" }
+openwebhmi-alarm-engine = { path = "../alarm-engine" }
+openwebhmi-historian = { path = "../historian" }
+openwebhmi-project-store = { path = "../project-store" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+openwebhmi-protocol = { path = "../protocol" }
+tempfile.workspace = true

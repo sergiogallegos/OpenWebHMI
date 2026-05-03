@@ -58,6 +58,27 @@ export type AuthUser = {
 
 export type AlarmState = "clear" | "active" | "acked" | "cleared";
 
+export type ProjectImportMode = "replace" | "merge";
+
+export type AuditQuery = {
+  from_ts_ms?: number | null;
+  to_ts_ms?: number | null;
+  user?: string | null;
+  kinds: string[];
+  limit: number;
+  offset: number;
+};
+
+export type AuditEntry = {
+  id: number;
+  ts_ms: number;
+  user?: string | null;
+  session_id?: string | null;
+  source_ip?: string | null;
+  kind: string;
+  payload: unknown;
+};
+
 /** Messages accepted by the gateway from a runtime or designer client. */
 export type ClientMessage =
   | { kind: "auth.login"; username: string; password: string }
@@ -106,6 +127,19 @@ export type ClientMessage =
       project_id: string;
       artifact: ArtifactRef;
     }
+  | {
+      kind: "project.export";
+      request_id: string;
+      project_id: string;
+      include_historian: boolean;
+      include_alarm_journal: boolean;
+    }
+  | {
+      kind: "project.import";
+      request_id: string;
+      project_id: string;
+      mode: ProjectImportMode;
+    }
   | { kind: "view.open"; project_id: string; view_id: string }
   | { kind: "view.close"; project_id: string; view_id: string }
   | { kind: "user.list" }
@@ -116,6 +150,9 @@ export type ClientMessage =
       roles: string[];
     }
   | { kind: "user.delete"; user_id: string }
+  | { kind: "audit.subscribe"; request_id: string }
+  | { kind: "audit.unsubscribe"; request_id: string }
+  | { kind: "audit.query"; request_id: string; query: AuditQuery }
   | {
       kind: "script.run";
       request_id?: string | null;
@@ -191,6 +228,24 @@ export type ServerMessage =
       artifact: ArtifactRef;
     }
   | {
+      kind: "project.export_ready";
+      request_id: string;
+      download_url: string;
+      size_bytes: number;
+    }
+  | {
+      kind: "project.import_progress";
+      request_id: string;
+      phase: string;
+      percent: number;
+    }
+  | {
+      kind: "project.import_result";
+      request_id: string;
+      ok: boolean;
+      error?: string | null;
+    }
+  | {
       kind: "view.definition";
       project_id: string;
       view_id: string;
@@ -217,6 +272,13 @@ export type ServerMessage =
       event_kind: "status" | "log" | "error" | string;
       status?: string | null;
       message?: string | null;
+    }
+  | { kind: "audit.event"; entry: AuditEntry }
+  | {
+      kind: "audit.query_result";
+      request_id: string;
+      entries: AuditEntry[];
+      total: number;
     };
 
 /** Return true when `value` is a valid OpenWebHMI tag value envelope. */
@@ -320,6 +382,19 @@ export function isClientMessage(value: unknown): value is ClientMessage {
           ? value.request_id === null || typeof value.request_id === "string"
           : true)
       );
+    case "project.export":
+      return (
+        typeof value.request_id === "string" &&
+        typeof value.project_id === "string" &&
+        typeof value.include_historian === "boolean" &&
+        typeof value.include_alarm_journal === "boolean"
+      );
+    case "project.import":
+      return (
+        typeof value.request_id === "string" &&
+        typeof value.project_id === "string" &&
+        isProjectImportMode(value.mode)
+      );
     case "view.open":
     case "view.close":
       return (
@@ -338,6 +413,13 @@ export function isClientMessage(value: unknown): value is ClientMessage {
       );
     case "user.delete":
       return typeof value.user_id === "string";
+    case "audit.subscribe":
+    case "audit.unsubscribe":
+      return typeof value.request_id === "string";
+    case "audit.query":
+      return (
+        typeof value.request_id === "string" && isAuditQuery(value.query)
+      );
     case "script.run":
       return (
         typeof value.script_id === "string" &&
@@ -450,6 +532,28 @@ export function isServerMessage(value: unknown): value is ServerMessage {
           ? value.request_id === null || typeof value.request_id === "string"
           : true)
       );
+    case "project.export_ready":
+      return (
+        typeof value.request_id === "string" &&
+        typeof value.download_url === "string" &&
+        typeof value.size_bytes === "number" &&
+        Number.isFinite(value.size_bytes)
+      );
+    case "project.import_progress":
+      return (
+        typeof value.request_id === "string" &&
+        typeof value.phase === "string" &&
+        typeof value.percent === "number" &&
+        Number.isFinite(value.percent)
+      );
+    case "project.import_result":
+      return (
+        typeof value.request_id === "string" &&
+        typeof value.ok === "boolean" &&
+        ("error" in value
+          ? value.error === null || typeof value.error === "string"
+          : true)
+      );
     case "view.definition":
       return (
         typeof value.project_id === "string" &&
@@ -488,9 +592,56 @@ export function isServerMessage(value: unknown): value is ServerMessage {
           ? value.message === null || typeof value.message === "string"
           : true)
       );
+    case "audit.event":
+      return isAuditEntry(value.entry);
+    case "audit.query_result":
+      return (
+        typeof value.request_id === "string" &&
+        Array.isArray(value.entries) &&
+        value.entries.every(isAuditEntry) &&
+        typeof value.total === "number" &&
+        Number.isFinite(value.total)
+      );
     default:
       return false;
   }
+}
+
+function isAuditQuery(value: unknown): value is AuditQuery {
+  return (
+    isRecord(value) &&
+    optionalFiniteNumber(value, "from_ts_ms") &&
+    optionalFiniteNumber(value, "to_ts_ms") &&
+    ("user" in value
+      ? value.user === null || typeof value.user === "string"
+      : true) &&
+    isStringArray(value.kinds) &&
+    typeof value.limit === "number" &&
+    Number.isFinite(value.limit) &&
+    typeof value.offset === "number" &&
+    Number.isFinite(value.offset)
+  );
+}
+
+function isAuditEntry(value: unknown): value is AuditEntry {
+  return (
+    isRecord(value) &&
+    typeof value.id === "number" &&
+    Number.isFinite(value.id) &&
+    typeof value.ts_ms === "number" &&
+    Number.isFinite(value.ts_ms) &&
+    ("user" in value
+      ? value.user === null || typeof value.user === "string"
+      : true) &&
+    ("session_id" in value
+      ? value.session_id === null || typeof value.session_id === "string"
+      : true) &&
+    ("source_ip" in value
+      ? value.source_ip === null || typeof value.source_ip === "string"
+      : true) &&
+    typeof value.kind === "string" &&
+    "payload" in value
+  );
 }
 
 function isAuthUser(value: unknown): value is AuthUser {
@@ -601,6 +752,10 @@ function isArtifactRef(value: unknown): value is ArtifactRef {
 
 function isChangeAction(value: unknown): value is ChangeAction {
   return value === "created" || value === "updated" || value === "deleted";
+}
+
+function isProjectImportMode(value: unknown): value is ProjectImportMode {
+  return value === "replace" || value === "merge";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
