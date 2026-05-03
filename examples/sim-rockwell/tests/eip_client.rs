@@ -45,7 +45,7 @@ fn unused_port() -> u16 {
 
 async fn spawn_sim(port: u16) -> Child {
     let exe = env!("CARGO_BIN_EXE_sim-rockwell");
-    let child = Command::new(exe)
+    Command::new(exe)
         .arg("--bind")
         .arg("127.0.0.1")
         .arg("--port")
@@ -55,9 +55,7 @@ async fn spawn_sim(port: u16) -> Child {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("spawn simulator");
-
-    child
+        .expect("spawn simulator")
 }
 
 async fn connect_with_retry(port: u16) -> Result<EipClient, Box<dyn std::error::Error>> {

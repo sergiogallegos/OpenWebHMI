@@ -8,12 +8,12 @@ use async_trait::async_trait;
 use futures_util::stream::{self, BoxStream, StreamExt};
 use jsonpath_rust::JsonPath;
 use openwebhmi_driver_api::{
-    make_metadata, Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate,
-    TagAddress, TagNode,
+    Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate, TagAddress,
+    TagNode, make_metadata,
 };
 use openwebhmi_protocol::{Quality, TagValue};
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, Publish, QoS, Transport};
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tokio::task::JoinHandle;
 
 use crate::address::{MqttAddress, MqttAddressKind, PayloadType};

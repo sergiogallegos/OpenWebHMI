@@ -9,7 +9,7 @@ use std::time::Instant;
 
 use anyhow::Context;
 use clap::Parser;
-use tag_config::{load_tags, update_dynamic_tags, write_tag, SimValue, TagMap};
+use tag_config::{SimValue, TagMap, load_tags, update_dynamic_tags, write_tag};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;

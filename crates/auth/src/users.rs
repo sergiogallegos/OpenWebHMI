@@ -5,9 +5,9 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use base64::Engine;
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::{DEFAULT_COST, hash, verify};
 use rand::RngCore;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use uuid::Uuid;
 
 use crate::roles::Role;

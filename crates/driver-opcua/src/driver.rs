@@ -16,8 +16,8 @@ use opcua::types::{
     StatusCode, TimestampsToReturn, UserTokenPolicy, Variant, WriteValue,
 };
 use openwebhmi_driver_api::{
-    make_metadata, Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate,
-    TagAddress, TagNode,
+    Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate, TagAddress,
+    TagNode, make_metadata,
 };
 use openwebhmi_protocol::{Quality, TagValue};
 use tokio::sync::mpsc;

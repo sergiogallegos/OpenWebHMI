@@ -7,8 +7,8 @@ use async_trait::async_trait;
 use openwebhmi_protocol::TagValue;
 
 use crate::{
-    trait_def::make_metadata, Capabilities, Driver, DriverError, DriverMetadata, DriverResult,
-    TagAddress, TagNode,
+    Capabilities, Driver, DriverError, DriverMetadata, DriverResult, TagAddress, TagNode,
+    trait_def::make_metadata,
 };
 
 /// Failure mode injected into [`MockDriver`].

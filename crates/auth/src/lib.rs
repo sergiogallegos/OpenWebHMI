@@ -11,7 +11,7 @@ pub mod sessions;
 /// SQLite-backed local user store.
 pub mod users;
 
-pub use acl::{can_write_in_view, ViewAcl};
+pub use acl::{ViewAcl, can_write_in_view};
 pub use roles::{Permission, Role};
 pub use sessions::{SessionClaims, SessionError, SessionManager, VerifiedSession};
 pub use users::{BootstrapAdmin, User, UserError, UserPatch, UserStore};

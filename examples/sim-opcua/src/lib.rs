@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use opcua::server::address_space::{AccessLevel, VariableBuilder};
-use opcua::server::node_manager::memory::{simple_node_manager_imports, SimpleNodeManager};
-use opcua::server::{ServerBuilder, ServerHandle, ANONYMOUS_USER_TOKEN_ID};
+use opcua::server::node_manager::memory::{SimpleNodeManager, simple_node_manager_imports};
+use opcua::server::{ANONYMOUS_USER_TOKEN_ID, ServerBuilder, ServerHandle};
 use opcua::types::{
     DataTypeId, DataValue, MessageSecurityMode, NodeId, NodeSetNamespaceMapper, ObjectId,
 };

@@ -26,8 +26,8 @@ members = [
 #   "crates/scripting"        # Phase 3 — script editor UI follows in CODEX-U
 
 [workspace.package]
-edition = "2021"
-rust-version = "1.80"
+edition = "2024"
+rust-version = "1.85"
 license = "MIT"
 repository = "https://github.com/sergiogallegos/OpenWebHMI"
 authors = ["Sergio Gallegos <sergiogallegos.net>"]

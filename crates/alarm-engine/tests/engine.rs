@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use openwebhmi_alarm_engine::{
-    evaluate, spawn_alarm_engine, AlarmCondition, AlarmDefinition, AlarmJournal, AlarmState,
-    AlarmTransition,
+    AlarmCondition, AlarmDefinition, AlarmJournal, AlarmState, AlarmTransition, evaluate,
+    spawn_alarm_engine,
 };
 use openwebhmi_protocol::{Quality, TagValue};
 use openwebhmi_tag_engine::TagStore;
@@ -10,59 +10,77 @@ use tokio::time::timeout;
 
 #[test]
 fn conditions_evaluate_boundaries_and_types() {
-    assert!(!evaluate(
-        &AlarmCondition::HighLimit { threshold: 10.0 },
-        &TagValue::Real(10.0),
-    )
-    .unwrap());
-    assert!(evaluate(
-        &AlarmCondition::HighLimit { threshold: 10.0 },
-        &TagValue::Real(10.1),
-    )
-    .unwrap());
-    assert!(!evaluate(
-        &AlarmCondition::LowLimit { threshold: 10.0 },
-        &TagValue::Int(10),
-    )
-    .unwrap());
-    assert!(evaluate(
-        &AlarmCondition::LowLimit { threshold: 10.0 },
-        &TagValue::Int(9),
-    )
-    .unwrap());
-    assert!(evaluate(
-        &AlarmCondition::Equals {
-            value: TagValue::String("fault".into()),
-        },
-        &TagValue::String("fault".into()),
-    )
-    .unwrap());
-    assert!(evaluate(
-        &AlarmCondition::Deviation {
-            setpoint: 100.0,
-            tolerance: 5.0,
-        },
-        &TagValue::Real(106.0),
-    )
-    .unwrap());
-    assert!(!evaluate(
-        &AlarmCondition::Deviation {
-            setpoint: 100.0,
-            tolerance: 5.0,
-        },
-        &TagValue::Real(105.0),
-    )
-    .unwrap());
-    assert!(evaluate(
-        &AlarmCondition::Digital { active_when: true },
-        &TagValue::Bool(true),
-    )
-    .unwrap());
-    assert!(evaluate(
-        &AlarmCondition::Digital { active_when: true },
-        &TagValue::Real(1.0),
-    )
-    .is_err());
+    assert!(
+        !evaluate(
+            &AlarmCondition::HighLimit { threshold: 10.0 },
+            &TagValue::Real(10.0),
+        )
+        .unwrap()
+    );
+    assert!(
+        evaluate(
+            &AlarmCondition::HighLimit { threshold: 10.0 },
+            &TagValue::Real(10.1),
+        )
+        .unwrap()
+    );
+    assert!(
+        !evaluate(
+            &AlarmCondition::LowLimit { threshold: 10.0 },
+            &TagValue::Int(10),
+        )
+        .unwrap()
+    );
+    assert!(
+        evaluate(
+            &AlarmCondition::LowLimit { threshold: 10.0 },
+            &TagValue::Int(9),
+        )
+        .unwrap()
+    );
+    assert!(
+        evaluate(
+            &AlarmCondition::Equals {
+                value: TagValue::String("fault".into()),
+            },
+            &TagValue::String("fault".into()),
+        )
+        .unwrap()
+    );
+    assert!(
+        evaluate(
+            &AlarmCondition::Deviation {
+                setpoint: 100.0,
+                tolerance: 5.0,
+            },
+            &TagValue::Real(106.0),
+        )
+        .unwrap()
+    );
+    assert!(
+        !evaluate(
+            &AlarmCondition::Deviation {
+                setpoint: 100.0,
+                tolerance: 5.0,
+            },
+            &TagValue::Real(105.0),
+        )
+        .unwrap()
+    );
+    assert!(
+        evaluate(
+            &AlarmCondition::Digital { active_when: true },
+            &TagValue::Bool(true),
+        )
+        .unwrap()
+    );
+    assert!(
+        evaluate(
+            &AlarmCondition::Digital { active_when: true },
+            &TagValue::Real(1.0),
+        )
+        .is_err()
+    );
 }
 
 #[tokio::test]
@@ -134,9 +152,11 @@ async fn hot_reload_replaces_same_path_definition() {
     let mut rx = engine.subscribe_events();
 
     tag_store.publish("rockwell-1/Pressure", TagValue::Real(150.0), Quality::Good);
-    assert!(timeout(Duration::from_millis(100), rx.recv())
-        .await
-        .is_err());
+    assert!(
+        timeout(Duration::from_millis(100), rx.recv())
+            .await
+            .is_err()
+    );
 
     let mut updated = definition(false);
     updated.condition = AlarmCondition::HighLimit { threshold: 100.0 };

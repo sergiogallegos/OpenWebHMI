@@ -11,8 +11,8 @@ pub mod journal;
 /// Public alarm types.
 pub mod types;
 
-pub use conditions::{evaluate, ConditionError};
-pub use engine::{spawn_alarm_engine, AlarmEngineHandle};
+pub use conditions::{ConditionError, evaluate};
+pub use engine::{AlarmEngineHandle, spawn_alarm_engine};
 pub use journal::{AlarmJournal, JournalEntry};
 pub use types::{
     ActiveAlarm, AlarmCondition, AlarmDefinition, AlarmEvent, AlarmState, AlarmTransition,

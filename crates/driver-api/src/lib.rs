@@ -27,7 +27,7 @@ pub use metadata::{Capabilities, DriverMetadata};
 #[cfg(feature = "mock")]
 pub use mock::{MockDriver, MockFailureMode};
 pub use supervisor::{DriverStatus, DriverSupervisor, SupervisorHandle};
-pub use trait_def::{make_metadata, Driver, DriverUpdate};
+pub use trait_def::{Driver, DriverUpdate, make_metadata};
 
 #[cfg(test)]
 mod tests {

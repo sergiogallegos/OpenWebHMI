@@ -19,7 +19,7 @@ pub mod triggers;
 pub mod worker;
 
 pub use host::{
-    ScriptEvent, ScriptHost, ScriptHostHandle, ScriptHostOptions, ScriptStatus, DEFAULT_TIMEOUT,
+    DEFAULT_TIMEOUT, ScriptEvent, ScriptHost, ScriptHostHandle, ScriptHostOptions, ScriptStatus,
 };
 pub use sink::{MemorySink, TagWriteError, TagWriteSink};
 pub use triggers::TriggerRegistration;

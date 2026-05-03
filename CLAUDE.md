@@ -93,7 +93,7 @@ After Phase 4 driver + component slices complete, the remaining v1.0 ladder: plu
 
 ## Project-specific gotchas
 
-- **Codex's verification claims often don't reproduce on Node 25.** Track environment drift; recommend `.nvmrc` / pinned CI Node for v1.1.
+- **Toolchain drift:** Rust is pinned by `rust-toolchain.toml` and CI Node is pinned in `.github/workflows/ci.yml`; include both versions when reporting environment-specific verification failures.
 - **CODEX-V plumbing**: `system.tag.write` from Python scripts routes through `GatewayTagWriteSink` (driver-prefixed paths → per-driver write mpsc; memory-tag paths → `TagStore::publish`). When briefing Python-related tasks, don't say "publish directly" — that's the v1.0 brief error that prompted CODEX-V.
 - **Read/write asymmetry in components**: bindings give the read path but not the write path. Write-back inputs need a separate `tagPath` config prop (NumericInput / Slider / Dropdown / ToggleSwitch all follow this). v1.1 architectural fix: extend the binding system to expose the bound path for write-back use.
 - **MQTT TLS in CI**: `rumqttd 0.20.0` is plaintext-only. Real TLS testing uses an external Mosquitto-with-CA fixture (manual smoke step #27 in designer README).

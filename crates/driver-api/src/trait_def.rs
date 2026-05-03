@@ -26,6 +26,7 @@ pub struct DriverUpdate {
 }
 
 /// Stable contract implemented by every OpenWebHMI device driver.
+// TODO(v1.1): revisit when async-fn-in-trait becomes object-safe.
 #[async_trait]
 pub trait Driver: Send + Sync + 'static {
     /// Static driver metadata.

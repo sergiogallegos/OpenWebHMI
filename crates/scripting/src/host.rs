@@ -11,9 +11,9 @@ use rand::Rng;
 use tokio::sync::{broadcast, mpsc, oneshot};
 use tracing::{info, warn};
 
+use crate::TagWriteSink;
 use crate::triggers::TriggerRegistration;
 use crate::worker::WorkerProc;
-use crate::TagWriteSink;
 
 const INITIAL_BACKOFF: Duration = Duration::from_millis(250);
 const MAX_BACKOFF: Duration = Duration::from_secs(8);
@@ -293,15 +293,18 @@ async fn run_script_supervisor(
                     timeout,
                     events: &events,
                 };
-                if let Err(err) = run_ready_worker(runtime, &mut worker, &mut control).await {
-                    warn!(script_id = %script.id, error = %err, "script worker restarting");
-                } else {
-                    let _ = events.send(ScriptEvent::Status {
-                        project_id: project_id.clone(),
-                        script_id: script.id.clone(),
-                        status: ScriptStatus::Stopped,
-                    });
-                    return;
+                match run_ready_worker(runtime, &mut worker, &mut control).await {
+                    Err(err) => {
+                        warn!(script_id = %script.id, error = %err, "script worker restarting");
+                    }
+                    _ => {
+                        let _ = events.send(ScriptEvent::Status {
+                            project_id: project_id.clone(),
+                            script_id: script.id.clone(),
+                            status: ScriptStatus::Stopped,
+                        });
+                        return;
+                    }
                 }
             }
             Err(err) => warn!(script_id = %script.id, error = %err, "script worker spawn failed"),

@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{bail, Context};
-use rusqlite::{params, Connection};
+use anyhow::{Context, bail};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 

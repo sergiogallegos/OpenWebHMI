@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use openwebhmi_historian::{spawn_recorder, Aggregation, HistorianStore, HistoryTagConfig};
+use openwebhmi_historian::{Aggregation, HistorianStore, HistoryTagConfig, spawn_recorder};
 use openwebhmi_protocol::{Quality, TagValue};
 use openwebhmi_tag_engine::TagStore;
 use tokio::time::sleep;

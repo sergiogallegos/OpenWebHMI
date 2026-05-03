@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
-use openwebhmi_alarm_engine::{spawn_alarm_engine, AlarmCondition, AlarmDefinition, AlarmJournal};
+use openwebhmi_alarm_engine::{AlarmCondition, AlarmDefinition, AlarmJournal, spawn_alarm_engine};
 use openwebhmi_auth::{Role, SessionManager, UserStore};
 use openwebhmi_gateway::{server, sim_provider};
 use openwebhmi_project_store::{ScriptConfig, ScriptTriggerConfig};

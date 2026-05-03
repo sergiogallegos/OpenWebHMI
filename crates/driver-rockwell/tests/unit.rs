@@ -3,14 +3,14 @@ use std::time::SystemTime;
 
 use futures_util::StreamExt;
 use openwebhmi_driver_api::{Driver, DriverError, TagAddress};
-use openwebhmi_driver_rockwell::test_support::{data_event, MockEipClient, RecordedCall};
+use openwebhmi_driver_rockwell::test_support::{MockEipClient, RecordedCall, data_event};
 use openwebhmi_driver_rockwell::{RockwellConfig, RockwellDriver};
 use openwebhmi_protocol::{Quality, TagValue};
 use rust_ethernet_ip::{
     EtherNetIpError, PlcValue, TagGroupEvent, TagGroupEventKind, TagGroupSnapshot,
     TagGroupValueResult,
 };
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 
 #[tokio::test]
 async fn read_maps_real_value() {

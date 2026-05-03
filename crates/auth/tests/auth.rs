@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use openwebhmi_auth::{
-    can_write_in_view, Permission, Role, SessionManager, UserPatch, UserStore, ViewAcl,
+    Permission, Role, SessionManager, UserPatch, UserStore, ViewAcl, can_write_in_view,
 };
 
 #[test]
@@ -15,10 +15,12 @@ fn bcrypt_round_trip_accepts_right_password_and_rejects_wrong_password() {
         )
         .unwrap();
 
-    assert!(store
-        .authenticate("alice", "correct horse battery staple")
-        .unwrap()
-        .is_some());
+    assert!(
+        store
+            .authenticate("alice", "correct horse battery staple")
+            .unwrap()
+            .is_some()
+    );
     assert!(store.authenticate("alice", "wrong").unwrap().is_none());
 }
 
@@ -76,9 +78,11 @@ fn bootstrap_admin_creates_once_and_upsert_preserves_existing_without_password()
         })
         .unwrap();
     assert_eq!(updated.roles, vec![Role::Administrator, Role::Designer]);
-    assert!(store
-        .bootstrap_admin(None)
-        .unwrap()
-        .generated_password
-        .is_none());
+    assert!(
+        store
+            .bootstrap_admin(None)
+            .unwrap()
+            .generated_password
+            .is_none()
+    );
 }

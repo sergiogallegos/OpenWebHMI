@@ -4,10 +4,10 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use openwebhmi_protocol::{Quality, TagValue};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
-use crate::aggregations::{aggregate, Aggregation};
+use crate::aggregations::{Aggregation, aggregate};
 
 /// A historical point returned to clients.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

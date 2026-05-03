@@ -19,8 +19,8 @@ use tokio::net::TcpListener;
 use tokio::sync::mpsc::{self, error::TrySendError};
 use tokio::task::JoinHandle;
 use tokio_tungstenite::accept_hdr_async;
-use tokio_tungstenite::tungstenite::handshake::server::{Request, Response};
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::tungstenite::handshake::server::{Request, Response};
 use tracing::{debug, info, warn};
 
 use crate::project::{DriverHandle, DriverHandles, WriteCommand, WriteEnqueueError};

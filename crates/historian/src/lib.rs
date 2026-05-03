@@ -10,5 +10,5 @@ pub mod recorder;
 pub mod store;
 
 pub use aggregations::Aggregation;
-pub use recorder::{spawn_recorder, HistoryTagConfig, RecorderHandle};
+pub use recorder::{HistoryTagConfig, RecorderHandle, spawn_recorder};
 pub use store::{HistorianStore, HistoryPoint};

@@ -6,7 +6,7 @@ use openwebhmi_project_store::{
 use serde_json::json;
 use tempfile::tempdir;
 use tokio::task;
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 
 #[test]
 fn save_list_load_and_read_artifacts() {
@@ -75,10 +75,12 @@ fn save_list_load_and_read_artifacts() {
     assert_eq!(project.tags[0].history.as_ref().unwrap().rate_ms, Some(500));
     assert_eq!(project.alarms[0].id, "pressure-high");
     assert_eq!(project.views[0].id, "home");
-    assert!(store
-        .read_artifact("demo", ArtifactKind::View { id: "home".into() })
-        .unwrap()
-        .is_some());
+    assert!(
+        store
+            .read_artifact("demo", ArtifactKind::View { id: "home".into() })
+            .unwrap()
+            .is_some()
+    );
 }
 
 #[test]

@@ -1,14 +1,14 @@
 //! Rockwell driver implementation.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use async_trait::async_trait;
 use futures_util::stream::{self, BoxStream};
 use openwebhmi_driver_api::{
-    make_metadata, Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate,
-    TagAddress, TagNode,
+    Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate, TagAddress,
+    TagNode, make_metadata,
 };
 use openwebhmi_protocol::{Quality, TagValue};
 use rust_ethernet_ip::{

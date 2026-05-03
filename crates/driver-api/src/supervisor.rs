@@ -290,7 +290,7 @@ mod tests {
     use tokio::time::{sleep, timeout};
 
     use super::*;
-    use crate::{trait_def::make_metadata, Capabilities, DriverMetadata};
+    use crate::{Capabilities, DriverMetadata, trait_def::make_metadata};
 
     #[derive(Clone)]
     struct TestDriver {

@@ -336,9 +336,11 @@ mod tests {
 
         assert_eq!(project.id, "phase1-demo");
         assert_eq!(project.drivers[0].id, "rockwell-1");
-        assert!(project
-            .tags
-            .iter()
-            .any(|tag| tag.path == "rockwell-1/Pressure"));
+        assert!(
+            project
+                .tags
+                .iter()
+                .any(|tag| tag.path == "rockwell-1/Pressure")
+        );
     }
 }

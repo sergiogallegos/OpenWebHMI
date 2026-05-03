@@ -8,7 +8,7 @@ use openwebhmi_scripting::{
 };
 use openwebhmi_tag_engine::TagStore;
 use tempfile::TempDir;
-use tokio::time::{sleep, timeout, Instant};
+use tokio::time::{Instant, sleep, timeout};
 
 fn write_script(dir: &TempDir, name: &str, source: &str) -> std::path::PathBuf {
     let path = dir.path().join(name);

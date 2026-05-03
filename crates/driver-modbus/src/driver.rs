@@ -8,15 +8,15 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use async_trait::async_trait;
 use futures_util::stream::{self, BoxStream};
 use openwebhmi_driver_api::{
-    make_metadata, Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate,
-    TagAddress, TagNode,
+    Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate, TagAddress,
+    TagNode, make_metadata,
 };
 use openwebhmi_protocol::{Quality, TagValue};
 use tokio::sync::Mutex;
 use tokio::time;
+use tokio_modbus::ExceptionCode;
 use tokio_modbus::client::{rtu, tcp};
 use tokio_modbus::prelude::{Reader, Slave, SlaveContext, Writer};
-use tokio_modbus::ExceptionCode;
 use tokio_serial::{DataBits, FlowControl};
 
 use crate::address::{Area, EncodedValue, ModbusAddress};
@@ -442,11 +442,7 @@ fn build_read_groups(mut requests: Vec<SubscriptionAddress>) -> Vec<ReadGroup> {
 }
 
 fn max_group_count(area: Area) -> u16 {
-    if area.is_bit_area() {
-        2000
-    } else {
-        125
-    }
+    if area.is_bit_area() { 2000 } else { 125 }
 }
 
 fn area_sort_key(area: Area) -> u8 {

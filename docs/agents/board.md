@@ -8,21 +8,19 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AD | ADS validation hardening — CI sim feasibility, TwinCAT 3 smoke runbook, sumup + upstream risk tracking | codex | open | 2026-05-01 claude | [tasks/CODEX-AD-ads-validation.md](tasks/CODEX-AD-ads-validation.md) |
+| CODEX-AD | ADS validation hardening — CI sim feasibility, TwinCAT 3 smoke runbook, sumup + upstream risk tracking | codex | submitted | 2026-05-03 codex | [tasks/CODEX-AD-ads-validation.md](tasks/CODEX-AD-ads-validation.md) |
 | CODEX-AE | `crates/audit-log` — security event journal + query/subscribe wire protocol | codex | open | 2026-05-02 claude | [tasks/CODEX-AE-audit-log.md](tasks/CODEX-AE-audit-log.md) |
 | CODEX-AF | `crates/backup` — project export/import + gateway-level backup with historian and alarm journal | codex | open | 2026-05-02 claude | [tasks/CODEX-AF-backup-restore.md](tasks/CODEX-AF-backup-restore.md) |
-| CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 (land first, rebase AD/AE/AF onto it) | codex | open | 2026-05-02 claude | [tasks/CODEX-AG-toolchain-edition-2024.md](tasks/CODEX-AG-toolchain-edition-2024.md) |
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-AG  (toolchain → 1.95 + edition 2024)  ← LAND FIRST — workspace-global; AD/AE/AF rebase onto its tip after merge
-CODEX-AD  (ADS validation hardening)         ← unblocked — closeout follow-up after CODEX-Z merge; runbook execution waits on hardware
+CODEX-AD  (ADS validation hardening)         ← submitted — Codex implementation landed on top of the AG migration; review in flight
 CODEX-AE  (audit log backend)                ← unblocked — independent of AD/AF; pure Rust + SQLite
 CODEX-AF  (backup / restore)                 ← unblocked — independent of AD/AE; depends only on shipped project-store/historian/alarm-engine
 ```
 
-**Four open tasks: AG (toolchain), AD (ADS validation), AE (audit log), AF (backup/restore).** AG lands first to give every other in-flight task a single, modern toolchain to rebase onto; the other three are independent and can land in any order after AG merges. AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. After all four land plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
+**Three open tasks: AD (submitted, under review), AE (audit log, open), AF (backup/restore, open).** AG merged on the same toolchain push; AD's submission landed on top of the new edition-2024 workspace so no rebase coordination was needed. AE and AF remain independent. AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. After AD merges plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
 
 ## Phase 3 — Core SCADA features
 
@@ -75,6 +73,7 @@ CODEX-AF  (backup / restore)                 ← unblocked — independent of AD
 | CODEX-AB | Component library batch 2 — 8 new components (Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner) | codex | `3e88046` | 4 |
 | CODEX-AC | Component library batch 3 — 9 new components (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper); v1 25-component target met | codex | `6bff505` | 4 |
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver; implementation-merged but not production-validated (see CODEX-AD) | codex | `f34ebd6` | 4 |
+| CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 | codex | _pending_ | 4 |
 
 ## Conventions
 
