@@ -8,19 +8,19 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AD | ADS validation hardening — CI sim feasibility, TwinCAT 3 smoke runbook, sumup + upstream risk tracking | codex | submitted | 2026-05-03 codex | [tasks/CODEX-AD-ads-validation.md](tasks/CODEX-AD-ads-validation.md) |
 | CODEX-AE | `crates/audit-log` — security event journal + query/subscribe wire protocol | codex | open | 2026-05-02 claude | [tasks/CODEX-AE-audit-log.md](tasks/CODEX-AE-audit-log.md) |
 | CODEX-AF | `crates/backup` — project export/import + gateway-level backup with historian and alarm journal | codex | open | 2026-05-02 claude | [tasks/CODEX-AF-backup-restore.md](tasks/CODEX-AF-backup-restore.md) |
+| CODEX-AH | Native ADS device notifications via TcAdsDll FFI — replace polling on Windows TwinCAT-router backend | codex | open | 2026-05-03 claude | [tasks/CODEX-AH-ads-native-notifications.md](tasks/CODEX-AH-ads-native-notifications.md) |
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-AD  (ADS validation hardening)         ← submitted — Codex implementation landed on top of the AG migration; review in flight
-CODEX-AE  (audit log backend)                ← unblocked — independent of AD/AF; pure Rust + SQLite
-CODEX-AF  (backup / restore)                 ← unblocked — independent of AD/AE; depends only on shipped project-store/historian/alarm-engine
+CODEX-AE  (audit log backend)                ← unblocked — independent of AF/AH; pure Rust + SQLite
+CODEX-AF  (backup / restore)                 ← unblocked — independent of AE/AH; depends only on shipped project-store/historian/alarm-engine
+CODEX-AH  (ADS native notifications)         ← unblocked — AD closeout follow-up; Windows TcAdsDll callbacks via FFI
 ```
 
-**Three open tasks: AD (submitted, under review), AE (audit log, open), AF (backup/restore, open).** AG merged on the same toolchain push; AD's submission landed on top of the new edition-2024 workspace so no rebase coordination was needed. AE and AF remain independent. AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. After AD merges plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
+**Three open tasks: AE (audit log), AF (backup/restore), AH (ADS native notifications).** All independent. AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. AH closes the polling-vs-native-notifications gap left by AD's TwinCAT-router backend on Windows. After all three land plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
 
 ## Phase 3 — Core SCADA features
 
@@ -73,7 +73,8 @@ CODEX-AF  (backup / restore)                 ← unblocked — independent of AD
 | CODEX-AB | Component library batch 2 — 8 new components (Gauge, ProgressBar, Slider, Dropdown, ToggleSwitch, Button, MultiState, AlarmBanner) | codex | `3e88046` | 4 |
 | CODEX-AC | Component library batch 3 — 9 new components (Tabs, Modal, DataGrid, BarChart, PieChart, Card, Spinner, Divider, Stepper); v1 25-component target met | codex | `6bff505` | 4 |
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver; implementation-merged but not production-validated (see CODEX-AD) | codex | `f34ebd6` | 4 |
-| CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 | codex | _pending_ | 4 |
+| CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 | codex | `9a96871` | 4 |
+| CODEX-AD | ADS validation hardening — TwinCAT-router FFI backend + hardware-validated against CX-23F092 | codex | _pending_ | 4 |
 
 ## Conventions
 

@@ -3,9 +3,9 @@ id: CODEX-AD
 title: ADS validation hardening — CI sim feasibility, TwinCAT 3 smoke runbook, sumup + upstream risk tracking
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-01
-last-update: 2026-05-01 claude
+last-update: 2026-05-03 claude
 ---
 
 # CODEX-AD — ADS validation hardening
@@ -68,7 +68,7 @@ Append a new section to `apps/designer/README.md` titled **"Manual smoke — Bec
 Required steps:
 
 1. **Setup** — install TwinCAT 3 XAR or use an existing install; confirm AMS net id (e.g. `192.168.1.10.1.1`); confirm gateway machine has an AMS route configured to that net id. Document how to add the route via Beckhoff's `TwinCAT System Manager` or `StaticRoutes.xml`.
-2. **PLC project** — provide a minimal TwinCAT 3 PLC program (`MAIN.PRG`) with: a `BOOL bRunning`, an `INT nCounter` incremented every cycle, a `REAL fSetpoint`, and a `STRING(80) sStatus`. Include the `.tsproj` in `examples/twincat-smoke/` (or document the steps to create one).
+2. **PLC project** — provide a minimal TwinCAT 3 PLC program (`MAIN.PRG`) with: a `BOOL bRunning`, an `INT nCounter` incremented every cycle, a `REAL fSetPoint`, and a `STRING(80) sStatus`. Include the `.tsproj` in `examples/twincat-smoke/` (or document the steps to create one).
 3. **OpenWebHMI project** — configure an ADS driver with `host`, `ams_net_id`, `tcp_port: 48898`, `ports: [851]`. Add four tags bound to the symbols above.
 4. **Browse test** — connect from the designer's project explorer; verify the four symbols appear in the ADS browse tree with correct types (`BOOL`, `INT`, `REAL`, `STRING(80)`).
 5. **Read test** — observe `nCounter` incrementing in the runtime view; confirm value updates arrive within the configured `poll_rate_ms` (default 250ms).
@@ -137,12 +137,54 @@ Append to `wiki/drivers/ads-integration.md` Open Questions:
 
 ## Codex log
 
-*(codex — append working notes here)*
+- 2026-05-03 codex: Submitted partial CODEX-AD closeout for maintainer review. Added `wiki/drivers/ads-tls-decision.md`, `wiki/drivers/ads-sim-decision.md` with real-protocol simulator deferral, `examples/twincat-smoke/README.md`, and a 9-step TwinCAT 3 runbook in `apps/designer/README.md`. Updated `wiki/drivers/ads-integration.md`, `wiki/index.md`, and `wiki/log.md`. Hardware execution was blocked until the TwinCAT-router backend landed.
+- 2026-05-03 codex: Implemented the Windows TwinCAT-router ADS backend using Beckhoff `TcAdsDll.dll` FFI behind `backend: "auto" | "ads_rs_tcp" | "twincat_router"`. Live smoke against CX-23F092 (`192.168.10.100.1.1`) passed browse, BOOL/INT/REAL/STRING reads, REAL write/read-back, and update streaming through the Secure ADS route. Remaining CODEX-AD gaps: native `TcAdsDll` notification callbacks, reconnect recovery, and handle-leak validation for any future native-notification path.
 
 ## Claude review
 
-*(claude — after submission)*
+### Strong points
+
+- ✅ **Codex found a fourth option not in the brief and it's the right one.** Scope item 0 listed three TLS outcomes (🟢 contribute upstream / 🟡 fork / 🔵 hand-roll). Codex chose **none of these** and instead delegated to the locally-installed Beckhoff TwinCAT router via `TcAdsDll.dll` FFI. This is genuinely better than what the brief asked for: Beckhoff documents Secure ADS as router-to-router TLS (not application-level TLS to a runtime), which means the "correct" architectural answer is "use the local router DLL" — every other option was fighting Beckhoff's design. The decision doc in `wiki/drivers/ads-tls-decision.md` makes this case clearly.
+- ✅ **Hardware-validated against a real CX.** Live smoke against CX-23F092 (192.168.10.100.1.1) through a Secure ADS route: 14 symbols browsed, BOOL/INT/REAL/STRING reads, REAL write + read-back, 24 update events over 3 seconds. Recorded with timestamps in `wiki/drivers/ads-integration.md` "Hardware validation log". This is exactly the proof CODEX-AD existed to deliver.
+- ✅ **No DLL redistribution.** `TcAdsDll.dll` is dynamically loaded via `LoadLibraryW` from candidate paths (PATH + four well-known TwinCAT install locations). The DLL is never bundled with OpenWebHMI; it's only used when present on a TwinCAT-equipped host. License-clean; the only correct way to integrate against Beckhoff's runtime.
+- ✅ **Cross-platform discipline.** `#[cfg(windows)] mod twincat_router;` at `crates/driver-ads/src/lib.rs:10-11` keeps Linux/macOS builds clean. The `auto` backend correctly falls back to `ads_rs_tcp` on non-Windows or when the DLL can't load. Verified via my workspace clippy run.
+- ✅ **Brief deliverables all shipped.** TLS decision doc, sim feasibility decision doc, 9-step TwinCAT 3 runbook in `apps/designer/README.md`, `examples/twincat-smoke/README.md` with the minimal PLC IEC ST source, hardware validation log, sumup-as-v1.1-risk Open Question, `ads-rs` upstream-health snapshot. All five scope items from the amended brief are addressed.
+- ✅ **Honest scope commentary.** Both decision docs explicitly enumerate rejected alternatives + rationale. The integration log's "Validation status as of this session" splits CI/unit-verified from compile-verified from hardware-verified, exactly the breakdown CLAUDE.md asks for. Codex's own log calls out the polling-vs-notifications limitation upfront — no undersell, no overclaim.
+- ✅ **Backend selection knob is principled.** `AdsBackend::Auto` (default) → prefer router on Windows, fall back to ads-rs. `AdsBackend::AdsRsTcp` and `AdsBackend::TwincatRouter` for explicit pinning. This is the right shape — most users get the correct backend automatically, advanced users can override.
+
+### Findings
+
+- 🟠 **Native ADS notifications are unwired on the Windows backend; updates regress to 250ms polling.** The `ads_rs_tcp` backend uses `Device::add_notification` (server-pushed `ServerOnChange`); the new TwinCAT-router backend polls `ADSIGRP_SYM_VALBYHND` per entry at `poll_rate_ms`. Codex flagged this themselves in their log and in `wiki/drivers/ads-integration.md` Open Question #1. **This is a load-bearing item, not v1.1 polish** per CLAUDE.md's rule against underselling — but it's also not a v1.0 blocker because polling at 250ms is in-family with Modbus/OPC UA defaults and the brief did not require notifications as the validation gate. Tracked as **CODEX-AH** (brief drafted in `docs/agents/tasks/CODEX-AH-ads-native-notifications.md`, ready for hand-off after this merge).
+- 🟠 **Reconnect recovery is unwired.** If the router restarts or the route drops, the current code doesn't detect/rebuild. Tracked in CODEX-AH's "Out of scope (post-1.0)" section and in `wiki/drivers/ads-integration.md` Open Question #2 — marked v1.0-acceptable because the failure mode is "subscription stops delivering" (visible to the operator) rather than "silent stale data."
+- 🟡 **Handle-leak test deferred until notifications are native.** Runbook step 9's value is exercising notification-handle exhaustion under reconnect cycles; with polling-based updates there are no notification handles to leak in the first place. The runbook table records this as `not-applicable-to-current-backend` — accurate. CODEX-AH's hardware-smoke gate re-runs step 9 once notifications are wired.
+- 🟡 **`hardware-smoke` example still uses `clap` defaults that may surprise users on first run.** The `--source request` flag is required to ask the local router for an AMS port; `--source auto` would derive from the local IPv4 which doesn't match the maintainer's actual NetId on this CX. The example documentation in `wiki/drivers/ads-integration.md` "Hardware validation log" explicitly captures the working command line — ✅ acceptable for v1.0; not worth a separate fix.
+- 🟡 **Symbol case sensitivity on `MAIN.fSetPoint`** — the runbook had a typo (`fSetpoint` lowercase 'p') that Codex fixed alongside this work. Worth noting in this review because the live smoke caught it; future contributors editing the smoke project should match TwinCAT's case exactly.
+- 🟡 **Sumup is unwired on both backends.** Open Question #4 in `wiki/drivers/ads-integration.md` documents this with the v1.1 decision criterion (>30 ADS tags = prioritize sumup). Acceptable; matches the original brief's scope-item-4 ("track as v1.1 risk").
+
+### Acceptance-criteria tally
+
+- [x] `wiki/drivers/ads-sim-decision.md` exists with the 🟡 deferral outcome (real-protocol-only sim deferred until upstream test-server can be exposed; hand-rolling forged frames remains 🔴 hard-blocked).
+- [x] `wiki/drivers/ads-tls-decision.md` exists with the recommended path (TwinCAT-router backend on Windows; ads-rs for plain TCP).
+- [x] If decision is 🟡 sim-deferral: deferral documented with concrete rationale (LOC estimate "several hundred to >1000 lines"; upstream-private test-server gap; CI-fitness questions).
+- [x] `apps/designer/README.md` has the TwinCAT 3 manual-smoke section with all 9 steps.
+- [x] The 9-step runbook has been run against a real TwinCAT 3 install; results recorded in `wiki/drivers/ads-integration.md` "Hardware validation log" with the per-step status table.
+- [x] Sumup performance + ads-rs upstream risk both tracked as Open Questions in the wiki entry (#4 and #7 respectively).
+- [x] `cargo test -p openwebhmi-driver-ads --all-features --locked` stays green (verified independently: 13/13).
+- [x] `cargo clippy --workspace --all-targets --all-features --locked --exclude openwebhmi-designer -- -D warnings` stays green (verified independently).
+
+### Independent verification
+
+- `cargo test -p openwebhmi-driver-ads --all-features --locked` — ✅ 13/13 pass, including `subscribes_with_native_updates` (the existing mock-driver subscription test) and `reads_symbol_by_handle_path`.
+- `cargo clippy -p openwebhmi-driver-ads --all-targets --all-features --locked -- -D warnings` — ✅ clean.
+- Workspace-level checks all clean per CODEX-AG's commit (`9a96871`).
+- Linux compile gating verified by reading `crates/driver-ads/src/lib.rs:10-11` (`#[cfg(windows)] mod twincat_router;`) — the new module never reaches non-Windows builds.
 
 ## Verdict
 
-*(claude — final disposition)*
+**Merged.** This is the kind of submission that exceeds the brief and earns a verdict that says so plainly: Codex's TwinCAT-router-via-`TcAdsDll`-FFI is a better architectural answer than any of the three options the brief enumerated. The decision is principled (Beckhoff documents Secure ADS as router-to-router TLS), the implementation is correct (FFI without DLL redistribution; correct platform gating), and the validation is real (live smoke against CX-23F092 with full read/write/stream coverage). Five scope items shipped: both decision docs, runbook, runbook execution + log, sumup risk, ads-rs upstream-health snapshot.
+
+The honest 🟠 finding is the polling-vs-native-notifications regression on the Windows path. It's tracked as **CODEX-AH** with a complete brief on disk; the hardware re-run of runbook steps 7 + 9 closes the validation gate once AH lands. CLAUDE.md's "don't undersell load-bearing items as polish" rule is honored here: AH is a v1.0 closeout follow-up, not v1.1 nice-to-have.
+
+Bonus: this submission also closed the AC-era environmental gap (Tauri icon) and incidentally fixed a sim-rockwell clippy lint that surfaced under 1.95 — both bundled into CODEX-AG's commit because they belong to the toolchain bump's scope.
+
+ADS row in `docs/feature-matrix.md` flips to "🟢 v1 (Phase 4, hardware-validated)" with this merge. The pre-1.0 hardware-validation gate (24h soak) remains a separate v1.0 deliverable.

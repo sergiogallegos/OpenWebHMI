@@ -71,3 +71,17 @@ pnpm --filter @openwebhmi/designer tauri dev
 43. Browse ADS symbols and bind runtime components to `851:MAIN.nCounter`, `851:MAIN.fPressure`, and `851:MAIN.bRun`; confirm live values arrive through ADS notifications.
 44. Write to `851:MAIN.bRun` from a `ToggleSwitch` and to a numeric primitive from `NumericInput`; confirm TwinCAT Online view reflects the writes.
 45. Stop the TwinCAT runtime or remove the AMS route, confirm bad-quality updates or connection errors surface, then restore the runtime and confirm the driver can be reconnected.
+
+## Manual smoke -- Beckhoff TwinCAT 3
+
+Current scope: `backend: "auto"` prefers the Windows TwinCAT-router backend through Beckhoff `TcAdsDll.dll` when TwinCAT is installed, and falls back to the pure Rust `ads = 0.4.4` plain ADS-over-TCP backend otherwise. Direct plain TCP to an XAE-created Secure ADS target is expected to fail; use the router backend for those routes.
+
+1. Setup: install TwinCAT 3 XAR/XAE or use an existing TwinCAT 3 target. Confirm the target AMS Net ID, for example `192.168.1.10.1.1`, and confirm the OpenWebHMI gateway machine has an AMS route to that Net ID. For Secure ADS, run the gateway on a Windows machine where TwinCAT's own route works.
+2. PLC project: create a minimal TwinCAT 3 PLC project with `MAIN.bRunning : BOOL`, `MAIN.nCounter : INT`, `MAIN.fSetPoint : REAL`, and `MAIN.sStatus : STRING(80)`. Use the sample `MAIN.PRG` in `examples/twincat-smoke/README.md`, activate the configuration, and start the PLC runtime on port `851`.
+3. OpenWebHMI project: configure an ADS driver with `backend: "auto"`, `host`, `ams_net_id`, `tcp_port: 48898`, and `ports: [851]`. Add four tags bound to `851:MAIN.bRunning`, `851:MAIN.nCounter`, `851:MAIN.fSetPoint`, and `851:MAIN.sStatus`.
+4. Browse test: connect from the designer project explorer and verify the four symbols appear in the ADS browse tree with types `BOOL`, `INT`, `REAL`, and `STRING(80)`.
+5. Read test: observe `MAIN.nCounter` incrementing in the runtime view. Confirm updates arrive within the configured `poll_rate_ms`, default `250`.
+6. Write test: write `42` to `MAIN.nCounter` from a `NumericInput` component and confirm TwinCAT Online view reflects the new value.
+7. Notification test: change `MAIN.bRunning` from TwinCAT Online view and confirm the runtime receives the update via ADS device notification. Check gateway `tracing` output for an ADS notification frame or notification-driven update rather than a polling-only read.
+8. Reconnect test: stop the TwinCAT runtime and observe OpenWebHMI quality degrade to Bad. Restart TwinCAT and confirm quality recovers and notifications resume without restarting the gateway.
+9. Handle leak check: reconnect 50 times by repeatedly stopping and starting the TwinCAT runtime or disconnecting and reconnecting the driver. Confirm TwinCAT's notification handle pool stays bounded; the OpenWebHMI subscription guard should delete notification handles on every disconnect.

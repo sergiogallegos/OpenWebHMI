@@ -19,7 +19,8 @@
 //! Run from the workspace root:
 //! ```bash
 //! cargo run --example hardware-smoke -p openwebhmi-driver-ads -- \
-//!     --host 192.168.10.100 --net-id 192.168.10.100.1.1
+//!     --host 127.0.0.1 --net-id 192.168.10.100.1.1 \
+//!     --source explicit --source-net-id 192.168.10.98.1.1
 //! ```
 //!
 //! Set `RUST_LOG=ads=debug,openwebhmi_driver_ads=debug` for verbose logs.
@@ -28,8 +29,8 @@ use std::time::Duration;
 
 use anyhow::Context;
 use futures_util::StreamExt;
-use openwebhmi_driver_api::{Driver, TagAddress};
 use openwebhmi_driver_ads::AdsDriver;
+use openwebhmi_driver_api::{Driver, TagAddress};
 use openwebhmi_protocol::TagValue;
 
 #[derive(Debug)]
@@ -38,6 +39,8 @@ struct Args {
     net_id: String,
     port: u16,
     source: String,
+    source_net_id: Option<String>,
+    source_port: Option<u16>,
     subscribe_seconds: u64,
 }
 
@@ -47,6 +50,8 @@ impl Args {
         let mut net_id = None;
         let mut port: u16 = 851;
         let mut source = "request".to_string();
+        let mut source_net_id = None;
+        let mut source_port = None;
         let mut subscribe_seconds: u64 = 10;
 
         let mut iter = std::env::args().skip(1);
@@ -64,7 +69,18 @@ impl Args {
                 "--source" => {
                     source = iter
                         .next()
-                        .context("--source needs a value (request | auto)")?
+                        .context("--source needs a value (request | auto | explicit)")?
+                }
+                "--source-net-id" => {
+                    source_net_id = iter.next();
+                }
+                "--source-port" => {
+                    source_port = Some(
+                        iter.next()
+                            .context("--source-port needs a value")?
+                            .parse()
+                            .context("--source-port must be a u16")?,
+                    );
                 }
                 "--subscribe-seconds" => {
                     subscribe_seconds = iter
@@ -86,6 +102,8 @@ impl Args {
             net_id: net_id.context("--net-id is required (e.g. 192.168.10.100.1.1)")?,
             port,
             source,
+            source_net_id,
+            source_port,
             subscribe_seconds,
         })
     }
@@ -99,14 +117,18 @@ USAGE:
     cargo run --example hardware-smoke -p openwebhmi-driver-ads -- [OPTIONS]
 
 REQUIRED:
-    --host <ip>             CX or PLC IP address (e.g. 192.168.10.100)
+    --host <ip>             ADS router host. Use 127.0.0.1 when TwinCAT is installed
+                            locally and has the route to the target PLC.
     --net-id <id>           Target AMS NetId (e.g. 192.168.10.100.1.1)
 
 OPTIONAL:
     --port <u16>            ADS port to browse (default: 851 — TwinCAT 3 PLC runtime 1)
-    --source <mode>         Source AMS mode: request | auto (default: request)
+    --source <mode>         Source AMS mode: request | auto | explicit (default: request)
                             request: TwinCAT installed locally, router assigns port
                             auto:    derive source NetId from local IPv4 (no TwinCAT)
+                            explicit: use --source-net-id and optional --source-port
+    --source-net-id <id>    Source AMS NetId for --source explicit
+    --source-port <u16>     Source AMS port for --source explicit
     --subscribe-seconds <u64>  How long to watch notifications (default: 10)
 "
     );
@@ -123,14 +145,28 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let args = Args::parse()?;
-    println!("config: host={} net_id={} port={} source={}\n", args.host, args.net_id, args.port, args.source);
+    println!(
+        "config: host={} net_id={} port={} source={} source_net_id={:?} source_port={:?}\n",
+        args.host, args.net_id, args.port, args.source, args.source_net_id, args.source_port
+    );
 
     let mut driver = AdsDriver::new();
+
+    let source = match args.source.as_str() {
+        "explicit" => serde_json::json!({
+            "explicit": {
+                "net_id": args.source_net_id.context("--source explicit requires --source-net-id")?,
+                "port": args.source_port,
+            }
+        }),
+        "request" | "auto" => serde_json::json!(args.source),
+        other => anyhow::bail!("unsupported --source {other}; use request, auto, or explicit"),
+    };
 
     let config = serde_json::json!({
         "host": args.host,
         "ams_net_id": args.net_id,
-        "source": args.source,
+        "source": source,
         "ports": [args.port],
         "poll_rate_ms": 250,
         "timeout_ms": 5_000,
@@ -160,24 +196,25 @@ async fn main() -> anyhow::Result<()> {
 
     // Try to read each test variable. Symbols are local to MAIN, so the path is "MAIN.<name>".
     let test_paths = [
-        ("851:MAIN.bRunning", "BOOL"),
-        ("851:MAIN.nCounter", "INT"),
-        ("851:MAIN.fSetpoint", "REAL"),
-        ("851:MAIN.sStatus", "STRING"),
+        (format!("{}:MAIN.bRunning", args.port), "BOOL"),
+        (format!("{}:MAIN.nCounter", args.port), "INT"),
+        (format!("{}:MAIN.fSetPoint", args.port), "REAL"),
+        (format!("{}:MAIN.sStatus", args.port), "STRING"),
     ];
 
     println!("=== Read each test variable ===");
-    for (path, typ) in test_paths {
-        match driver.read(&TagAddress::new(path)).await {
+    for (path, typ) in &test_paths {
+        match driver.read(&TagAddress::new(path.as_str())).await {
             Ok(value) => println!("  {:30} ({}) = {:?}", path, typ, value),
             Err(err) => println!("  {:30} ({}) ERROR: {}", path, typ, err),
         }
     }
     println!();
 
-    // Write fSetpoint
-    println!("=== Write 851:MAIN.fSetpoint = 75.0 ===");
-    let write_target = TagAddress::new("851:MAIN.fSetpoint");
+    // Write fSetPoint
+    let write_path = format!("{}:MAIN.fSetPoint", args.port);
+    println!("=== Write {write_path} = 75.0 ===");
+    let write_target = TagAddress::new(write_path);
     match driver.write(&write_target, TagValue::Real(75.0)).await {
         Ok(()) => {
             println!("write returned Ok.");
@@ -198,13 +235,10 @@ async fn main() -> anyhow::Result<()> {
         args.subscribe_seconds
     );
     let addrs = vec![
-        TagAddress::new("851:MAIN.bRunning"),
-        TagAddress::new("851:MAIN.nCounter"),
+        TagAddress::new(format!("{}:MAIN.bRunning", args.port)),
+        TagAddress::new(format!("{}:MAIN.nCounter", args.port)),
     ];
-    let mut stream = driver
-        .subscribe(addrs)
-        .await
-        .context("subscribe failed")?;
+    let mut stream = driver.subscribe(addrs).await.context("subscribe failed")?;
 
     let timeout = tokio::time::sleep(Duration::from_secs(args.subscribe_seconds));
     tokio::pin!(timeout);
@@ -228,7 +262,10 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-    println!("received {count} notifications in {}s.\n", args.subscribe_seconds);
+    println!(
+        "received {count} notifications in {}s.\n",
+        args.subscribe_seconds
+    );
 
     drop(stream);
 

@@ -5,26 +5,26 @@ use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use async_trait::async_trait;
-use futures_util::stream::{self, BoxStream};
 use futures_util::Stream;
+use futures_util::stream::{self, BoxStream};
 use openwebhmi_driver_api::{
-    make_metadata, Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate,
-    TagAddress, TagNode,
+    Capabilities, Driver, DriverError, DriverMetadata, DriverResult, DriverUpdate, TagAddress,
+    TagNode, make_metadata,
 };
 use openwebhmi_protocol::{Quality, TagValue};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::address::AdsAddress;
-use crate::connection::{parse_ams_net_id, AdsConfig, SourceAms};
+use crate::connection::{AdsBackend, AdsConfig, SourceAms, parse_ams_net_id};
 use crate::symbols::{
-    decode_ads_value, encode_ads_value, table_from_ads, AdsDataType, SymbolEntry, SymbolTable,
+    AdsDataType, SymbolEntry, SymbolTable, decode_ads_value, encode_ads_value, table_from_ads,
 };
 
 type SharedClient = Arc<dyn AdsClientLike>;
 
 #[async_trait]
-trait AdsClientLike: Send + Sync {
+pub(crate) trait AdsClientLike: Send + Sync {
     async fn symbol_table(&self, port: u16) -> DriverResult<SymbolTable>;
     async fn read_symbol(&self, port: u16, symbol: &str, size: usize) -> DriverResult<Vec<u8>>;
     async fn write_symbol(&self, port: u16, symbol: &str, data: Vec<u8>) -> DriverResult<()>;
@@ -159,6 +159,7 @@ impl AdsClientLike for RealAdsClient {
                 client: Some(client),
                 target_net_id,
                 handles,
+                backend_guard: None,
             })
         })
         .await
@@ -232,7 +233,7 @@ impl Driver for AdsDriver {
 
     async fn connect(&mut self, config: serde_json::Value) -> DriverResult<()> {
         let config = AdsConfig::from_value(config)?;
-        let client = Arc::new(RealAdsClient::connect(config.clone())?) as SharedClient;
+        let client = connect_client(config.clone())?;
         let mut symbols_by_port = BTreeMap::new();
         for port in &config.ports {
             symbols_by_port.insert(*port, client.symbol_table(*port).await?);
@@ -322,23 +323,36 @@ impl Driver for AdsDriver {
 }
 
 #[derive(Clone)]
-struct SubscriptionEntry {
-    raw: TagAddress,
-    port: u16,
-    index_group: u32,
-    index_offset: u32,
-    size: usize,
-    data_type: AdsDataType,
+pub(crate) struct SubscriptionEntry {
+    pub(crate) raw: TagAddress,
+    pub(crate) port: u16,
+    pub(crate) index_group: u32,
+    pub(crate) index_offset: u32,
+    pub(crate) size: usize,
+    pub(crate) data_type: AdsDataType,
 }
 
-struct SubscriptionGuard {
+pub(crate) struct SubscriptionGuard {
     client: Option<Arc<StdMutex<ads::Client>>>,
     target_net_id: ads::AmsNetId,
     handles: Vec<(u16, ads::notif::Handle)>,
+    backend_guard: Option<Box<dyn Send + Sync>>,
+}
+
+impl SubscriptionGuard {
+    pub(crate) fn backend(guard: impl Send + Sync + 'static) -> Self {
+        Self {
+            client: None,
+            target_net_id: ads::AmsNetId([0; 6]),
+            handles: Vec::new(),
+            backend_guard: Some(Box::new(guard)),
+        }
+    }
 }
 
 impl Drop for SubscriptionGuard {
     fn drop(&mut self) {
+        let _ = self.backend_guard.take();
         let Some(client) = self.client.take() else {
             return;
         };
@@ -390,7 +404,47 @@ fn source_from_config(source: &SourceAms) -> DriverResult<ads::Source> {
     }
 }
 
-async fn spawn_blocking_driver<T>(
+fn connect_client(config: AdsConfig) -> DriverResult<SharedClient> {
+    match config.backend {
+        AdsBackend::AdsRsTcp => Ok(Arc::new(RealAdsClient::connect(config)?) as SharedClient),
+        AdsBackend::TwincatRouter => connect_twin_cat_router(config),
+        AdsBackend::Auto => connect_auto(config),
+    }
+}
+
+fn connect_auto(config: AdsConfig) -> DriverResult<SharedClient> {
+    #[cfg(windows)]
+    {
+        match connect_twin_cat_router(config.clone()) {
+            Ok(client) => return Ok(client),
+            Err(err) => {
+                tracing::debug!(
+                    "TwinCAT router ADS backend unavailable, falling back to ads-rs: {err}"
+                );
+            }
+        }
+    }
+
+    Ok(Arc::new(RealAdsClient::connect(config)?) as SharedClient)
+}
+
+fn connect_twin_cat_router(config: AdsConfig) -> DriverResult<SharedClient> {
+    #[cfg(windows)]
+    {
+        Ok(Arc::new(crate::twincat_router::TcAdsClient::connect(config)?) as SharedClient)
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = config;
+        Err(DriverError::UnsupportedType {
+            device_type: "TwinCAT router backend requires Windows and Beckhoff TcAdsDll.dll"
+                .to_string(),
+        })
+    }
+}
+
+pub(crate) async fn spawn_blocking_driver<T>(
     f: impl FnOnce() -> DriverResult<T> + Send + 'static,
 ) -> DriverResult<T>
 where
@@ -417,7 +471,7 @@ fn map_ads_error(error: ads::Error) -> DriverError {
     }
 }
 
-fn update_from_result(
+pub(crate) fn update_from_result(
     address: TagAddress,
     result: DriverResult<TagValue>,
     ts_ms: u64,
@@ -438,7 +492,7 @@ fn update_from_result(
     }
 }
 
-fn now_ms() -> u64 {
+pub(crate) fn now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_millis() as u64)
@@ -497,6 +551,7 @@ mod tests {
                 client: None,
                 target_net_id: ads::AmsNetId([0; 6]),
                 handles: Vec::new(),
+                backend_guard: None,
             })
         }
     }

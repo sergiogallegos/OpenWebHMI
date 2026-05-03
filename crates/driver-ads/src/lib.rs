@@ -7,8 +7,10 @@ pub mod address;
 pub mod connection;
 pub mod driver;
 pub mod symbols;
+#[cfg(windows)]
+mod twincat_router;
 
 pub use address::{AdsAddress, AdsAddressError};
-pub use connection::{AdsConfig, SourceAms};
+pub use connection::{AdsBackend, AdsConfig, SourceAms};
 pub use driver::AdsDriver;
-pub use symbols::{decode_ads_value, encode_ads_value, AdsDataType, SymbolEntry, SymbolTable};
+pub use symbols::{AdsDataType, SymbolEntry, SymbolTable, decode_ads_value, encode_ads_value};

@@ -24,9 +24,26 @@ pub enum SourceAms {
     },
 }
 
+/// ADS transport/backend implementation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum AdsBackend {
+    /// Prefer the Beckhoff TwinCAT router backend on Windows when available,
+    /// otherwise use the pure Rust ADS-over-TCP backend.
+    #[default]
+    Auto,
+    /// Use the pure Rust `ads` crate over plain ADS-over-TCP.
+    AdsRsTcp,
+    /// Use Beckhoff `TcAdsDll.dll` through the local TwinCAT router.
+    TwincatRouter,
+}
+
 /// Beckhoff ADS driver configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AdsConfig {
+    /// ADS backend selection.
+    #[serde(default)]
+    pub backend: AdsBackend,
     /// Target host or IP address used for ADS-over-TCP.
     pub host: String,
     /// TCP port for ADS-over-TCP. Defaults to `48898`.
@@ -66,6 +83,7 @@ impl AdsConfig {
 impl Default for AdsConfig {
     fn default() -> Self {
         Self {
+            backend: AdsBackend::Auto,
             host: "127.0.0.1".to_string(),
             tcp_port: default_tcp_port(),
             ams_net_id: "127.0.0.1.1.1".to_string(),
