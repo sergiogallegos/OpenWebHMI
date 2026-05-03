@@ -77,6 +77,35 @@ impl AlarmJournal {
         Ok(())
     }
 
+    /// Replace this alarm journal database from `path` using SQLite's online restore API.
+    pub fn restore_from_path(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        let mut conn = self.lock()?;
+        conn.restore(
+            DatabaseName::Main,
+            path,
+            Option::<fn(rusqlite::backup::Progress)>::None,
+        )?;
+        Ok(())
+    }
+
+    /// Append transitions from another alarm journal database.
+    pub fn merge_from_path(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        let path = path.as_ref().to_string_lossy().replace('\'', "''");
+        let mut conn = self.lock()?;
+        conn.execute_batch(&format!("ATTACH DATABASE '{path}' AS source_alarm;"))?;
+        {
+            let tx = conn.transaction()?;
+            tx.execute_batch(
+                "INSERT INTO alarm_journal (alarm_id, ts_ms, from_state, to_state, who, note)
+                 SELECT alarm_id, ts_ms, from_state, to_state, who, note
+                 FROM source_alarm.alarm_journal;",
+            )?;
+            tx.commit()?;
+        }
+        conn.execute_batch("DETACH DATABASE source_alarm;")?;
+        Ok(())
+    }
+
     fn lock(&self) -> anyhow::Result<std::sync::MutexGuard<'_, Connection>> {
         self.conn
             .lock()

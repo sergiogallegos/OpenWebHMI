@@ -1458,6 +1458,8 @@ where
         &request.body,
         RestoreOptions {
             mode,
+            historian_store: DEFAULT_HISTORIAN.get().cloned(),
+            alarm_journal: DEFAULT_ALARM_JOURNAL.get().cloned(),
             audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
             user: Some(session.username),
         },

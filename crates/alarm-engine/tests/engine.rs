@@ -187,6 +187,38 @@ fn journal_persists_transition_round_trip() {
     assert_eq!(entries[0].note.as_deref(), Some("checked"));
 }
 
+#[test]
+fn journal_restore_from_path_replaces_existing_transitions() {
+    let source = AlarmJournal::memory().unwrap();
+    let target = AlarmJournal::memory().unwrap();
+    source.write_transition(&transition("a", 10)).unwrap();
+    target
+        .write_transition(&transition("target-only", 5))
+        .unwrap();
+    let snapshot = tempfile::NamedTempFile::new().unwrap();
+    source.backup_to_path(snapshot.path()).unwrap();
+
+    target.restore_from_path(snapshot.path()).unwrap();
+
+    assert_eq!(target.read_alarm("a").unwrap().len(), 1);
+    assert!(target.read_alarm("target-only").unwrap().is_empty());
+}
+
+#[test]
+fn journal_merge_from_path_appends_transitions() {
+    let source = AlarmJournal::memory().unwrap();
+    let target = AlarmJournal::memory().unwrap();
+    source.write_transition(&transition("a", 10)).unwrap();
+    target.write_transition(&transition("b", 5)).unwrap();
+    let snapshot = tempfile::NamedTempFile::new().unwrap();
+    source.backup_to_path(snapshot.path()).unwrap();
+
+    target.merge_from_path(snapshot.path()).unwrap();
+
+    assert_eq!(target.read_alarm("a").unwrap().len(), 1);
+    assert_eq!(target.read_alarm("b").unwrap().len(), 1);
+}
+
 fn definition(require_ack: bool) -> AlarmDefinition {
     AlarmDefinition {
         id: "pressure-high".into(),
@@ -197,6 +229,17 @@ fn definition(require_ack: bool) -> AlarmDefinition {
         message: "Pressure high: {value}".into(),
         enabled: true,
         require_ack,
+    }
+}
+
+fn transition(alarm_id: &str, ts_ms: u64) -> AlarmTransition {
+    AlarmTransition {
+        alarm_id: alarm_id.into(),
+        ts_ms,
+        from_state: AlarmState::Clear,
+        to_state: AlarmState::Active,
+        who: Some("operator".into()),
+        note: None,
     }
 }
 

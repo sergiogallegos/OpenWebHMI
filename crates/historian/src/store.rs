@@ -95,6 +95,41 @@ impl HistorianStore {
         Ok(())
     }
 
+    /// Replace this historian database from `path` using SQLite's online restore API.
+    pub fn restore_from_path(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        let mut conn = self.lock()?;
+        conn.restore(
+            DatabaseName::Main,
+            path,
+            Option::<fn(rusqlite::backup::Progress)>::None,
+        )?;
+        Ok(())
+    }
+
+    /// Merge samples from another historian database, ignoring duplicate `(tag, timestamp)` rows.
+    pub fn merge_from_path(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        let path = path.as_ref().to_string_lossy().replace('\'', "''");
+        let mut conn = self.lock()?;
+        conn.execute_batch(&format!("ATTACH DATABASE '{path}' AS source_history;"))?;
+        {
+            let tx = conn.transaction()?;
+            tx.execute_batch(
+                "INSERT OR IGNORE INTO tag_dictionary (tag_path)
+                 SELECT tag_path FROM source_history.tag_dictionary;
+                 INSERT OR IGNORE INTO tag_history (tag_id, ts_ms, value, quality)
+                 SELECT target.tag_id, sample.ts_ms, sample.value, sample.quality
+                 FROM source_history.tag_history AS sample
+                 JOIN source_history.tag_dictionary AS source_tag
+                    ON source_tag.tag_id = sample.tag_id
+                 JOIN main.tag_dictionary AS target
+                    ON target.tag_path = source_tag.tag_path;",
+            )?;
+            tx.commit()?;
+        }
+        conn.execute_batch("DETACH DATABASE source_history;")?;
+        Ok(())
+    }
+
     fn read_raw_unbounded(
         &self,
         tag_path: &str,

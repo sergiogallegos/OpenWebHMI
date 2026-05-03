@@ -22,6 +22,64 @@ fn raw_round_trip_preserves_order_and_quality() {
 }
 
 #[test]
+fn restore_from_path_replaces_existing_samples() {
+    let source = HistorianStore::memory().unwrap();
+    let target = HistorianStore::memory().unwrap();
+    source
+        .write_sample("a", 10, &TagValue::Real(2.0), Quality::Good)
+        .unwrap();
+    target
+        .write_sample("target-only", 5, &TagValue::Real(1.0), Quality::Good)
+        .unwrap();
+    let snapshot = tempfile::NamedTempFile::new().unwrap();
+    source.backup_to_path(snapshot.path()).unwrap();
+
+    target.restore_from_path(snapshot.path()).unwrap();
+
+    assert_eq!(
+        values(target.read("a", 0, 20, Aggregation::Raw, 10).unwrap()),
+        vec![2.0]
+    );
+    assert!(
+        target
+            .read("target-only", 0, 20, Aggregation::Raw, 10)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn merge_from_path_appends_and_ignores_duplicate_samples() {
+    let source = HistorianStore::memory().unwrap();
+    let target = HistorianStore::memory().unwrap();
+    source
+        .write_sample("a", 10, &TagValue::Real(2.0), Quality::Good)
+        .unwrap();
+    source
+        .write_sample("a", 20, &TagValue::Real(3.0), Quality::Good)
+        .unwrap();
+    target
+        .write_sample("a", 10, &TagValue::Real(1.0), Quality::Good)
+        .unwrap();
+    target
+        .write_sample("b", 5, &TagValue::Real(4.0), Quality::Good)
+        .unwrap();
+    let snapshot = tempfile::NamedTempFile::new().unwrap();
+    source.backup_to_path(snapshot.path()).unwrap();
+
+    target.merge_from_path(snapshot.path()).unwrap();
+
+    assert_eq!(
+        values(target.read("a", 0, 30, Aggregation::Raw, 10).unwrap()),
+        vec![1.0, 3.0]
+    );
+    assert_eq!(
+        values(target.read("b", 0, 10, Aggregation::Raw, 10).unwrap()),
+        vec![4.0]
+    );
+}
+
+#[test]
 fn aggregations_match_known_dataset() {
     let store = HistorianStore::memory().unwrap();
     for (ts, value) in [(0, 1.0), (10, 3.0), (20, 5.0), (30, 7.0)] {

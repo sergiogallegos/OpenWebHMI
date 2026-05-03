@@ -17,6 +17,7 @@ openwebhmi-historian = { path = "../historian" }
 openwebhmi-project-store = { path = "../project-store" }
 serde.workspace = true
 serde_json.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 openwebhmi-protocol = { path = "../protocol" }

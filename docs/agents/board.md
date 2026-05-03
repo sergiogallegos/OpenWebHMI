@@ -8,15 +8,15 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AI | Wire historian + alarm-journal import path in `crates/backup` — close CODEX-AF's v1.0 gap | codex | open | 2026-05-03 claude | [tasks/CODEX-AI-backup-historian-import.md](tasks/CODEX-AI-backup-historian-import.md) |
+*(no open Phase 4 tasks)*
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-AI  (historian/alarm import for backup)  ← AF closeout follow-up; mechanical FFI-style fix; v1.0 closeout blocker
+(all driver + component + audit + backup ladder items merged)
 ```
 
-**One open task: AI (historian/alarm import for backup).** AE + AF merged together (gateway integration is shared between them; splitting required surgical reverts across 6 files and a non-compiling intermediate). AF's headline gap — historian/alarm-journal data is exported but not imported — is tracked as AI's scope; v1.0 should not tag without AI landed. After AI lands plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
+**🎉 Phase 4 ladder complete.** AE (audit log), AF (backup/restore), AI (historian import closeout) all merged. Driver slice was AG (toolchain) → AD (ADS validation) → AH (ADS native notifications). Component slice closed at AC (25 components). Remaining v1.0 closeout items live outside the agent-task ladder: plugin SDK, performance baseline, pre-1.0 hardware-validation 24h soak gate, plus the v1.1 polish list flagged across AE/AF/AI verdicts (SessionExpired hook, wiki/protocol/* pages, SQL-side audit-log filter pushdown, alarm-journal merge dedupe, designer session disconnect on replace).
 
 ## Phase 3 — Core SCADA features
 
@@ -74,6 +74,7 @@ CODEX-AI  (historian/alarm import for backup)  ← AF closeout follow-up; mechan
 | CODEX-AH | Native ADS device notifications via TcAdsDll FFI — closes AD's polling regression | codex | `2be075e` | 4 |
 | CODEX-AE | `crates/audit-log` — SQLite security event journal + query/subscribe wire protocol + gateway hooks | codex | `83aac91` | 4 |
 | CODEX-AF | `crates/backup` — project export/import + gateway HTTP side-channel; historian/alarm import deferred to CODEX-AI | codex | `83aac91` | 4 |
+| CODEX-AI | Historian + alarm-journal import path in `crates/backup` — closes AF's v1.0 gap | codex | _pending_ | 4 |
 
 ## Conventions
 

@@ -4,6 +4,7 @@
 
 use std::io::{Read, Write};
 use std::path::{Component, Path};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use flate2::Compression;
@@ -14,10 +15,12 @@ use openwebhmi_audit_log::{AuditEvent, AuditLog};
 use openwebhmi_historian::HistorianStore;
 use openwebhmi_project_store::{ArtifactKind, ProjectStore};
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 const MANIFEST_PATH: &str = "manifest.json";
 const ARTIFACT_PREFIX: &str = "artifacts/";
 const SCHEMA_VERSION: u32 = 1;
+static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Import conflict behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -51,6 +54,10 @@ pub struct BackupOptions {
 pub struct RestoreOptions {
     /// Import mode.
     pub mode: ImportMode,
+    /// Optional live historian store to restore when the archive contains `historian.sqlite`.
+    pub historian_store: Option<HistorianStore>,
+    /// Optional live alarm journal to restore when the archive contains `alarm-journal.sqlite`.
+    pub alarm_journal: Option<AlarmJournal>,
     /// Optional audit journal used to record the import.
     pub audit_log: Option<AuditLog>,
     /// Authenticated user, when called from the gateway.
@@ -61,6 +68,8 @@ impl Default for RestoreOptions {
     fn default() -> Self {
         Self {
             mode: ImportMode::Replace,
+            historian_store: None,
+            alarm_journal: None,
             audit_log: None,
             user: None,
         }
@@ -173,6 +182,12 @@ pub fn export_project(
 }
 
 /// Restore a `.owhmi` tar.gz archive into a project store.
+///
+/// When `RestoreOptions` includes live historian or alarm-journal handles and the
+/// archive contains matching SQLite entries, replace mode restores those live
+/// stores from the archive snapshots, while merge mode appends rows and ignores
+/// historian duplicate `(tag_path, ts_ms)` samples. Historian/alarm restore
+/// errors are logged and do not abort project artifact restoration.
 pub fn import_project(
     store: &ProjectStore,
     archive: &[u8],
@@ -205,6 +220,8 @@ pub fn import_project(
         store.save_artifact(&manifest.project_id, artifact.kind.clone(), body)?;
     }
 
+    restore_sqlite_entries(&entries, &manifest, &options);
+
     if let Some(audit_log) = options.audit_log {
         let _ = audit_log.append(
             options.user,
@@ -219,6 +236,32 @@ pub fn import_project(
     }
 
     Ok(manifest)
+}
+
+fn restore_sqlite_entries(
+    entries: &[ArchiveEntry],
+    manifest: &BackupManifest,
+    options: &RestoreOptions,
+) {
+    if manifest.includes_historian
+        && let Some(historian_store) = &options.historian_store
+        && let Some(entry) = entries
+            .iter()
+            .find(|entry| entry.path == "historian.sqlite")
+        && let Err(err) = restore_historian(historian_store, &entry.bytes, options.mode)
+    {
+        warn!(error = %err, "failed to restore historian backup entry");
+    }
+
+    if manifest.includes_alarm_journal
+        && let Some(alarm_journal) = &options.alarm_journal
+        && let Some(entry) = entries
+            .iter()
+            .find(|entry| entry.path == "alarm-journal.sqlite")
+        && let Err(err) = restore_alarm_journal(alarm_journal, &entry.bytes, options.mode)
+    {
+        warn!(error = %err, "failed to restore alarm-journal backup entry");
+    }
 }
 
 fn artifact_kinds(project: &openwebhmi_project_store::Project) -> Vec<ArtifactKind> {
@@ -274,8 +317,43 @@ fn snapshot_alarm_journal(journal: &AlarmJournal) -> anyhow::Result<Vec<u8>> {
     result
 }
 
+fn restore_historian(store: &HistorianStore, bytes: &[u8], mode: ImportMode) -> anyhow::Result<()> {
+    let path = temp_snapshot_path("openwebhmi-historian-restore");
+    let result = (|| {
+        std::fs::write(&path, bytes)?;
+        match mode {
+            ImportMode::Replace => store.restore_from_path(&path),
+            ImportMode::Merge => store.merge_from_path(&path),
+        }
+    })();
+    let _ = std::fs::remove_file(&path);
+    result
+}
+
+fn restore_alarm_journal(
+    journal: &AlarmJournal,
+    bytes: &[u8],
+    mode: ImportMode,
+) -> anyhow::Result<()> {
+    let path = temp_snapshot_path("openwebhmi-alarm-restore");
+    let result = (|| {
+        std::fs::write(&path, bytes)?;
+        match mode {
+            ImportMode::Replace => journal.restore_from_path(&path),
+            ImportMode::Merge => journal.merge_from_path(&path),
+        }
+    })();
+    let _ = std::fs::remove_file(&path);
+    result
+}
+
 fn temp_snapshot_path(prefix: &str) -> std::path::PathBuf {
-    let unique = format!("{prefix}-{}-{}.sqlite", std::process::id(), now_ms());
+    let counter = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let unique = format!(
+        "{prefix}-{}-{}-{counter}.sqlite",
+        std::process::id(),
+        now_ms()
+    );
     std::env::temp_dir().join(unique)
 }
 

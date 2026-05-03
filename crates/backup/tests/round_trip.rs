@@ -2,7 +2,7 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use openwebhmi_alarm_engine::{AlarmJournal, AlarmState, AlarmTransition};
 use openwebhmi_backup::{BackupManifest, BackupOptions, ImportMode, RestoreOptions};
-use openwebhmi_historian::HistorianStore;
+use openwebhmi_historian::{Aggregation, HistorianStore};
 use openwebhmi_project_store::{ArtifactKind, ProjectStore};
 use openwebhmi_protocol::{Quality, TagValue};
 use std::io::Write;
@@ -98,6 +98,165 @@ fn export_uses_online_backup_for_live_sqlite_stores() {
             .iter()
             .any(|(path, bytes)| path == "alarm-journal.sqlite" && !bytes.is_empty())
     );
+}
+
+#[test]
+fn historian_rows_round_trip_through_export_import() {
+    let source_dir = tempfile::tempdir().unwrap();
+    let target_dir = tempfile::tempdir().unwrap();
+    let source = ProjectStore::open(source_dir.path()).unwrap();
+    let target = ProjectStore::open(target_dir.path()).unwrap();
+    seed_project(&source);
+    let source_historian = HistorianStore::memory().unwrap();
+    let target_historian = HistorianStore::memory().unwrap();
+    source_historian
+        .write_sample("rockwell-1/value", 10, &TagValue::Real(12.5), Quality::Good)
+        .unwrap();
+    source_historian
+        .write_sample(
+            "rockwell-1/value",
+            20,
+            &TagValue::Real(13.5),
+            Quality::Stale,
+        )
+        .unwrap();
+
+    let archive = openwebhmi_backup::export_project(
+        &source,
+        "demo",
+        BackupOptions {
+            historian_store: Some(source_historian.clone()),
+            ..BackupOptions::default()
+        },
+    )
+    .unwrap();
+    openwebhmi_backup::import_project(
+        &target,
+        &archive,
+        RestoreOptions {
+            historian_store: Some(target_historian.clone()),
+            ..RestoreOptions::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        target_historian
+            .read("rockwell-1/value", 0, 30, Aggregation::Raw, 10)
+            .unwrap(),
+        source_historian
+            .read("rockwell-1/value", 0, 30, Aggregation::Raw, 10)
+            .unwrap()
+    );
+}
+
+#[test]
+fn alarm_transitions_round_trip_through_export_import() {
+    let source_dir = tempfile::tempdir().unwrap();
+    let target_dir = tempfile::tempdir().unwrap();
+    let source = ProjectStore::open(source_dir.path()).unwrap();
+    let target = ProjectStore::open(target_dir.path()).unwrap();
+    seed_project(&source);
+    let source_journal = AlarmJournal::memory().unwrap();
+    let target_journal = AlarmJournal::memory().unwrap();
+    source_journal
+        .write_transition(&alarm_transition("pressure-high", 10))
+        .unwrap();
+    source_journal
+        .write_transition(&AlarmTransition {
+            ts_ms: 20,
+            from_state: AlarmState::Active,
+            to_state: AlarmState::Acked,
+            ..alarm_transition("pressure-high", 20)
+        })
+        .unwrap();
+
+    let archive = openwebhmi_backup::export_project(
+        &source,
+        "demo",
+        BackupOptions {
+            alarm_journal: Some(source_journal.clone()),
+            ..BackupOptions::default()
+        },
+    )
+    .unwrap();
+    openwebhmi_backup::import_project(
+        &target,
+        &archive,
+        RestoreOptions {
+            alarm_journal: Some(target_journal.clone()),
+            ..RestoreOptions::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        target_journal.read_alarm("pressure-high").unwrap(),
+        source_journal.read_alarm("pressure-high").unwrap()
+    );
+}
+
+#[test]
+fn replace_mode_wipes_target_historian_and_alarm_journal() {
+    let source_dir = tempfile::tempdir().unwrap();
+    let target_dir = tempfile::tempdir().unwrap();
+    let source = ProjectStore::open(source_dir.path()).unwrap();
+    let target = ProjectStore::open(target_dir.path()).unwrap();
+    seed_project(&source);
+    let source_historian = HistorianStore::memory().unwrap();
+    let target_historian = HistorianStore::memory().unwrap();
+    let source_journal = AlarmJournal::memory().unwrap();
+    let target_journal = AlarmJournal::memory().unwrap();
+    source_historian
+        .write_sample("rockwell-1/value", 10, &TagValue::Real(12.5), Quality::Good)
+        .unwrap();
+    target_historian
+        .write_sample("target-only", 5, &TagValue::Real(1.0), Quality::Good)
+        .unwrap();
+    source_journal
+        .write_transition(&alarm_transition("pressure-high", 10))
+        .unwrap();
+    target_journal
+        .write_transition(&alarm_transition("target-only", 5))
+        .unwrap();
+
+    let archive = openwebhmi_backup::export_project(
+        &source,
+        "demo",
+        BackupOptions {
+            historian_store: Some(source_historian),
+            alarm_journal: Some(source_journal),
+            ..BackupOptions::default()
+        },
+    )
+    .unwrap();
+    openwebhmi_backup::import_project(
+        &target,
+        &archive,
+        RestoreOptions {
+            mode: ImportMode::Replace,
+            historian_store: Some(target_historian.clone()),
+            alarm_journal: Some(target_journal.clone()),
+            ..RestoreOptions::default()
+        },
+    )
+    .unwrap();
+
+    assert!(
+        target_historian
+            .read("target-only", 0, 20, Aggregation::Raw, 10)
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        target_historian
+            .read("rockwell-1/value", 0, 20, Aggregation::Raw, 10)
+            .unwrap()
+            .len(),
+        1
+    );
+    assert!(target_journal.read_alarm("target-only").unwrap().is_empty());
+    assert_eq!(target_journal.read_alarm("pressure-high").unwrap().len(), 1);
 }
 
 #[test]
@@ -203,6 +362,17 @@ fn seed_project(store: &ProjectStore) {
             }),
         )
         .unwrap();
+}
+
+fn alarm_transition(alarm_id: &str, ts_ms: u64) -> AlarmTransition {
+    AlarmTransition {
+        alarm_id: alarm_id.into(),
+        ts_ms,
+        from_state: AlarmState::Clear,
+        to_state: AlarmState::Active,
+        who: Some("admin".into()),
+        note: None,
+    }
 }
 
 fn make_malicious_archive() -> Vec<u8> {
