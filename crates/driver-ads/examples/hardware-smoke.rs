@@ -1,7 +1,7 @@
 //! Hardware smoke test for `openwebhmi-driver-ads`.
 //!
 //! Connects to a real Beckhoff TwinCAT 3 runtime, browses symbols, reads four
-//! test variables (BOOL/INT/REAL/STRING), subscribes for live notifications,
+//! test variables (BOOL/INT/REAL/STRING), subscribes for native ADS notifications,
 //! writes to a REAL, and prints what it sees. Exercises the same `Driver` trait
 //! path the gateway uses.
 //!
@@ -23,7 +23,7 @@
 //!     --source explicit --source-net-id 192.168.10.98.1.1
 //! ```
 //!
-//! Set `RUST_LOG=ads=debug,openwebhmi_driver_ads=debug` for verbose logs.
+//! Set `RUST_LOG=ads=debug,openwebhmi_driver_ads=trace` for notification logs.
 
 use std::time::Duration;
 
@@ -229,9 +229,9 @@ async fn main() -> anyhow::Result<()> {
     }
     println!();
 
-    // Subscribe to bRunning + nCounter for N seconds
+    // Subscribe to bRunning + nCounter for N seconds via native ADS notifications.
     println!(
-        "=== Subscribe to bRunning + nCounter for {}s ===",
+        "=== Subscribe to bRunning + nCounter for {}s via native ADS notifications ===",
         args.subscribe_seconds
     );
     let addrs = vec![

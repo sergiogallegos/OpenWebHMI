@@ -8,19 +8,17 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AE | `crates/audit-log` — security event journal + query/subscribe wire protocol | codex | open | 2026-05-02 claude | [tasks/CODEX-AE-audit-log.md](tasks/CODEX-AE-audit-log.md) |
-| CODEX-AF | `crates/backup` — project export/import + gateway-level backup with historian and alarm journal | codex | open | 2026-05-02 claude | [tasks/CODEX-AF-backup-restore.md](tasks/CODEX-AF-backup-restore.md) |
-| CODEX-AH | Native ADS device notifications via TcAdsDll FFI — replace polling on Windows TwinCAT-router backend | codex | open | 2026-05-03 claude | [tasks/CODEX-AH-ads-native-notifications.md](tasks/CODEX-AH-ads-native-notifications.md) |
+| CODEX-AE | `crates/audit-log` — security event journal + query/subscribe wire protocol | codex | submitted | 2026-05-03 codex | [tasks/CODEX-AE-audit-log.md](tasks/CODEX-AE-audit-log.md) |
+| CODEX-AF | `crates/backup` — project export/import + gateway-level backup with historian and alarm journal | codex | submitted | 2026-05-03 codex | [tasks/CODEX-AF-backup-restore.md](tasks/CODEX-AF-backup-restore.md) |
 
 ### Phase 4 dependency graph
 
 ```
-CODEX-AE  (audit log backend)                ← unblocked — independent of AF/AH; pure Rust + SQLite
-CODEX-AF  (backup / restore)                 ← unblocked — independent of AE/AH; depends only on shipped project-store/historian/alarm-engine
-CODEX-AH  (ADS native notifications)         ← unblocked — AD closeout follow-up; Windows TcAdsDll callbacks via FFI
+CODEX-AE  (audit log backend)                ← submitted — Codex implementation in flight; review pending
+CODEX-AF  (backup / restore)                 ← submitted — Codex implementation in flight; review pending
 ```
 
-**Three open tasks: AE (audit log), AF (backup/restore), AH (ADS native notifications).** All independent. AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. AH closes the polling-vs-native-notifications gap left by AD's TwinCAT-router backend on Windows. After all three land plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
+**Two open tasks under review: AE (audit log) and AF (backup/restore).** Both submitted; reviews in flight. AH merged on the same push as a closeout for AD's polling-vs-native-notifications gap (ADS row in `docs/feature-matrix.md` is now hardware-validated without an asterisk). AE+AF audit-event integration is described in AF's brief as "if AE merged first, emit; otherwise leave TODO" so neither blocks the other. After both land plus the remaining v1 items (plugin SDK, performance baseline, pre-1.0 hardware-validation gate), Phase 4 closes. Component-library is at 25 (v1 target met via AC).
 
 ## Phase 3 — Core SCADA features
 
@@ -75,6 +73,7 @@ CODEX-AH  (ADS native notifications)         ← unblocked — AD closeout follo
 | CODEX-Z | `crates/driver-ads` — Beckhoff TwinCAT (ADS) client driver; implementation-merged but not production-validated (see CODEX-AD) | codex | `f34ebd6` | 4 |
 | CODEX-AG | Workspace toolchain modernization — pin Rust 1.95.0 + edition 2024 | codex | `9a96871` | 4 |
 | CODEX-AD | ADS validation hardening — TwinCAT-router FFI backend + hardware-validated against CX-23F092 | codex | `54ec808` | 4 |
+| CODEX-AH | Native ADS device notifications via TcAdsDll FFI — closes AD's polling regression | codex | _pending_ | 4 |
 
 ## Conventions
 

@@ -7,25 +7,25 @@ last-validated: 2026-05-03
 
 ## Summary
 
-`driver-ads` now has two real ADS backends: the pure Rust `ads = 0.4.4` ADS-over-TCP backend for plain routes, and a Windows TwinCAT-router backend that dynamically loads Beckhoff `TcAdsDll.dll` for XAE-created Secure ADS routes. Unit tests verify OpenWebHMI address parsing, AMS configuration, symbol mapping, primitive encode/decode, read/write routing, and subscription plumbing; the TwinCAT-router backend passed a live smoke against CX-23F092 on 2026-05-03.
+`driver-ads` now has two real ADS backends: the pure Rust `ads = 0.4.4` ADS-over-TCP backend for plain routes, and a Windows TwinCAT-router backend that dynamically loads Beckhoff `TcAdsDll.dll` for XAE-created Secure ADS routes. Unit tests verify OpenWebHMI address parsing, AMS configuration, symbol mapping, primitive encode/decode, read/write routing, and subscription plumbing; the TwinCAT-router backend passed live read/write/native-notification smoke against CX-23F092 on 2026-05-03.
 
 ## Current understanding
 
 1. OpenWebHMI ADS addresses use `<port>:<symbol>`, for example `851:MAIN.nCounter`. `crates/driver-ads/src/address.rs` preserves TwinCAT symbol case and rejects malformed ports or unsupported symbol characters.
 2. The plain-TCP backend uses the `ads` crate's production client APIs: `ads::Client::new`, `Client::device`, `ads::Handle::new`, `Handle::read`, `Handle::write`, `ads::symbol::get_symbol_info`, `Device::add_notification`, and `Device::delete_notification`. This is the real ADS-over-TCP path, not a custom test protocol.
-3. The Windows TwinCAT-router backend dynamically loads `TcAdsDll.dll` from the TwinCAT install or PATH, opens a local ADS port with `AdsPortOpenEx`, uploads symbols with `AdsSyncReadReqEx2`, and uses ADS handle read/write calls through `AdsSyncReadWriteReqEx2`, `AdsSyncReadReqEx2`, and `AdsSyncWriteReqEx`. Live updates currently use driver-owned polling over symbol index group/offset reads, not Beckhoff native notification callbacks.
+3. The Windows TwinCAT-router backend dynamically loads `TcAdsDll.dll` from the TwinCAT install or PATH, opens a local ADS port with `AdsPortOpenEx`, uploads symbols with `AdsSyncReadReqEx2`, uses ADS handle read/write calls through `AdsSyncReadWriteReqEx2`, `AdsSyncReadReqEx2`, and `AdsSyncWriteReqEx`, and subscribes with native `AdsSyncAddDeviceNotificationReqEx` callbacks cleaned up by `AdsSyncDelDeviceNotificationReqEx`.
 4. Configuration requires `host` and a six-octet `ams_net_id`. `backend` defaults to `auto`, which prefers the TwinCAT-router backend on Windows when `TcAdsDll.dll` loads and falls back to `ads_rs_tcp`; `twincat_router` and `ads_rs_tcp` are explicit choices. `tcp_port` defaults to Beckhoff ADS-over-TCP port `48898`; `ports` defaults to `[851]`, the first TwinCAT 3 PLC runtime port.
 5. The source AMS address can be `auto`, `request`, or an explicit `{ net_id, port }`. This is relevant to the `ads_rs_tcp` backend; the TwinCAT-router backend uses the local router's own port assignment.
 6. Symbol browsing caches per-port symbol tables from ADS upload metadata. Primitive BOOL, integer, REAL/LREAL, and STRING values map to OpenWebHMI `TagValue` values with little-endian encoding.
-7. The `ads_rs_tcp` backend subscriptions use ADS device notifications in `ServerOnChange` mode with the configured cycle time. The TwinCAT-router backend currently provides the same stream surface via polling reads at `poll_rate_ms`.
+7. Both ADS backends now use ADS device notifications for subscriptions. The TwinCAT-router backend passes a generated 32-bit registry ID through Beckhoff's `hUser` callback argument rather than packing a pointer, because Beckhoff documents `hUser` as a 32-bit value. Beckhoff's `ADSTRANSMODE` enum defines `ADSTRANS_SERVERONCHA` as `4`; `3` is `ADSTRANS_SERVERCYCLE`.
 8. Secure ADS is now tracked as a v1.0 decision. Beckhoff documents Secure ADS as router-to-router TLS; normal applications should use the local TwinCAT router. Source: [ads-tls-decision.md](ads-tls-decision.md).
 9. The ADS CI simulator is deferred unless it speaks real AMS/ADS frames. The `ads` crate has private test-server code but no public server API, so OpenWebHMI should not reintroduce a fake dialect. Source: [ads-sim-decision.md](ads-sim-decision.md).
 10. Verification status is deliberately split:
    - CI/unit verified: parser, config defaults, symbol type mapping, primitive value codecs, mocked read/write, mocked subscription update flow.
    - Compile verified: the real `ads` 0.4.4 client/symbol/notification APIs compile against the driver.
    - Hardware first-contact attempted: TCP connectivity and source NetId derivation were verified, but AMS round-trip was blocked by a TLS-required route.
-   - Hardware smoke verified through TwinCAT router: live symbol upload, browse, read, write, and update streaming against a Secure ADS route.
-   - Not yet real-hardware verified: reconnect recovery, handle leak behavior, and native `TcAdsDll` notification callback support.
+   - Hardware smoke verified through TwinCAT router: live symbol upload, browse, read, write, native notification streaming, and 50 notification subscribe/drop reconnect cycles against a Secure ADS route.
+   - Not yet real-hardware verified: reconnect recovery after router/runtime restart.
 
 ## Evidence
 
@@ -38,6 +38,9 @@ last-validated: 2026-05-03
 - `docs/agents/tasks/CODEX-Z-driver-ads.md` records the rejected JSON-line submission and the rework requirement to use the real `ads` crate API.
 - Beckhoff official ADS client source: <https://github.com/Beckhoff/ADS>.
 - Beckhoff Information System ADS documentation: <https://infosys.beckhoff.com/>.
+- Beckhoff `AdsSyncAddDeviceNotificationReqEx` documentation: <https://infosys.beckhoff.com/content/1033/tcadsdll2/12444760843.html>.
+- Beckhoff `AdsNotificationAttrib` documentation: <https://infosys.beckhoff.com/content/1033/tcadsdll2/12444776587.html>.
+- Beckhoff ADS C header reference for `ADSTRANSMODE`: <https://beckhoff.github.io/ADS/AdsDef_8h.html>.
 - Rust `ads` crate documentation: <https://docs.rs/ads/0.4.4/ads/>.
 - ADS TLS decision: [ads-tls-decision.md](ads-tls-decision.md).
 - ADS simulator decision: [ads-sim-decision.md](ads-sim-decision.md).
@@ -86,19 +89,18 @@ Runbook result table:
 | Read `MAIN.nCounter` | pass | Value read successfully and changed between samples. |
 | Read primitives | pass | BOOL, INT, REAL, and STRING symbols decoded into `TagValue`. |
 | Write `MAIN.fSetPoint` | pass | Write returned `Ok`; read-back returned `Real(75.0)`. |
-| Update stream | pass-with-limitation | Driver stream delivered changing values at `poll_rate_ms`; native `TcAdsDll` notification callback remains a follow-up. |
+| Update stream | pass | CODEX-AH hardware smoke produced `ADS native device notification update` trace output for `MAIN.bRunning` and `MAIN.nCounter`; 12 good-quality updates arrived over 3 seconds. |
 | Reconnect recovery | not-run | Needs repeated runtime stop/start or gateway reconnect pass. |
-| Handle leak check | not-applicable-to-current-backend | Current TwinCAT-router update stream does not allocate ADS notification handles; native callback implementation will need this test. |
+| Handle leak check | pass | `target\debug\examples\hardware-smoke.exe` completed 50 connect/subscribe/drop/disconnect cycles without ADS notification-handle exhaustion. |
 
 ## Open Questions
 
-1. Native `TcAdsDll` notification callbacks are not implemented. The 2026-05-03 TwinCAT-router backend validates the driver stream with polling reads, so an exact native notification proof still requires `AdsSyncAddDeviceNotificationReqEx` / `AdsSyncDelDeviceNotificationReqEx` support or a conscious v1 decision that polling is acceptable for the router backend.
-2. Reconnect recovery remains open. Resolve by stopping/restarting the TwinCAT runtime or reconnecting the gateway repeatedly against the same Secure ADS route and verifying quality recovery.
-3. Route-table discovery is not implemented. Explicit `host` plus `ams_net_id` is the supported v1 path until Windows registry and Linux `StaticRoutes.xml` parsing are designed.
-4. **ADS sumup batch read/write is not wired into `driver-ads` yet.** The current driver issues sequential `Handle::read` and `Handle::write` calls per tag on the `ads_rs_tcp` backend and sequential read/write calls on the TwinCAT-router backend. For an HMI polling 50 ADS tags at 100 ms, that can become 50 request/reply round trips per poll cycle. The `ads` crate exposes sumup-capable `Device::read_multi`, `write_multi`, `write_read_multi`, `add_notification_multi`, and `delete_notification_multi` APIs, and Beckhoff documents ADS Sum Commands as the protocol-level batching path. Decision criteria for v1.1: if a real deployment shows latency degradation above roughly 30 ADS tags, prioritize sumup; otherwise defer to v2.
-5. Structured TwinCAT types are browsed as symbols but are not decoded as single OpenWebHMI structured tag values. Primitive child symbols remain the v1 path.
-6. A deterministic CI ADS server harness is still open. The `ads` 0.4.4 crate provides a client-oriented public surface, so the previous simulator-stub evidence was removed rather than treated as protocol validation. Source: [ads-sim-decision.md](ads-sim-decision.md).
-7. **`birkenfeld/ads-rs` upstream maintenance status is a v1.0 risk.** Snapshot from 2026-05-03: latest upstream `master` commit/push was 2026-03-05; the GitHub API reported 0 open non-PR issues and 1 open PR; public package mirrors still list 0.4.4 as the latest published crates.io release from 2024-10-03 while upstream README advertises `ads = "0.5"`. Mitigation: keep OpenWebHMI's wrapper boundary in `crates/driver-ads/src/` narrow enough that the transport dependency is replaceable by a fork or a thin AMS/ADS layer.
+1. Reconnect recovery remains open. Resolve by stopping/restarting the TwinCAT runtime or reconnecting the gateway repeatedly against the same Secure ADS route and verifying quality recovery. CODEX-AH explicitly does not rebuild notification handles after router restart.
+2. Route-table discovery is not implemented. Explicit `host` plus `ams_net_id` is the supported v1 path until Windows registry and Linux `StaticRoutes.xml` parsing are designed.
+3. **ADS sumup batch read/write is not wired into `driver-ads` yet.** The current driver issues sequential `Handle::read` and `Handle::write` calls per tag on the `ads_rs_tcp` backend and sequential read/write calls on the TwinCAT-router backend. For an HMI polling 50 ADS tags at 100 ms, that can become 50 request/reply round trips per poll cycle. The `ads` crate exposes sumup-capable `Device::read_multi`, `write_multi`, `write_read_multi`, `add_notification_multi`, and `delete_notification_multi` APIs, and Beckhoff documents ADS Sum Commands as the protocol-level batching path. Decision criteria for v1.1: if a real deployment shows latency degradation above roughly 30 ADS tags, prioritize sumup; otherwise defer to v2.
+4. Structured TwinCAT types are browsed as symbols but are not decoded as single OpenWebHMI structured tag values. Primitive child symbols remain the v1 path.
+5. A deterministic CI ADS server harness is still open. The `ads` 0.4.4 crate provides a client-oriented public surface, so the previous simulator-stub evidence was removed rather than treated as protocol validation. Source: [ads-sim-decision.md](ads-sim-decision.md).
+6. **`birkenfeld/ads-rs` upstream maintenance status is a v1.0 risk.** Snapshot from 2026-05-03: latest upstream `master` commit/push was 2026-03-05; the GitHub API reported 0 open non-PR issues and 1 open PR; public package mirrors still list 0.4.4 as the latest published crates.io release from 2024-10-03 while upstream README advertises `ads = "0.5"`. Mitigation: keep OpenWebHMI's wrapper boundary in `crates/driver-ads/src/` narrow enough that the transport dependency is replaceable by a fork or a thin AMS/ADS layer.
 
 ## Related Pages
 

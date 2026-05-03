@@ -1,14 +1,14 @@
 //! Windows TwinCAT-router ADS backend using Beckhoff `TcAdsDll.dll`.
 
+use std::collections::HashMap;
 use std::ffi::{CString, OsStr, c_char, c_void};
 use std::os::windows::ffi::OsStrExt;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex as StdMutex};
-use std::thread::JoinHandle;
-use std::time::Duration;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, LazyLock, Mutex as StdMutex};
 
 use async_trait::async_trait;
-use openwebhmi_driver_api::{DriverError, DriverResult};
+use openwebhmi_driver_api::{DriverError, DriverResult, DriverUpdate};
 use tokio::sync::mpsc;
 
 use crate::connection::{AdsConfig, parse_ams_net_id};
@@ -55,6 +55,42 @@ type AdsSyncReadWriteReqEx2 = unsafe extern "system" fn(
     *const c_void,
     *mut u32,
 ) -> i32;
+type AdsNotificationCallback =
+    unsafe extern "system" fn(*const AmsAddr, *const AdsNotificationHeader, u32);
+type AdsSyncAddDeviceNotificationReqEx = unsafe extern "system" fn(
+    i32,
+    *const AmsAddr,
+    u32,
+    u32,
+    *const AdsNotificationAttrib,
+    AdsNotificationCallback,
+    u32,
+    *mut u32,
+) -> i32;
+type AdsSyncDelDeviceNotificationReqEx = unsafe extern "system" fn(i32, *const AmsAddr, u32) -> i32;
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+struct AdsNotificationAttrib {
+    cb_length: u32,
+    trans_mode: u32,
+    max_delay: u32,
+    cycle_time: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+struct AdsNotificationHeader {
+    notification_handle: u32,
+    timestamp: i64,
+    sample_size: u32,
+}
+
+const ADS_NOTIFICATION_TRANS_SERVER_ON_CHANGE: u32 = 4;
+
+static NOTIFICATION_REGISTRY: LazyLock<StdMutex<HashMap<u32, Arc<NotificationContext>>>> =
+    LazyLock::new(|| StdMutex::new(HashMap::new()));
+static NOTIFICATION_ID_COUNTER: AtomicU32 = AtomicU32::new(1);
 
 #[link(name = "kernel32")]
 unsafe extern "system" {
@@ -81,6 +117,8 @@ struct TcAdsApi {
     read: AdsSyncReadReqEx2,
     write: AdsSyncWriteReqEx,
     read_write: AdsSyncReadWriteReqEx2,
+    add_notification: AdsSyncAddDeviceNotificationReqEx,
+    del_notification: AdsSyncDelDeviceNotificationReqEx,
 }
 
 impl TcAdsApi {
@@ -110,6 +148,14 @@ impl TcAdsApi {
             let write = load_symbol::<AdsSyncWriteReqEx>(&library, "AdsSyncWriteReqEx")?;
             let read_write =
                 load_symbol::<AdsSyncReadWriteReqEx2>(&library, "AdsSyncReadWriteReqEx2")?;
+            let add_notification = load_symbol::<AdsSyncAddDeviceNotificationReqEx>(
+                &library,
+                "AdsSyncAddDeviceNotificationReqEx",
+            )?;
+            let del_notification = load_symbol::<AdsSyncDelDeviceNotificationReqEx>(
+                &library,
+                "AdsSyncDelDeviceNotificationReqEx",
+            )?;
 
             Ok(Self {
                 _library: library,
@@ -118,6 +164,8 @@ impl TcAdsApi {
                 read,
                 write,
                 read_write,
+                add_notification,
+                del_notification,
             })
         }
     }
@@ -252,61 +300,201 @@ impl AdsClientLike for TcAdsClient {
         let call_lock = self.call_lock.clone();
         let ads_port = self.port;
         let target_net_id = self.target_net_id;
-        let stop = Arc::new(AtomicBool::new(false));
-        let worker_stop = stop.clone();
-        let join = std::thread::spawn(move || {
-            while !worker_stop.load(Ordering::Relaxed) {
-                for entry in &entries {
-                    let target = AmsAddr {
-                        net_id: AmsNetId { b: target_net_id },
-                        port: entry.port,
-                    };
-                    let result = call_lock
-                        .lock()
-                        .map_err(|_| DriverError::Other(anyhow::anyhow!("TcAdsDll mutex poisoned")))
-                        .and_then(|_guard| {
-                            read_symbol_indexed(
-                                &api,
+        spawn_blocking_driver(move || {
+            let mut registrations: Vec<NotificationRegistration> =
+                Vec::with_capacity(entries.len());
+            for entry in entries {
+                let id = next_notification_id();
+                let target = AmsAddr {
+                    net_id: AmsNetId { b: target_net_id },
+                    port: entry.port,
+                };
+                let context = Arc::new(NotificationContext {
+                    entry,
+                    updates: updates.clone(),
+                    notification_handle: AtomicU32::new(0),
+                });
+                insert_notification_context(id, context.clone())?;
+
+                let attributes = notification_attrib(context.entry.size, poll_rate_ms);
+                let mut notification_handle = 0_u32;
+                let result = call_lock
+                    .lock()
+                    .map_err(|_| DriverError::Other(anyhow::anyhow!("TcAdsDll mutex poisoned")))
+                    .and_then(|_guard| {
+                        ads_result(unsafe {
+                            (api.add_notification)(
                                 ads_port,
                                 &target,
-                                entry.index_group,
-                                entry.index_offset,
-                                entry.size,
+                                context.entry.index_group,
+                                context.entry.index_offset,
+                                &attributes,
+                                ads_notification_trampoline,
+                                id,
+                                &mut notification_handle,
                             )
                         })
-                        .and_then(|bytes| {
-                            crate::symbols::decode_ads_value(entry.data_type, &bytes)
-                        });
-                    let update = update_from_result(entry.raw.clone(), result, now_ms());
-                    if updates.send(update).is_err() {
-                        return;
-                    }
-                }
-                std::thread::sleep(Duration::from_millis(poll_rate_ms));
-            }
-        });
+                    });
 
-        Ok(SubscriptionGuard::backend(PollGuard {
-            stop,
-            join: StdMutex::new(Some(join)),
-        }))
+                if let Err(err) = result {
+                    remove_notification_context(id);
+                    for registration in registrations {
+                        remove_notification_context(registration.id);
+                        registration.delete(&api, ads_port);
+                    }
+                    return Err(err);
+                }
+
+                context
+                    .notification_handle
+                    .store(notification_handle, Ordering::Release);
+                registrations.push(NotificationRegistration {
+                    id,
+                    target,
+                    notification_handle,
+                });
+            }
+
+            Ok(SubscriptionGuard::backend(NotificationGuard {
+                api,
+                port: ads_port,
+                registrations,
+            }))
+        })
+        .await
     }
 }
 
-struct PollGuard {
-    stop: Arc<AtomicBool>,
-    join: StdMutex<Option<JoinHandle<()>>>,
+struct NotificationContext {
+    entry: SubscriptionEntry,
+    updates: mpsc::UnboundedSender<DriverUpdate>,
+    notification_handle: AtomicU32,
 }
 
-impl Drop for PollGuard {
-    fn drop(&mut self) {
-        self.stop.store(true, Ordering::Relaxed);
-        if let Ok(mut join) = self.join.lock() {
-            if let Some(join) = join.take() {
-                let _ = join.join();
-            }
+#[derive(Clone, Copy)]
+struct NotificationRegistration {
+    id: u32,
+    target: AmsAddr,
+    notification_handle: u32,
+}
+
+impl NotificationRegistration {
+    fn delete(self, api: &TcAdsApi, port: i32) {
+        let handle = self.notification_handle;
+        if handle == 0 {
+            return;
+        }
+        let err = unsafe { (api.del_notification)(port, &self.target, handle) };
+        if err != 0 {
+            tracing::warn!(
+                "TcAdsDll failed to delete ADS notification {} for registry id {}: {}",
+                handle,
+                self.id,
+                err
+            );
         }
     }
+}
+
+struct NotificationGuard {
+    api: Arc<TcAdsApi>,
+    port: i32,
+    registrations: Vec<NotificationRegistration>,
+}
+
+impl Drop for NotificationGuard {
+    fn drop(&mut self) {
+        for registration in std::mem::take(&mut self.registrations) {
+            remove_notification_context(registration.id);
+            registration.delete(&self.api, self.port);
+        }
+    }
+}
+
+fn next_notification_id() -> u32 {
+    let id = NOTIFICATION_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+    if id == 0 {
+        NOTIFICATION_ID_COUNTER.fetch_add(1, Ordering::Relaxed)
+    } else {
+        id
+    }
+}
+
+fn insert_notification_context(id: u32, context: Arc<NotificationContext>) -> DriverResult<()> {
+    let mut registry = NOTIFICATION_REGISTRY
+        .lock()
+        .map_err(|_| DriverError::Other(anyhow::anyhow!("ADS notification registry poisoned")))?;
+    registry.insert(id, context);
+    Ok(())
+}
+
+fn lookup_notification_context(id: u32) -> Option<Arc<NotificationContext>> {
+    NOTIFICATION_REGISTRY
+        .lock()
+        .ok()
+        .and_then(|registry| registry.get(&id).cloned())
+}
+
+fn remove_notification_context(id: u32) -> Option<Arc<NotificationContext>> {
+    NOTIFICATION_REGISTRY
+        .lock()
+        .ok()
+        .and_then(|mut registry| registry.remove(&id))
+}
+
+fn notification_attrib(size: usize, poll_rate_ms: u64) -> AdsNotificationAttrib {
+    AdsNotificationAttrib {
+        cb_length: size as u32,
+        trans_mode: ADS_NOTIFICATION_TRANS_SERVER_ON_CHANGE,
+        max_delay: 0,
+        cycle_time: poll_rate_ms.saturating_mul(10_000).min(u32::MAX as u64) as u32,
+    }
+}
+
+unsafe extern "system" fn ads_notification_trampoline(
+    _addr: *const AmsAddr,
+    notification: *const AdsNotificationHeader,
+    user: u32,
+) {
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        dispatch_notification_for_user(user, notification)
+    }));
+}
+
+unsafe fn dispatch_notification_for_user(user: u32, notification: *const AdsNotificationHeader) {
+    #[cfg(test)]
+    if FORCE_NOTIFICATION_DISPATCH_PANIC.load(Ordering::SeqCst) {
+        panic!("forced notification dispatch panic");
+    }
+
+    let Some(context) = lookup_notification_context(user) else {
+        return;
+    };
+    if notification.is_null() {
+        return;
+    }
+
+    let header = unsafe { std::ptr::read_unaligned(notification) };
+    let payload = unsafe {
+        std::slice::from_raw_parts(
+            notification
+                .cast::<u8>()
+                .add(std::mem::size_of::<AdsNotificationHeader>()),
+            header.sample_size as usize,
+        )
+    };
+    dispatch_notification(&context, payload);
+}
+
+fn dispatch_notification(context: &NotificationContext, payload: &[u8]) {
+    let result = crate::symbols::decode_ads_value(context.entry.data_type, payload);
+    let update = update_from_result(context.entry.raw.clone(), result, now_ms());
+    tracing::trace!(
+        address = %update.address.raw,
+        quality = ?update.quality,
+        "ADS native device notification update"
+    );
+    let _ = context.updates.send(update);
 }
 
 fn read_symbol_table(api: &TcAdsApi, port: i32, target: &AmsAddr) -> DriverResult<SymbolTable> {
@@ -558,4 +746,109 @@ fn string_field(bytes: &[u8], start: usize, len: usize) -> DriverResult<String> 
         code: "ads-symbol-upload".to_string(),
         message: err.to_string(),
     })
+}
+
+#[cfg(test)]
+static FORCE_NOTIFICATION_DISPATCH_PANIC: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+#[cfg(test)]
+mod tests {
+    use std::mem::{MaybeUninit, offset_of};
+    use std::sync::atomic::Ordering;
+
+    use openwebhmi_driver_api::TagAddress;
+    use openwebhmi_protocol::{Quality, TagValue};
+
+    use super::*;
+
+    #[test]
+    fn notification_registry_insert_lookup_remove() {
+        let (context, _rx) = test_notification_context(AdsDataType::Real);
+        let id = next_notification_id();
+
+        insert_notification_context(id, context.clone()).unwrap();
+        let found = lookup_notification_context(id).unwrap();
+        assert!(Arc::ptr_eq(&context, &found));
+
+        let removed = remove_notification_context(id).unwrap();
+        assert!(Arc::ptr_eq(&context, &removed));
+        assert!(lookup_notification_context(id).is_none());
+    }
+
+    #[test]
+    fn notification_dispatch_decodes_payload() {
+        let (context, mut rx) = test_notification_context(AdsDataType::Real);
+
+        dispatch_notification(&context, &12.5_f32.to_le_bytes());
+
+        let update = rx.try_recv().unwrap();
+        assert_eq!(update.address.raw, "851:MAIN.Speed");
+        assert_eq!(update.value, TagValue::Real(12.5));
+        assert_eq!(update.quality, Quality::Good);
+    }
+
+    #[test]
+    fn notification_dispatch_swallows_panic() {
+        let (context, _rx) = test_notification_context(AdsDataType::Real);
+        let id = next_notification_id();
+        insert_notification_context(id, context).unwrap();
+        FORCE_NOTIFICATION_DISPATCH_PANIC.store(true, Ordering::SeqCst);
+
+        unsafe {
+            ads_notification_trampoline(std::ptr::null(), std::ptr::null(), id);
+        }
+
+        FORCE_NOTIFICATION_DISPATCH_PANIC.store(false, Ordering::SeqCst);
+        remove_notification_context(id);
+    }
+
+    #[test]
+    fn notification_dispatch_stale_id() {
+        let id = next_notification_id();
+        remove_notification_context(id);
+
+        unsafe {
+            ads_notification_trampoline(std::ptr::null(), std::ptr::null(), id);
+        }
+    }
+
+    #[test]
+    fn notification_attrib_layout() {
+        assert_eq!(std::mem::size_of::<AdsNotificationAttrib>(), 16);
+        assert_eq!(offset_of!(AdsNotificationAttrib, cb_length), 0);
+        assert_eq!(offset_of!(AdsNotificationAttrib, trans_mode), 4);
+        assert_eq!(offset_of!(AdsNotificationAttrib, max_delay), 8);
+        assert_eq!(offset_of!(AdsNotificationAttrib, cycle_time), 12);
+
+        assert_eq!(offset_of!(AdsNotificationHeader, notification_handle), 0);
+        assert_eq!(offset_of!(AdsNotificationHeader, timestamp), 8);
+        assert_eq!(offset_of!(AdsNotificationHeader, sample_size), 16);
+        assert_eq!(std::mem::size_of::<AdsNotificationHeader>(), 24);
+        let _ = MaybeUninit::<AdsNotificationHeader>::uninit();
+    }
+
+    fn test_notification_context(
+        data_type: AdsDataType,
+    ) -> (
+        Arc<NotificationContext>,
+        mpsc::UnboundedReceiver<DriverUpdate>,
+    ) {
+        let (tx, rx) = mpsc::unbounded_channel();
+        (
+            Arc::new(NotificationContext {
+                entry: SubscriptionEntry {
+                    raw: TagAddress::new("851:MAIN.Speed"),
+                    port: 851,
+                    index_group: 0x4020,
+                    index_offset: 0,
+                    size: 4,
+                    data_type,
+                },
+                updates: tx,
+                notification_handle: AtomicU32::new(0),
+            }),
+            rx,
+        )
+    }
 }

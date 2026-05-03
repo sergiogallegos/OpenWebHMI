@@ -3,7 +3,7 @@ id: CODEX-AH
 title: Native ADS device notifications via TcAdsDll FFI — replace polling on Windows TwinCAT-router backend
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-03
 last-update: 2026-05-03 claude
 ---
@@ -192,10 +192,52 @@ Match the `ads_rs_tcp` backend's `Device::add_notification` defaults:
 
 <!-- Codex appends status transitions and notes here. -->
 
+- 2026-05-03 codex: Submitted. Wired `AdsSyncAddDeviceNotificationReqEx` and `AdsSyncDelDeviceNotificationReqEx` in the Windows `TcAdsDll.dll` backend, replaced `subscribe_symbols` polling with native callback registration, and added `NotificationGuard` cleanup. Callback dispatch uses a global `Mutex<HashMap<u32, Arc<NotificationContext>>>` keyed by a generated `u32` passed as `hUser`; no pointer is packed into `hUser`.
+- 2026-05-03 codex: Added FFI-safe trampoline with `catch_unwind`, sync `UnboundedSender::send()` dispatch from the DLL thread, stale-ID no-op handling, and unit coverage for registry round-trip, dispatch decode, panic swallow, stale ID, and struct layout. Beckhoff docs/source identify `ADSTRANS_SERVERONCHA` as `4` and `ADSTRANS_SERVERCYCLE` as `3`, so the implementation uses `4` for native on-change notifications.
+- 2026-05-03 codex: Validation passed: `cargo test -p openwebhmi-driver-ads --all-features --locked` three consecutive runs; `cargo clippy -p openwebhmi-driver-ads --all-targets --all-features --locked -- -D warnings`; workspace `cargo test --workspace --all-features --locked`, workspace clippy, and fmt check three consecutive runs. Live TwinCAT smoke against `192.168.10.100.1.1` passed native notification trace output and 50 connect/subscribe/drop cycles completed without notification-handle exhaustion.
+
 ## Claude review
 
-<!-- Claude reviews after submission. -->
+### Strong points
+
+- ✅ **Race-free dispatch design implemented exactly as the brief specified.** Per-subscription context inserted into the global `Mutex<HashMap<u32, Arc<NotificationContext>>>` registry **before** calling `AdsSyncAddDeviceNotificationReqEx` (`twincat_router.rs:317`), keyed by an `AtomicU32` ID passed as `hUser`. Callback looks up by `hUser`, not by the returned `hNotification` — eliminates the registration-vs-callback race the brief flagged as the v1.0 design error to avoid.
+- ✅ **Panic safety at the FFI boundary.** Trampoline (`twincat_router.rs:454-462`) wraps the entire body in `catch_unwind(AssertUnwindSafe(|| unsafe { dispatch_notification_for_user(...) }))`. Uses `std::ptr::read_unaligned` for the `AdsNotificationHeader` field reads — defensive against ABI-quirky layouts on the DLL-owned memory. Payload extracted via pointer arithmetic + `cbSampleSize` (no flexible-array-member struct — exactly what the brief asked for).
+- ✅ **All-or-nothing rollback on partial subscription failure.** `subscribe_symbols` (`twincat_router.rs:339-346`): if any single `AdsSyncAddDeviceNotificationReqEx` call fails, removes the failing context **and** every prior successful registration, calling `del_notification` on each. No half-subscribed state leaks back to the caller.
+- ✅ **Drop cleanup logs but doesn't panic.** `NotificationRegistration::delete` (`twincat_router.rs:382-396`) calls `tracing::warn!` on DLL error and continues — partial cleanup is better than a panicking destructor. Exactly the pattern the brief required.
+- ✅ **`std::sync::LazyLock` used over `once_cell` / `lazy_static`.** Available since Rust 1.80, fully supported by the AG-pinned 1.95.0 toolchain. Idiomatically modern; no unnecessary deps.
+- ✅ **Five tests, all passing.** Brief requested four (registry round-trip, dispatch decode, panic swallow, stale ID); Codex added a fifth — `notification_attrib_layout` — that asserts `size_of` and `offset_of` against Beckhoff's expected struct ABI byte-by-byte. That's defense against future struct edits silently breaking the wire layout. **Bonus value beyond the brief.**
+- ✅ **Hardware-validated.** Codex's log records: live CX notification trace passed against `192.168.10.100.1.1`, and the runbook-step-9 closeout (50 connect/subscribe/drop cycles) completed without notification-handle exhaustion. `wiki/drivers/ads-integration.md` "Hardware validation log" updates the runbook table: `Update stream` flips from `pass-with-limitation` to `pass`; `Handle leak check` flips from `not-applicable-to-current-backend` to `pass` with concrete cycle count.
+- ✅ **Polling fallback fully removed.** No `Duration::from_millis(poll_rate_ms)` sleep loop, no `std::thread::spawn` polling thread. `subscribe_symbols` is exclusively native-callback-based on the Windows path.
+- ✅ **Documentation updated.** `apps/designer/README.md` runbook step 7's success criterion now requires the literal `ADS native device notification update` trace line under `RUST_LOG=openwebhmi_driver_ads=trace`. Step 5 simplified (no more "configured `poll_rate_ms`" hand-wave). Wiki Open Questions list trimmed: items #1 (notification callbacks) and #6 (handle-leak check) removed; reconnect recovery (#1 in the new numbering) remains explicitly tracked as out-of-scope-for-AH.
+
+### Findings
+
+- 🟡 **Brief error owned: `nTransMode` value was wrong in the brief.** I wrote `nTransMode = 3 (ServerOnChange — same as ads-rs's TransmissionMode::ServerOnChange)`. Codex caught the mismatch against Beckhoff's official `AdsDef.h` and used `4` (`ADSTRANS_SERVERONCHA`); `3` is `ADSTRANS_SERVERCYCLE` (server-cyclic, not on-change). Codex's value is correct; the implementation matches the underlying ads-rs path's intent. **My brief was wrong, Codex caught it.** That's the second time Codex has done better than the brief asked (first: the entire fourth-option TLS solution in CODEX-AD). Recorded for future brief authors: **always double-check Beckhoff constant values against `AdsDef.h`, not against external Rust crate enum names**, because the Rust-side enum-name mapping isn't always 1:1 with the C constant integer.
+- 🟡 **Notification ID generator's wrap-around safety is approximate.** `next_notification_id` (`twincat_router.rs:414-421`) skips the value `0` only on the immediate wrap; if multiple wraps happen between two long-lived subscriptions the IDs could theoretically collide. In practice this requires 4 billion subscribe/unsubscribe cycles between two subscriptions that both stay alive — not a realistic v1.0 scenario, but worth a v1.1 note if the audit log ever grows persistent subscription pools. **Acceptable for v1.0.**
+- 🟡 **Registry is process-global, shared across multiple `TcAdsClient` instances.** Atomically-generated unique IDs make this safe, but it means a future "reconnect by recreating the client" pattern needs to be careful about ID hygiene. Trust the atomic counter; no defect today.
+- 🟡 **`cycle_time` saturates at `u32::MAX` 100-ns ticks (~7 minutes).** `notification_attrib` (`twincat_router.rs:445-452`) uses `saturating_mul(10_000).min(u32::MAX as u64) as u32` — defensive choice for an external-facing config knob. If a user sets `poll_rate_ms` to a truly huge value, the effective cycle clamps; the alternative would be returning `Err(InvalidConfig)`. Acceptable.
+
+### Acceptance-criteria tally
+
+- [x] Native `AdsSyncAddDeviceNotificationReqEx` / `AdsSyncDelDeviceNotificationReqEx` wired in `twincat_router.rs`.
+- [x] Polling fallback removed; subscription updates flow exclusively through native callbacks on the Windows backend.
+- [x] `NotificationContext` registry uses `hUser` (not `hNotification`) as the lookup key, eliminating the registration-callback race.
+- [x] Trampoline wraps body in `std::panic::catch_unwind`.
+- [x] All four new unit tests pass; existing tests still pass (18 total: 13 prior + 4 brief-required + 1 bonus layout test).
+- [x] Wiki + designer README updated; runbook step 7 success criterion now requires native notification (not polling).
+- [x] **Maintainer hardware smoke** — runbook steps 7 + 9 both `pass` per `wiki/drivers/ads-integration.md` "Hardware validation log".
+
+### Independent verification
+
+- `cargo test -p openwebhmi-driver-ads --all-features --locked` — ✅ **18/18 pass** (was 13 pre-AH; 5 new tests added).
+- `cargo clippy -p openwebhmi-driver-ads --all-targets --all-features --locked -- -D warnings` — ✅ clean.
+- Read `crates/driver-ads/src/twincat_router.rs` end-to-end: FFI signatures match Beckhoff's documented surface, registration ordering is race-free, callback is panic-safe, drop cleanup is non-panicking, payload extraction uses correct pointer arithmetic + `cbSampleSize`.
+- `notification_attrib_layout` test asserts `AdsNotificationAttrib` is 16 bytes with offsets {0, 4, 8, 12} and `AdsNotificationHeader` is 24 bytes with offsets {0, 8, 16} — wire ABI verified.
 
 ## Verdict
 
-<!-- Final disposition. -->
+**Merged.** Closes the polling-vs-native-notifications gap left by AD on the Windows TwinCAT-router backend. Native callbacks via FFI, race-free dispatch via `hUser`-keyed registry, panic-safe trampoline, all-or-nothing rollback on partial subscribe failure, non-panicking drop cleanup. Five tests added (one bonus over the brief) — all 18 driver-ads tests pass. Hardware closeout gate landed: native notifications observed in trace logs against CX-23F092, and 50 reconnect cycles completed without notification-handle exhaustion.
+
+**Owned brief error: my AH brief had `nTransMode = 3` for ServerOnChange.** Beckhoff's `AdsDef.h` defines `ADSTRANS_SERVERONCHA = 4` (`3` is `ADSTRANS_SERVERCYCLE`). Codex caught and corrected it. The implementation is right; my brief was wrong. This is the second submission where Codex has done better than the brief asked — first the fourth-option TLS solution in AD, now the trans-mode constant in AH. Pattern worth noting: Codex reads primary sources (Beckhoff `AdsDef.h`, the InfoSys docs) and trusts those over brief assertions when they conflict. That's the right reading order.
+
+ADS row in `docs/feature-matrix.md` already flipped to "🟢 v1 (Phase 4, hardware-validated)" with AD's merge — AH closes the asterisk. The Open Questions list in `wiki/drivers/ads-integration.md` is down to genuine v1.1+ items (reconnect recovery, sumup batching, route-table discovery, structured-type decoding, CI sim harness, ads-rs upstream maintenance). v1.0 ADS surface is now complete pending only the pre-1.0 24h soak gate.
