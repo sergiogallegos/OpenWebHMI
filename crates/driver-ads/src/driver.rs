@@ -340,6 +340,7 @@ pub(crate) struct SubscriptionGuard {
 }
 
 impl SubscriptionGuard {
+    #[allow(dead_code)]
     pub(crate) fn backend(guard: impl Send + Sync + 'static) -> Self {
         Self {
             client: None,

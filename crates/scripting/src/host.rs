@@ -6,9 +6,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use openwebhmi_project_store::ScriptConfig;
-use openwebhmi_tag_engine::TagStore;
+use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use rand::Rng;
 use tokio::sync::{broadcast, mpsc, oneshot};
+use tokio_stream::wrappers::BroadcastStream;
+use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
+use tokio_stream::{StreamExt, StreamMap};
 use tracing::{info, warn};
 
 use crate::TagWriteSink;
@@ -173,6 +176,11 @@ impl ScriptHostHandle {
             })
             .await?;
         rx.await?
+    }
+
+    /// Ask the script host to stop all worker supervisors.
+    pub async fn shutdown(&self) {
+        let _ = self.control.send(ControlMessage::Shutdown).await;
     }
 }
 
@@ -341,11 +349,16 @@ async fn run_ready_worker(
         runtime.project_id.to_string(),
         runtime.events.clone(),
     )?;
-    let mut receivers = runtime
+    let mut snapshots = runtime
         .tag_paths
         .iter()
-        .map(|path| (path.clone(), runtime.store.subscribe(path)))
-        .collect::<Vec<_>>();
+        .map(|path| {
+            (
+                path.clone(),
+                BroadcastStream::new(runtime.store.subscribe(path)),
+            )
+        })
+        .collect::<StreamMap<String, BroadcastStream<TagSnapshot>>>();
 
     loop {
         tokio::select! {
@@ -367,42 +380,36 @@ async fn run_ready_worker(
                 let status = status?;
                 return Err(anyhow::anyhow!("worker exited with {status}"));
             }
-            result = recv_any(&mut receivers) => {
-                let snapshot = result?;
-                if let Err(err) = worker.invoke_tag_change(snapshot, runtime.timeout).await {
-                    warn!(script_id = %runtime.script_id, error = %err, "script handler failed");
-                    let _ = runtime.events.send(ScriptEvent::Error {
-                        project_id: runtime.project_id.to_string(),
-                        script_id: runtime.script_id.to_string(),
-                        message: err.to_string(),
-                    });
-                    let _ = worker.kill().await;
-                    return Err(err);
+            Some((path, item)) = snapshots.next(), if !snapshots.is_empty() => {
+                match item {
+                    Ok(snapshot) => {
+                        if let Err(err) = worker.invoke_tag_change(snapshot, runtime.timeout).await {
+                            warn!(script_id = %runtime.script_id, error = %err, "script handler failed");
+                            let _ = runtime.events.send(ScriptEvent::Error {
+                                project_id: runtime.project_id.to_string(),
+                                script_id: runtime.script_id.to_string(),
+                                message: err.to_string(),
+                            });
+                            let _ = worker.kill().await;
+                            return Err(err);
+                        }
+                    }
+                    Err(BroadcastStreamRecvError::Lagged(skipped)) => {
+                        warn_fan_in_lag(runtime.script_id, &path, skipped);
+                    }
                 }
             }
         }
     }
 }
 
-async fn recv_any(
-    receivers: &mut [(
-        String,
-        tokio::sync::broadcast::Receiver<openwebhmi_tag_engine::TagSnapshot>,
-    )],
-) -> anyhow::Result<openwebhmi_tag_engine::TagSnapshot> {
-    loop {
-        for (_, rx) in receivers.iter_mut() {
-            match rx.try_recv() {
-                Ok(snapshot) => return Ok(snapshot),
-                Err(tokio::sync::broadcast::error::TryRecvError::Empty) => {}
-                Err(tokio::sync::broadcast::error::TryRecvError::Lagged(_)) => {}
-                Err(tokio::sync::broadcast::error::TryRecvError::Closed) => {
-                    anyhow::bail!("tag subscription closed")
-                }
-            }
-        }
-        tokio::time::sleep(Duration::from_millis(10)).await;
-    }
+fn warn_fan_in_lag(script_id: &str, path: &str, skipped: u64) {
+    warn!(
+        script_id = %script_id,
+        %path,
+        skipped,
+        "script tag fan-in lagged"
+    );
 }
 
 fn jittered(duration: Duration) -> Duration {
@@ -413,4 +420,64 @@ fn jittered(duration: Duration) -> Duration {
     let min = millis.saturating_mul(75) / 100;
     let max = millis.saturating_mul(125) / 100;
     Duration::from_millis(rand::thread_rng().gen_range(min..=max))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::{self, Write};
+    use std::sync::{Arc, Mutex};
+
+    use tracing_subscriber::fmt::MakeWriter;
+
+    use super::warn_fan_in_lag;
+
+    #[derive(Clone, Default)]
+    struct CapturedLogs {
+        bytes: Arc<Mutex<Vec<u8>>>,
+    }
+
+    struct CapturedWriter {
+        bytes: Arc<Mutex<Vec<u8>>>,
+    }
+
+    impl<'a> MakeWriter<'a> for CapturedLogs {
+        type Writer = CapturedWriter;
+
+        fn make_writer(&'a self) -> Self::Writer {
+            CapturedWriter {
+                bytes: self.bytes.clone(),
+            }
+        }
+    }
+
+    impl Write for CapturedWriter {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.bytes.lock().unwrap().extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn fan_in_lag_is_logged_with_script_and_path() {
+        let logs = CapturedLogs::default();
+        let subscriber = tracing_subscriber::fmt()
+            .with_writer(logs.clone())
+            .with_max_level(tracing::Level::WARN)
+            .without_time()
+            .finish();
+
+        tracing::subscriber::with_default(subscriber, || {
+            warn_fan_in_lag("script-a", "tag.fast", 17);
+        });
+
+        let output = String::from_utf8(logs.bytes.lock().unwrap().clone()).unwrap();
+        assert!(output.contains("script tag fan-in lagged"));
+        assert!(output.contains("script-a"));
+        assert!(output.contains("tag.fast"));
+        assert!(output.contains("17"));
+    }
 }

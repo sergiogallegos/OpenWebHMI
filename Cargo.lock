@@ -3644,6 +3644,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.4",
  "tokio-tungstenite",
+ "tokio-util",
  "toml 0.8.23",
  "tracing",
  "tracing-subscriber",
@@ -3704,6 +3705,7 @@ dependencies = [
  "tempfile",
  "thiserror 1.0.69",
  "tokio",
+ "tokio-stream",
  "tracing",
  "tracing-subscriber",
 ]
@@ -6176,6 +6178,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
+ "futures-util",
  "pin-project-lite",
  "tokio",
 ]

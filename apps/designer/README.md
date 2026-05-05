@@ -71,6 +71,7 @@ pnpm --filter @openwebhmi/designer tauri dev
 43. Browse ADS symbols and bind runtime components to `851:MAIN.nCounter`, `851:MAIN.fPressure`, and `851:MAIN.bRun`; confirm live values arrive through ADS notifications.
 44. Write to `851:MAIN.bRun` from a `ToggleSwitch` and to a numeric primitive from `NumericInput`; confirm TwinCAT Online view reflects the writes.
 45. Stop the TwinCAT runtime or remove the AMS route, confirm bad-quality updates or connection errors surface, then restore the runtime and confirm the driver can be reconnected.
+46. Ctrl-C the gateway while simulator, runtime preview, alarms, historian, and audit writes are active; confirm it exits within 6 s and `PRAGMA integrity_check;` reports `ok` for the history, alarm, and audit SQLite databases.
 
 ## Manual smoke -- Beckhoff TwinCAT 3
 

@@ -15,10 +15,14 @@ use openwebhmi_project_store::ProjectStore;
 use openwebhmi_protocol::ArtifactKind;
 use openwebhmi_scripting::{ScriptHost, ScriptHostOptions};
 use openwebhmi_tag_engine::TagStore;
+use tokio::task::JoinSet;
 use tokio_rustls::TlsAcceptor;
 use tokio_rustls::rustls::ServerConfig;
+use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
+
+const SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
@@ -64,10 +68,23 @@ struct Args {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+    run_gateway(args, CancellationToken::new(), tokio::signal::ctrl_c()).await
+}
+
+async fn run_gateway(
+    args: Args,
+    shutdown: CancellationToken,
+    signal: impl std::future::Future<Output = std::io::Result<()>>,
+) -> anyhow::Result<()> {
     init_tracing(&args.log_level)?;
 
+    let mut tasks = JoinSet::new();
     let store = TagStore::new();
-    tokio::spawn(sim_provider::run(store.clone()));
+    spawn_cancellable(
+        &mut tasks,
+        shutdown.clone(),
+        sim_provider::run(store.clone()),
+    );
     let auth = init_auth(&args)?;
     let audit_log = AuditLog::open(&args.audit_db, args.audit_retention_days)
         .with_context(|| format!("failed to open audit db {:?}", args.audit_db))?;
@@ -86,10 +103,24 @@ async fn main() -> anyhow::Result<()> {
     let mut _script_host = None;
     let driver_handles = if let Some(path) = args.project.as_ref() {
         let project = project::load(path)?;
-        spawn_history_recorder(store.clone(), project_store.clone(), &project)?;
-        spawn_alarm_runtime(store.clone(), project_store.clone(), &project)?;
+        spawn_history_recorder(
+            &mut tasks,
+            shutdown.clone(),
+            store.clone(),
+            project_store.clone(),
+            &project,
+        )?;
+        spawn_alarm_runtime(
+            &mut tasks,
+            shutdown.clone(),
+            store.clone(),
+            project_store.clone(),
+            &project,
+        )?;
         let driver_handles = project::spawn_project(project.clone(), store.clone())?;
         _script_host = spawn_script_runtime(
+            &mut tasks,
+            shutdown.clone(),
             store.clone(),
             project_store.clone(),
             &project,
@@ -105,7 +136,7 @@ async fn main() -> anyhow::Result<()> {
     let backup_project_store = project_store.clone();
     let backup_auth = auth.clone();
     if let (Some(bind), Some(project_store)) = (args.backup_bind, backup_project_store) {
-        tokio::spawn(async move {
+        spawn_cancellable(&mut tasks, shutdown.clone(), async move {
             match tokio::net::TcpListener::bind(bind).await {
                 Ok(listener) => {
                     if let Err(err) =
@@ -119,17 +150,57 @@ async fn main() -> anyhow::Result<()> {
         });
     }
 
-    tokio::select! {
-        result = run_server(args.bind, store, project_store, driver_handles, auth, tls_config(&args)?) => result,
-        signal = tokio::signal::ctrl_c() => {
+    let result = tokio::select! {
+        result = run_server(args.bind, store, project_store, driver_handles, auth, tls_config(&args)?) => {
+            shutdown.cancel();
+            result
+        }
+        signal = signal => {
             signal.context("failed to listen for ctrl-c")?;
             info!("shutdown signal received");
+            shutdown.cancel();
             Ok(())
         }
+        _ = shutdown.cancelled() => {
+            info!("shutdown token cancelled");
+            Ok(())
+        }
+    };
+    drain_tasks(&mut tasks).await;
+    result
+}
+
+fn spawn_cancellable<F>(tasks: &mut JoinSet<()>, shutdown: CancellationToken, work: F)
+where
+    F: std::future::Future<Output = ()> + Send + 'static,
+{
+    tasks.spawn(async move {
+        tokio::select! {
+            _ = shutdown.cancelled() => {}
+            _ = work => {}
+        }
+    });
+}
+
+async fn drain_tasks(tasks: &mut JoinSet<()>) {
+    let drained = tokio::time::timeout(SHUTDOWN_GRACE, async {
+        while tasks.join_next().await.is_some() {}
+    })
+    .await;
+    if drained.is_err() {
+        warn!(
+            ?SHUTDOWN_GRACE,
+            remaining = tasks.len(),
+            "shutdown drain timed out"
+        );
+        tasks.abort_all();
+        while tasks.join_next().await.is_some() {}
     }
 }
 
 fn spawn_script_runtime(
+    tasks: &mut JoinSet<()>,
+    shutdown: CancellationToken,
     store: TagStore,
     project_store: Option<ProjectStore>,
     project: &openwebhmi_project_store::Project,
@@ -164,13 +235,19 @@ fn spawn_script_runtime(
         ScriptHostOptions::default(),
     ));
     server::set_default_script_host(host.clone());
+    let shutdown_handle = host.handle();
     if let Some(project_store) = project_store {
         let project_id = project.id.clone();
         let handle = host.handle();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             let mut changes = project_store.subscribe_changes(Some(&project_id));
             loop {
-                match changes.recv().await {
+                tokio::select! {
+                    _ = shutdown.cancelled() => {
+                        shutdown_handle.shutdown().await;
+                        return;
+                    }
+                    change = changes.recv() => match change {
                     Ok(change)
                         if change.project_id == project_id
                             && matches!(
@@ -197,13 +274,21 @@ fn spawn_script_runtime(
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Closed) => return,
                 }
+                }
             }
+        });
+    } else {
+        tasks.spawn(async move {
+            shutdown.cancelled().await;
+            shutdown_handle.shutdown().await;
         });
     }
     Some(host)
 }
 
 fn spawn_alarm_runtime(
+    tasks: &mut JoinSet<()>,
+    shutdown: CancellationToken,
     store: TagStore,
     project_store: Option<ProjectStore>,
     project: &openwebhmi_project_store::Project,
@@ -214,12 +299,10 @@ fn spawn_alarm_runtime(
     let Some(project_store) = project_store else {
         let engine = Arc::new(std::sync::Mutex::new(engine));
         server::set_default_alarm_engine(engine.clone());
-        tokio::spawn(async move {
-            std::future::pending::<()>().await;
-            if let Ok(engine) = Arc::try_unwrap(engine) {
-                if let Ok(engine) = engine.into_inner() {
-                    engine.abort();
-                }
+        tasks.spawn(async move {
+            shutdown.cancelled().await;
+            if let Ok(mut engine) = engine.lock() {
+                engine.abort();
             }
         });
         return Ok(());
@@ -228,10 +311,17 @@ fn spawn_alarm_runtime(
     let project_id = project.id.clone();
     let engine = Arc::new(std::sync::Mutex::new(engine));
     server::set_default_alarm_engine(engine.clone());
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         let mut changes = project_store.subscribe_changes(Some(&project_id));
         loop {
-            match changes.recv().await {
+            tokio::select! {
+                _ = shutdown.cancelled() => {
+                    if let Ok(mut engine) = engine.lock() {
+                        engine.abort();
+                    }
+                    return;
+                }
+                change = changes.recv() => match change {
                 Ok(change)
                     if change.project_id == project_id
                         && matches!(change.artifact, ArtifactKind::Alarms) =>
@@ -262,12 +352,15 @@ fn spawn_alarm_runtime(
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => return,
             }
+            }
         }
     });
     Ok(())
 }
 
 fn spawn_history_recorder(
+    tasks: &mut JoinSet<()>,
+    shutdown: CancellationToken,
     store: TagStore,
     project_store: Option<ProjectStore>,
     project: &openwebhmi_project_store::Project,
@@ -277,18 +370,23 @@ fn spawn_history_recorder(
 
     let mut recorder = spawn_recorder(store, historian, project::history_configs(project));
     let Some(project_store) = project_store else {
-        tokio::spawn(async move {
-            std::future::pending::<()>().await;
+        tasks.spawn(async move {
+            shutdown.cancelled().await;
             recorder.abort();
         });
         return Ok(());
     };
 
     let project_id = project.id.clone();
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         let mut changes = project_store.subscribe_changes(Some(&project_id));
         loop {
-            match changes.recv().await {
+            tokio::select! {
+                _ = shutdown.cancelled() => {
+                    recorder.abort();
+                    return;
+                }
+                change = changes.recv() => match change {
                 Ok(change)
                     if change.project_id == project_id
                         && matches!(change.artifact, ArtifactKind::Tags) =>
@@ -314,6 +412,7 @@ fn spawn_history_recorder(
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => return,
             }
+            }
         }
     });
     Ok(())
@@ -334,6 +433,7 @@ async fn run_server(
         let local_addr = listener.local_addr().context("failed to read local addr")?;
         info!(%local_addr, "gateway listening with TLS");
         let acceptor = TlsAcceptor::from(tls);
+        let mut connections = JoinSet::new();
         loop {
             let (stream, peer_addr) = listener.accept().await.context("accept failed")?;
             let acceptor = acceptor.clone();
@@ -341,7 +441,7 @@ async fn run_server(
             let project_store = project_store.clone();
             let driver_handles = driver_handles.clone();
             let auth = auth.clone();
-            tokio::spawn(async move {
+            connections.spawn(async move {
                 match acceptor.accept(stream).await {
                     Ok(stream) => {
                         if let Err(err) = server::handle_connection(
@@ -360,6 +460,11 @@ async fn run_server(
                     Err(err) => warn!(%peer_addr, error = %err, "TLS accept failed"),
                 }
             });
+            while let Some(result) = connections.try_join_next() {
+                if let Err(err) = result {
+                    warn!(error = %err, "TLS websocket task failed");
+                }
+            }
         }
     }
 
@@ -455,4 +560,47 @@ fn init_tracing(log_level: &str) -> anyhow::Result<()> {
 
 fn infer_project_store_root(project_path: &std::path::Path) -> Option<PathBuf> {
     project_path.parent()?.parent().map(PathBuf::from)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::future;
+    use std::net::{IpAddr, Ipv4Addr};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn shutdown_token_drains_gateway_tasks() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let shutdown = CancellationToken::new();
+        let cancel = shutdown.clone();
+        let args = Args {
+            bind: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0),
+            backup_bind: None,
+            log_level: "off".to_string(),
+            project: None,
+            project_store: None,
+            auth_db: tempdir.path().join("auth.sqlite"),
+            audit_db: tempdir.path().join("audit.sqlite"),
+            audit_retention_days: 90,
+            jwt_secret: Some("test-secret".to_string()),
+            admin_password: Some("admin-password".to_string()),
+            tls_cert: None,
+            tls_key: None,
+        };
+
+        let gateway = tokio::spawn(run_gateway(
+            args,
+            shutdown,
+            future::pending::<std::io::Result<()>>(),
+        ));
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        cancel.cancel();
+
+        tokio::time::timeout(SHUTDOWN_GRACE + Duration::from_secs(1), gateway)
+            .await
+            .expect("gateway should drain before the shutdown deadline")
+            .expect("gateway task should not panic")
+            .expect("gateway should shut down cleanly");
+    }
 }

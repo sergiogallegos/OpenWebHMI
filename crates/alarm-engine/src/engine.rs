@@ -103,8 +103,8 @@ impl AlarmEngineHandle {
     }
 
     /// Stop all subscription tasks.
-    pub fn abort(self) {
-        for (_, handle) in self.handles {
+    pub fn abort(&mut self) {
+        for (_, handle) in self.handles.drain() {
             handle.abort();
         }
     }
@@ -155,12 +155,16 @@ fn spawn_path(
         let mut rx = tag_store.subscribe(&path);
         let mut states = AlarmRuntime::default();
         if let Some(snapshot) = tag_store.get(&path) {
-            states.evaluate_snapshot(&snapshot, &definitions, &journal, &events, &acks);
+            states
+                .evaluate_snapshot(&snapshot, &definitions, &journal, &events, &acks)
+                .await;
         }
         loop {
             match rx.recv().await {
                 Ok(snapshot) => {
-                    states.evaluate_snapshot(&snapshot, &definitions, &journal, &events, &acks)
+                    states
+                        .evaluate_snapshot(&snapshot, &definitions, &journal, &events, &acks)
+                        .await
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
                     warn!(%path, skipped, "alarm engine lagged");
@@ -182,7 +186,7 @@ struct AckRequest {
 }
 
 impl AlarmRuntime {
-    fn evaluate_snapshot(
+    async fn evaluate_snapshot(
         &mut self,
         snapshot: &TagSnapshot,
         definitions: &HashMap<String, Vec<AlarmDefinition>>,
@@ -199,7 +203,8 @@ impl AlarmRuntime {
             if let Some(ack) = take_ack(acks, &definition.id) {
                 self.mark_acked(definition, snapshot, ack);
             }
-            self.apply(definition, snapshot, condition_active, journal, events);
+            self.apply(definition, snapshot, condition_active, journal, events)
+                .await;
         }
     }
 
@@ -219,7 +224,7 @@ impl AlarmRuntime {
         }
     }
 
-    fn apply(
+    async fn apply(
         &mut self,
         definition: &AlarmDefinition,
         snapshot: &TagSnapshot,
@@ -234,10 +239,12 @@ impl AlarmRuntime {
             .unwrap_or(AlarmState::Clear);
         match (current, condition_active, definition.require_ack) {
             (AlarmState::Clear | AlarmState::Cleared, true, _) => {
-                self.transition(definition, snapshot, AlarmState::Active, journal, events);
+                self.transition(definition, snapshot, AlarmState::Active, journal, events)
+                    .await;
             }
             (AlarmState::Active, false, false) | (AlarmState::Acked, false, _) => {
-                self.transition(definition, snapshot, AlarmState::Cleared, journal, events);
+                self.transition(definition, snapshot, AlarmState::Cleared, journal, events)
+                    .await;
                 self.active.remove(&definition.id);
             }
             (AlarmState::Active, false, true) => {
@@ -247,7 +254,7 @@ impl AlarmRuntime {
         }
     }
 
-    fn transition(
+    async fn transition(
         &mut self,
         definition: &AlarmDefinition,
         snapshot: &TagSnapshot,
@@ -275,7 +282,18 @@ impl AlarmRuntime {
             who: None,
             note: None,
         };
-        if let Err(err) = journal.write_transition(&transition) {
+        let journal = journal.clone();
+        let write_transition = transition.clone();
+        let result =
+            tokio::task::spawn_blocking(move || journal.write_transition(&write_transition)).await;
+        let result = match result {
+            Ok(result) => result,
+            Err(err) => {
+                warn!(alarm_id = %definition.id, error = %err, "alarm journal write task failed");
+                Ok(())
+            }
+        };
+        if let Err(err) = result {
             warn!(alarm_id = %definition.id, error = %err, "failed to write alarm journal transition");
         }
         let event = AlarmEvent {

@@ -370,7 +370,22 @@ where
                     send_error(&out_tx, "auth.unavailable", "auth is not enabled".into());
                     continue;
                 };
-                match auth.users.authenticate(&username, &password) {
+                let users = auth.users.clone();
+                let login_username = username.clone();
+                let login_password = password;
+                let auth_result = tokio::task::spawn_blocking(move || {
+                    users.authenticate(&login_username, &login_password)
+                })
+                .await;
+                let auth_result = match auth_result {
+                    Ok(result) => result,
+                    Err(err) => {
+                        warn!(error = %err, "auth login task failed");
+                        send_error(&out_tx, "auth.unavailable", "internal auth error".into());
+                        continue;
+                    }
+                };
+                match auth_result {
                     Ok(Some(user)) => {
                         append_audit(
                             None,
@@ -523,15 +538,26 @@ where
                     );
                     continue;
                 };
-                match engine.lock() {
+                let engine = engine.clone();
+                let who = session
+                    .as_ref()
+                    .map(|session| session.username.clone())
+                    .unwrap_or_else(|| "anonymous".to_string());
+                let ack_result = tokio::task::spawn_blocking(move || match engine.lock() {
                     Ok(engine) => {
-                        let who = session
-                            .as_ref()
-                            .map(|session| session.username.as_str())
-                            .unwrap_or("anonymous");
-                        engine.ack(&alarm_id, who, note);
+                        engine.ack(&alarm_id, &who, note);
+                        Ok(())
                     }
-                    Err(_) => send_error(&out_tx, "alarm.ack", "alarm engine lock poisoned".into()),
+                    Err(_) => Err(anyhow::anyhow!("alarm engine lock poisoned")),
+                })
+                .await;
+                match ack_result {
+                    Ok(Ok(())) => {}
+                    Ok(Err(err)) => send_error(&out_tx, "alarm.ack", err.to_string()),
+                    Err(err) => {
+                        warn!(error = %err, "alarm ack task failed");
+                        send_error(&out_tx, "alarm.ack", "internal alarm error".into());
+                    }
                 }
             }
             ClientMessage::ScriptSubscribe { project_id } => {
@@ -726,7 +752,31 @@ where
                         continue;
                     }
                 };
-                match historian.read(&tag_path, t_start_ms, t_end_ms, aggregation, max_points) {
+                let historian = historian.clone();
+                let read_tag_path = tag_path.clone();
+                let read_result = tokio::task::spawn_blocking(move || {
+                    historian.read(
+                        &read_tag_path,
+                        t_start_ms,
+                        t_end_ms,
+                        aggregation,
+                        max_points,
+                    )
+                })
+                .await;
+                let read_result = match read_result {
+                    Ok(result) => result,
+                    Err(err) => {
+                        warn!(error = %err, "history read task failed");
+                        send_error(
+                            &out_tx,
+                            "history.unavailable",
+                            "internal historian error".into(),
+                        );
+                        continue;
+                    }
+                };
+                match read_result {
                     Ok(points) => try_send_message(
                         &out_tx,
                         ServerMessage::HistoryResult {
@@ -870,7 +920,25 @@ where
                     audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
                     user: session.as_ref().map(|session| session.username.clone()),
                 };
-                match openwebhmi_backup::export_project(project_store, &project_id, options) {
+                let export_project_store = project_store.clone();
+                let export_project_id = project_id.clone();
+                let export_result = tokio::task::spawn_blocking(move || {
+                    openwebhmi_backup::export_project(
+                        &export_project_store,
+                        &export_project_id,
+                        options,
+                    )
+                })
+                .await;
+                let export_result = match export_result {
+                    Ok(result) => result,
+                    Err(err) => {
+                        warn!(error = %err, "project export task failed");
+                        send_error(&out_tx, "project.export", "internal export error".into());
+                        continue;
+                    }
+                };
+                match export_result {
                     Ok(archive) => {
                         let token = uuid::Uuid::new_v4().to_string();
                         let size_bytes = archive.len() as u64;
@@ -1105,14 +1173,26 @@ where
                     );
                     continue;
                 };
-                match audit_log.query(&StoredAuditQuery {
+                let query = StoredAuditQuery {
                     from_ts_ms: query.from_ts_ms,
                     to_ts_ms: query.to_ts_ms,
                     user: query.user,
                     kinds: query.kinds,
                     limit: query.limit,
                     offset: query.offset,
-                }) {
+                };
+                let audit_log = audit_log.clone();
+                let query_result =
+                    tokio::task::spawn_blocking(move || audit_log.query(&query)).await;
+                let query_result = match query_result {
+                    Ok(result) => result,
+                    Err(err) => {
+                        warn!(error = %err, "audit query task failed");
+                        send_error(&out_tx, "audit.unavailable", "internal audit error".into());
+                        continue;
+                    }
+                };
+                match query_result {
                     Ok((entries, total)) => try_send_message(
                         &out_tx,
                         ServerMessage::AuditQueryResult {
@@ -1316,9 +1396,19 @@ fn append_audit(session: Option<&VerifiedSession>, peer_addr: SocketAddr, event:
     };
     let user = session.map(|session| session.username.clone());
     let session_id = session.map(|session| session.user_id.clone());
-    if let Err(err) = audit_log.append(user, session_id, Some(peer_addr.ip().to_string()), event) {
-        warn!(error = %err, "failed to append audit event");
-    }
+    let audit_log = audit_log.clone();
+    let source_ip = Some(peer_addr.ip().to_string());
+    tokio::spawn(async move {
+        let result = tokio::task::spawn_blocking(move || {
+            audit_log.append(user, session_id, source_ip, event)
+        })
+        .await;
+        match result {
+            Ok(Ok(_)) => {}
+            Ok(Err(err)) => warn!(error = %err, "failed to append audit event"),
+            Err(err) => warn!(error = %err, "audit append task failed"),
+        }
+    });
 }
 
 fn audit_entry_to_wire(entry: StoredAuditEntry) -> openwebhmi_protocol::AuditEntry {
@@ -1453,17 +1543,30 @@ where
     } else {
         ImportMode::Replace
     };
-    let manifest = openwebhmi_backup::import_project(
-        &project_store,
-        &request.body,
-        RestoreOptions {
-            mode,
-            historian_store: DEFAULT_HISTORIAN.get().cloned(),
-            alarm_journal: DEFAULT_ALARM_JOURNAL.get().cloned(),
-            audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
-            user: Some(session.username),
-        },
-    )?;
+    let import_project_store = project_store.clone();
+    let import_body = request.body.clone();
+    let user = session.username;
+    let import_result = tokio::task::spawn_blocking(move || {
+        openwebhmi_backup::import_project(
+            &import_project_store,
+            &import_body,
+            RestoreOptions {
+                mode,
+                historian_store: DEFAULT_HISTORIAN.get().cloned(),
+                alarm_journal: DEFAULT_ALARM_JOURNAL.get().cloned(),
+                audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
+                user: Some(user),
+            },
+        )
+    })
+    .await;
+    let manifest = match import_result {
+        Ok(result) => result?,
+        Err(err) => {
+            warn!(error = %err, "project import task failed");
+            anyhow::bail!("internal import error");
+        }
+    };
     if manifest.project_id != project_id {
         write_http_response(
             stream,

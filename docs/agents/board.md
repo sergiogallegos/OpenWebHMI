@@ -8,7 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AJ | Async hygiene — blocking SQLite + coordinated shutdown + scripting fan-in | codex | open | 2026-05-05 claude | [`CODEX-AJ-async-hygiene.md`](tasks/CODEX-AJ-async-hygiene.md) |
+*(no open Phase 4 tasks)*
 
 ### Phase 4 dependency graph
 
@@ -83,6 +83,7 @@
 | CODEX-AE | `crates/audit-log` — SQLite security event journal + query/subscribe wire protocol + gateway hooks | codex | `83aac91` | 4 |
 | CODEX-AF | `crates/backup` — project export/import + gateway HTTP side-channel; historian/alarm import deferred to CODEX-AI | codex | `83aac91` | 4 |
 | CODEX-AI | Historian + alarm-journal import path in `crates/backup` — closes AF's v1.0 gap | codex | `79e0ec4` | 4 |
+| CODEX-AJ | Async hygiene — blocking SQLite spawn_blocking, coordinated shutdown, scripting fan-in | codex | _pending_ | 4 |
 
 ## Conventions
 

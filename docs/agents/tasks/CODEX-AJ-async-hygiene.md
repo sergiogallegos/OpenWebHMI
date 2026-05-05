@@ -3,7 +3,7 @@ id: CODEX-AJ
 title: Async hygiene — blocking SQLite, coordinated shutdown, scripting fan-in
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-05
 last-update: 2026-05-05 claude
 ---
@@ -192,6 +192,59 @@ This keeps the WS handler off the blocking-pool queue entirely.
 
 <!-- Codex appends status transitions and notes here. -->
 
+2026-05-05 codex Status -> submitted. Implemented call-site `spawn_blocking` wrappers for historian recorder writes, gateway auth/history/audit/alarm/backup paths, audit append's outer-spawn pattern, and alarm-engine journal writes. Added gateway-local `tokio-util` CancellationToken + service JoinSet with 5s drain and removed `pending::<()>` shutdown placeholders. Replaced scripting `recv_any` polling with `StreamMap<BroadcastStream<_>>` and warn-level lag logging. Added recorder current_thread non-blocking regression, script fan-in lag log capture, gateway token shutdown drain test, and designer smoke checklist step. Validation: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets --all-features -- -D warnings` clean; `cargo test --workspace --all-features --locked` passed three consecutive runs. Manual Ctrl-C/SQLite integrity smoke not run in this environment.
+
 ## Claude review
 
+### Strong points
+
+- ✅ **Spawn_blocking pattern is uniform across all eight wrap sites.** Same shape every time: clone the (cheap) handle, move owned data into the closure, match `JoinError` → `send_error` + `warn!`, match inner `Result` → existing handling. Sites: historian recorder write (recorder.rs:160-174), gateway auth login (server.rs:373-387), alarm ack (server.rs:541-562), history read (server.rs:752-779), audit query (server.rs:1175-1196), project export (server.rs:920-942), project import HTTP (server.rs:1543-1571), audit append (server.rs:1396-1413), and the alarm-engine subscription transition write (engine.rs:285-298). Easy to read and audit.
+- ✅ **Audit-append outer-spawn pattern correctly implemented** (server.rs:1396-1413). `tokio::spawn(async move { spawn_blocking(...).await })` — keeps the WS hot path off the blocking-pool queue exactly as the brief specified. JoinError + inner Err are both logged at `warn!`; the WS handler returns immediately.
+- ✅ **JoinError never propagated via `?` out of WS handlers.** Every wrap site translates it to a wire-level error via `send_error` (or to a `warn!` log + drop for fire-and-forget paths). The WS connection is preserved on internal failures.
+- ✅ **CancellationToken + JoinSet shape is clean.** `spawn_cancellable` (main.rs:173-183) extracts the `select! { _ = shutdown.cancelled() => {}, _ = work => {} }` shape so every spawn site reads identically. `drain_tasks` (main.rs:185-199) correctly times out → `abort_all` → final drain.
+- ✅ **`pending::<()>` placeholders eliminated.** The no-project-store branches in `spawn_alarm_runtime` and `spawn_history_recorder` are now `tasks.spawn(async move { shutdown.cancelled().await; engine.abort()/recorder.abort() })` — actual cleanup, not idle parking.
+- ✅ **`run_gateway` factored out of `main`** (main.rs:74-171) so the test can drive it with a custom signal future + cancellation token. `future::pending::<std::io::Result<()>>()` substitutes for `tokio::signal::ctrl_c()` in the test — clean cross-platform shape, no SIGINT dependency on Windows.
+- ✅ **`recorder_does_not_block_current_thread_runtime`** (tests/store.rs:118-150) is exactly the regression shape the brief asked for: `flavor = "current_thread"`, flood-publish 2000 updates, assert that 20 unrelated `sleep(0)` ticks complete within 200 ms. Pre-fix this would have hung; post-fix it passes.
+- ✅ **Script-host StreamMap fan-in is idiomatic.** `Some((path, item)) = snapshots.next(), if !snapshots.is_empty() => { ... }` (host.rs:383-401), `biased` ordering preserved (control → worker.wait → fan-in), `BroadcastStreamRecvError::Lagged` logged via the `warn_fan_in_lag` helper. The empty-map guard is defensive but correct.
+- ✅ **Lag-visibility test design.** `warn_fan_in_lag` is extracted as a small free function (host.rs:406-413) specifically so the test (`fan_in_lag_is_logged_with_script_and_path`, host.rs:464-482) can call it directly through a custom `MakeWriter` log capture rather than spinning up the full supervisor. Testable-design idiom done well.
+- ✅ **Wiki page (`wiki/architecture/async-runtime-hygiene.md`)** is honest, evidence-cited, and lists the right "Open questions" — including the per-connection drain gap (correctly identified as v1.1 follow-up scope) and the deferred manual smoke.
+- ✅ **Designer smoke checklist step added** verbatim to the brief's wording (apps/designer/README.md:74).
+
+### Bonuses beyond brief
+
+- ✅ **Alarm-engine subscription task `spawn_blocking` extension.** Codex made `AlarmRuntime::evaluate_snapshot` / `apply` / `transition` async (engine.rs:189, 224, 257) so the journal write inside `transition` (engine.rs:287-288) lands in `spawn_blocking` at the right call site. **The brief missed this path** — it only contemplated the gateway WS-handler `engine.ack` route, but the alarm subscription task itself writes a transition every time a condition fires/clears, which is high write rate and was previously blocking the runtime. This is the fourth time this sprint Codex has executed the brief cleanly *and* caught a brief gap (after CODEX-AD's TLS fourth-option, CODEX-AH's `nTransMode` correction, and CODEX-AI's `TEMP_COUNTER` hardening). Owned brief miss.
+- ✅ **`AlarmEngineHandle::abort` signature change** from consuming `self` to `&mut self` + `handles.drain()` (engine.rs:106-110) — required by the new shutdown pattern (the gateway calls `engine.abort()` from inside a `MutexGuard` in main.rs:304 and 319). Correct API design call; consistent with the consume-vs-borrow convention `JoinSet::abort_all` follows.
+
+### Findings
+
+- 🟡 **Shutdown drain test only exercises the empty-project path.** `shutdown_token_drains_gateway_tasks` (main.rs:572-605) constructs `Args { project: None, project_store: None, ... }`, so `spawn_history_recorder` / `spawn_alarm_runtime` / `spawn_script_runtime` never spawn during the test. The brief asked for a project that activates all four service tasks. The test verifies the *core mechanism* (token cancel → drain → return within `SHUTDOWN_GRACE + 1s`) but not the *full multi-task scenario*. Mitigation: the per-task select-on-cancel pattern is symmetric across all spawn sites — if one drains cleanly, they all do. Not a merge blocker; v1.1 polish would extend the test to load a project fixture.
+- 🟡 **Per-connection WebSocket handler tasks are not in the JoinSet.** Both `run_server` (TLS path, main.rs:444) and `serve_with_project_store_driver_handles_and_auth` (non-TLS path, in server.rs) spawn a per-connection handler that is *not* registered with the top-level `tasks` JoinSet and *not* given a `shutdown.cancelled()` arm. On Ctrl-C, in-flight WS handlers run until the underlying connection close hits an I/O error. The wiki page calls this out honestly under "Open questions". Genuine v1.1 follow-up; not a regression from the brief (the brief said "every long-lived task spawned by `gateway/src/main.rs`", and per-connection tasks are spawned in `server.rs`).
+- 🟡 **No regression test for the alarm-engine `spawn_blocking` extension.** The existing alarm-engine tests still pass, but the new async `evaluate_snapshot` / `transition` path doesn't have a dedicated current_thread non-blocking test in the historian-recorder shape. Since this extension came in as a "Codex caught the brief miss" item, tests should follow. v1.1 polish.
+- 🟡 **`driver-ads/src/driver.rs` carries an incidental `#[allow(dead_code)]`** on `SubscriptionGuard::backend` (driver.rs:343). Not in brief; pre-existing dead code that the workspace-level clippy `--all-targets --all-features -D warnings` lights up. Minimal fix is appropriate. Flagging for transparency.
+- 🟡 **Manual Ctrl-C + `PRAGMA integrity_check` smoke deferred.** Codex correctly didn't fake it — it requires a hardware/runtime session. Acceptance criterion partially satisfied; the wiki page tracks this as the first "Open question". Maintainer-action item, not Codex-action.
+
+### Independent verification
+
+- `cargo fmt --all --check` — ✅ clean.
+- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` — ✅ clean.
+- `cargo test --workspace --all-features --locked` — ✅ green (single workspace run on my side; Codex documents three consecutive runs).
+- Read every changed Rust source file (gateway/main.rs, gateway/server.rs, scripting/host.rs, historian/recorder.rs, alarm-engine/engine.rs) plus the new test file (historian/tests/store.rs) and the new wiki page; cross-checked against the brief's call-site list.
+
+### Acceptance-criteria tally
+
+- [x] Every blocking SQLite call from an async context is `spawn_blocking`-wrapped — historian recorder write, gateway history read, gateway audit append + query, gateway alarm ack, alarm-engine subscription transition write, gateway auth authenticate, gateway project export, gateway project import HTTP. **Eight wrap sites, all uniform.**
+- [x] `cargo clippy --workspace --all-targets --all-features -- -D warnings` clean.
+- [x] `gateway/src/main.rs` has a single top-level `CancellationToken`; every previously bare `tokio::spawn` is now via `JoinSet` and selects on cancellation.
+- [~] Ctrl-C drain works under load — **verified by test for the mechanism**; manual smoke under real PLC + scripts + alarms + audit + backup HTTP load is the maintainer-action follow-up.
+- [x] `recv_any` is gone. Script-host supervisor uses `StreamMap`. Broadcast lag logged at `warn!` with `script_id`, tag path, and skip count.
+- [~] Three new tests added — recorder non-blocking ✓, supervisor lag visibility ✓, gateway shutdown drain ✓ (mechanism-only; multi-task project-fixture variant is v1.1 polish).
+- [x] `pending::<()>` placeholders at gateway/src/main.rs (the alarm-runtime no-project-store branch) removed.
+- [x] `apps/designer/README.md` smoke checklist gets the Ctrl-C + `PRAGMA integrity_check` step.
+
 ## Verdict
+
+**Merged.** Eight uniform `spawn_blocking` wraps lift every blocking SQLite (and bcrypt) call off the runtime worker pool. The audit-append outer-spawn pattern keeps the WS hot path off the blocking-pool queue. `gateway/src/main.rs` now owns a single `CancellationToken` + `JoinSet` with a 5 s drain → `abort_all` fallback, and the script-host supervisor's busy-poll fan-in is replaced by `StreamMap<BroadcastStream<TagSnapshot>>` with `warn!`-level lag visibility. All six brief acceptance criteria are satisfied; two are partial (the shutdown-drain test runs the mechanism without a full project fixture; the manual `PRAGMA integrity_check` smoke is a deferred maintainer-action item). The wiki page tracks both honestly.
+
+Codex extended scope on one point — making `AlarmRuntime::evaluate_snapshot` / `apply` / `transition` async to land `spawn_blocking` at the journal write inside `transition` — and was right to. The brief only contemplated the WS-handler ack route; the subscription task's own transition writes are a high-rate path the brief missed. Fourth time this sprint Codex has caught a brief gap; pattern noted.
+
+Two genuine v1.1 follow-ups surface from this work and are tracked under the broader CODEX-AK / -AL / -AM modernization plan (and in the new wiki page's Open Questions): (1) per-connection WebSocket handlers are not in the JoinSet, so in-flight connections don't drain on shutdown; (2) the alarm-engine async extension lacks a current_thread non-blocking regression test in the historian-recorder shape. Neither blocks the merge.

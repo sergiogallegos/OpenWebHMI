@@ -115,11 +115,11 @@ async fn run_one(tag_store: TagStore, historian: HistorianStore, config: History
     let mut rx = tag_store.subscribe(&config.path);
     let mut state = FilterState::default();
     if let Some(snapshot) = tag_store.get(&config.path) {
-        maybe_write(&historian, &config, &mut state, snapshot);
+        maybe_write(&historian, &config, &mut state, snapshot).await;
     }
     loop {
         match rx.recv().await {
-            Ok(snapshot) => maybe_write(&historian, &config, &mut state, snapshot),
+            Ok(snapshot) => maybe_write(&historian, &config, &mut state, snapshot).await,
             Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
                 warn!(path = %config.path, skipped, "historian recorder lagged");
             }
@@ -134,7 +134,7 @@ struct FilterState {
     last_numeric: Option<f64>,
 }
 
-fn maybe_write(
+async fn maybe_write(
     historian: &HistorianStore,
     config: &HistoryTagConfig,
     state: &mut FilterState,
@@ -153,16 +153,26 @@ fn maybe_write(
         }
         state.last_numeric = Some(value);
     }
-    if let Err(err) = historian.write_sample(
-        &snapshot.path,
-        snapshot.ts,
-        &snapshot.value,
-        snapshot.quality,
-    ) {
-        warn!(path = %snapshot.path, error = %err, "failed to write history sample");
+    let path = snapshot.path;
+    let ts = snapshot.ts;
+    let value = snapshot.value;
+    let quality = snapshot.quality;
+    let historian = historian.clone();
+    let result =
+        tokio::task::spawn_blocking(move || historian.write_sample(&path, ts, &value, quality))
+            .await;
+    let write = match result {
+        Ok(write) => write,
+        Err(err) => {
+            warn!(path = %config.path, error = %err, "historian recorder write task failed");
+            return;
+        }
+    };
+    if let Err(err) = write {
+        warn!(path = %config.path, error = %err, "failed to write history sample");
         return;
     }
-    state.last_logged_ts = Some(snapshot.ts);
+    state.last_logged_ts = Some(ts);
 }
 
 fn numeric_value(value: &TagValue) -> Option<f64> {

@@ -3,7 +3,7 @@ use std::time::Duration;
 use openwebhmi_historian::{Aggregation, HistorianStore, HistoryTagConfig, spawn_recorder};
 use openwebhmi_protocol::{Quality, TagValue};
 use openwebhmi_tag_engine::TagStore;
-use tokio::time::sleep;
+use tokio::time::{sleep, timeout};
 
 #[test]
 fn raw_round_trip_preserves_order_and_quality() {
@@ -113,6 +113,40 @@ fn aggregations_match_known_dataset() {
             .collect::<Vec<_>>(),
         vec![TagValue::Int(2), TagValue::Int(2)]
     );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn recorder_does_not_block_current_thread_runtime() {
+    let tag_store = TagStore::new();
+    let historian = HistorianStore::memory().unwrap();
+    let handle = spawn_recorder(
+        tag_store.clone(),
+        historian,
+        vec![HistoryTagConfig {
+            path: "fast".into(),
+            rate_ms: 0,
+            deadband: 0.0,
+        }],
+    );
+    sleep(Duration::from_millis(10)).await;
+
+    let publisher = tokio::spawn(async move {
+        for idx in 0..2_000 {
+            tag_store.publish("fast", TagValue::Int(idx), Quality::Good);
+            tokio::task::yield_now().await;
+        }
+    });
+
+    timeout(Duration::from_millis(200), async {
+        for _ in 0..20 {
+            sleep(Duration::from_millis(0)).await;
+        }
+    })
+    .await
+    .expect("unrelated timer should not be blocked by recorder writes");
+
+    publisher.await.unwrap();
+    handle.abort();
 }
 
 #[tokio::test]
