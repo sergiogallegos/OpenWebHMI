@@ -24,10 +24,13 @@ use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc::{self, error::TrySendError};
-use tokio::task::JoinHandle;
+use tokio::task::AbortHandle;
 use tokio_tungstenite::accept_hdr_async;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::handshake::server::{Request, Response};
+use tokio_tungstenite::tungstenite::protocol::CloseFrame;
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, info, warn};
 
 use crate::project::{DriverHandle, DriverHandles, WriteCommand, WriteEnqueueError};
@@ -179,6 +182,31 @@ pub async fn serve_with_project_store_driver_handles_and_auth(
     serve_inner(listener, store, project_store, driver_handles, Some(auth)).await
 }
 
+/// Serve WebSocket clients with shutdown-aware connection task registration.
+///
+/// Cancel-safe: dropping this future stops accepting new sockets; already
+/// spawned handlers stay registered in the caller's JoinSet.
+pub async fn serve_with_project_store_driver_handles_auth_and_shutdown(
+    listener: TcpListener,
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+    driver_handles: DriverHandles,
+    auth: AuthContext,
+    shutdown: CancellationToken,
+    tasks: &mut tokio::task::JoinSet<()>,
+) -> anyhow::Result<()> {
+    serve_inner_with_shutdown(
+        listener,
+        store,
+        project_store,
+        driver_handles,
+        Some(auth),
+        shutdown,
+        tasks,
+    )
+    .await
+}
+
 /// Serve backup/restore HTTP side-channel requests from an already-bound listener.
 pub async fn serve_backup_http(
     listener: TcpListener,
@@ -218,6 +246,29 @@ async fn serve_inner(
     driver_handles: DriverHandles,
     auth: Option<AuthContext>,
 ) -> anyhow::Result<()> {
+    let shutdown = CancellationToken::new();
+    let mut tasks = tokio::task::JoinSet::new();
+    serve_inner_with_shutdown(
+        listener,
+        store,
+        project_store,
+        driver_handles,
+        auth,
+        shutdown,
+        &mut tasks,
+    )
+    .await
+}
+
+async fn serve_inner_with_shutdown(
+    listener: TcpListener,
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+    driver_handles: DriverHandles,
+    auth: Option<AuthContext>,
+    shutdown: CancellationToken,
+    tasks: &mut tokio::task::JoinSet<()>,
+) -> anyhow::Result<()> {
     let local_addr = listener
         .local_addr()
         .context("failed to read listener local addr")?;
@@ -229,8 +280,9 @@ async fn serve_inner(
         let project_store = project_store.clone();
         let driver_handles = driver_handles.clone();
         let auth = auth.clone();
+        let shutdown = shutdown.clone();
 
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             if let Err(err) = handle_connection(
                 stream,
                 peer_addr,
@@ -238,16 +290,25 @@ async fn serve_inner(
                 project_store,
                 driver_handles,
                 auth,
+                shutdown,
             )
             .await
             {
                 warn!(%peer_addr, error = %err, "connection handler failed");
             }
         });
+        while let Some(result) = tasks.try_join_next() {
+            if let Err(err) = result {
+                warn!(error = %err, "connection task failed");
+            }
+        }
     }
 }
 
 /// Handle one accepted websocket stream.
+///
+/// Cancel-safe: dropping this future closes the WebSocket; when the shutdown
+/// token fires normally, the writer attempts a 1001 close frame first.
 #[allow(clippy::result_large_err)]
 pub async fn handle_connection<S>(
     stream: S,
@@ -256,6 +317,7 @@ pub async fn handle_connection<S>(
     project_store: Option<ProjectStore>,
     driver_handles: DriverHandles,
     auth: Option<AuthContext>,
+    shutdown: CancellationToken,
 ) -> anyhow::Result<()>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
@@ -277,19 +339,40 @@ where
     let (mut sink, mut incoming) = ws.split();
     let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(OUTBOUND_CAPACITY);
 
-    let writer = tokio::spawn(async move {
-        while let Some(message) = out_rx.recv().await {
-            let json = match serde_json::to_string(&message) {
-                Ok(json) => json,
-                Err(err) => {
-                    warn!(error = %err, "failed to serialize server message");
-                    continue;
+    let writer_shutdown = shutdown.clone();
+    let mut writer = tokio::spawn(async move {
+        loop {
+            tokio::select! {
+                biased;
+                _ = writer_shutdown.cancelled() => {
+                    let frame = CloseFrame {
+                        code: CloseCode::Away,
+                        reason: "gateway shutting down".into(),
+                    };
+                    let _ = tokio::time::timeout(
+                        Duration::from_secs(1),
+                        sink.send(Message::Close(Some(frame))),
+                    )
+                    .await;
+                    break;
                 }
-            };
+                message = out_rx.recv() => {
+                    let Some(message) = message else {
+                        break;
+                    };
+                    let json = match serde_json::to_string(&message) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            warn!(error = %err, "failed to serialize server message");
+                            continue;
+                        }
+                    };
 
-            if let Err(err) = sink.send(Message::Text(json)).await {
-                debug!(error = %err, "failed to send websocket message");
-                break;
+                    if let Err(err) = sink.send(Message::Text(json)).await {
+                        debug!(error = %err, "failed to send websocket message");
+                        break;
+                    }
+                }
             }
         }
     });
@@ -314,13 +397,24 @@ where
         _ => None,
     };
     let mut current_view_allowed_roles: Option<Vec<String>> = None;
-    let mut subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
-    let mut project_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
-    let mut alarm_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
-    let mut script_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
-    let mut audit_subscriptions: HashMap<String, JoinHandle<()>> = HashMap::new();
+    let mut subscriptions: HashMap<String, AbortHandle> = HashMap::new();
+    let mut project_subscriptions: HashMap<String, AbortHandle> = HashMap::new();
+    let mut alarm_subscriptions: HashMap<String, AbortHandle> = HashMap::new();
+    let mut script_subscriptions: HashMap<String, AbortHandle> = HashMap::new();
+    let mut audit_subscriptions: HashMap<String, AbortHandle> = HashMap::new();
 
-    while let Some(item) = incoming.next().await {
+    let mut shutdown_requested = false;
+    loop {
+        let item = tokio::select! {
+            _ = shutdown.cancelled() => {
+                shutdown_requested = true;
+                break;
+            }
+            item = incoming.next() => item,
+        };
+        let Some(item) = item else {
+            break;
+        };
         let message = match item {
             Ok(message) => message,
             Err(err) => {
@@ -1153,7 +1247,8 @@ where
                             },
                         );
                     }
-                });
+                })
+                .abort_handle();
                 audit_subscriptions.insert(request_id, handle);
             }
             ClientMessage::AuditUnsubscribe { request_id } => {
@@ -1245,7 +1340,16 @@ where
         handle.abort();
     }
     drop(out_tx);
-    writer.abort();
+    if shutdown_requested {
+        if tokio::time::timeout(Duration::from_secs(1), &mut writer)
+            .await
+            .is_err()
+        {
+            writer.abort();
+        }
+    } else {
+        writer.abort();
+    }
     info!(%peer_addr, "connection cleanup complete");
 
     Ok(())
@@ -1796,7 +1900,7 @@ fn spawn_project_change_forwarder(
     project_id: String,
     project_store: ProjectStore,
     out_tx: OutboundTx,
-) -> JoinHandle<()> {
+) -> AbortHandle {
     tokio::spawn(async move {
         let mut rx = project_store.subscribe_changes(Some(&project_id));
         loop {
@@ -1824,9 +1928,10 @@ fn spawn_project_change_forwarder(
             }
         }
     })
+    .abort_handle()
 }
 
-fn spawn_forwarder(path: String, store: TagStore, out_tx: OutboundTx) -> JoinHandle<()> {
+fn spawn_forwarder(path: String, store: TagStore, out_tx: OutboundTx) -> AbortHandle {
     tokio::spawn(async move {
         let mut rx = store.subscribe(&path);
         loop {
@@ -1841,6 +1946,7 @@ fn spawn_forwarder(path: String, store: TagStore, out_tx: OutboundTx) -> JoinHan
             }
         }
     })
+    .abort_handle()
 }
 
 fn spawn_alarm_forwarder(
@@ -1849,7 +1955,7 @@ fn spawn_alarm_forwarder(
     priority_min: u8,
     priority_max: u8,
     out_tx: OutboundTx,
-) -> JoinHandle<()> {
+) -> AbortHandle {
     tokio::spawn(async move {
         loop {
             match rx.recv().await {
@@ -1864,13 +1970,14 @@ fn spawn_alarm_forwarder(
             }
         }
     })
+    .abort_handle()
 }
 
 fn spawn_script_event_forwarder(
     project_id: String,
     mut rx: tokio::sync::broadcast::Receiver<ScriptEvent>,
     out_tx: OutboundTx,
-) -> JoinHandle<()> {
+) -> AbortHandle {
     tokio::spawn(async move {
         loop {
             match rx.recv().await {
@@ -1885,6 +1992,7 @@ fn spawn_script_event_forwarder(
             }
         }
     })
+    .abort_handle()
 }
 
 fn script_event_project_id(event: &ScriptEvent) -> &str {

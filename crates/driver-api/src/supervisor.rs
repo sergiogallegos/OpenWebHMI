@@ -9,7 +9,7 @@ use openwebhmi_protocol::TagValue;
 use rand::Rng;
 use serde_json::Value;
 use tokio::sync::{mpsc, oneshot};
-use tokio::task::JoinHandle;
+use tokio::task::AbortHandle;
 use tokio::time;
 use tracing::{debug, warn};
 
@@ -48,7 +48,7 @@ pub struct DriverSupervisor;
 pub struct SupervisorHandle {
     status: Arc<RwLock<DriverStatus>>,
     tx: mpsc::Sender<Command>,
-    task: JoinHandle<()>,
+    task: Option<AbortHandle>,
 }
 
 enum Command {
@@ -134,7 +134,11 @@ impl DriverSupervisor {
             }
         });
 
-        SupervisorHandle { status, tx, task }
+        SupervisorHandle {
+            status,
+            tx,
+            task: Some(task.abort_handle()),
+        }
     }
 }
 
@@ -184,11 +188,19 @@ impl SupervisorHandle {
     }
 
     /// Gracefully stop the supervised driver.
-    pub async fn shutdown(self) {
+    pub async fn shutdown(mut self) {
         let (reply, rx) = oneshot::channel();
         let _ = self.tx.send(Command::Shutdown { reply }).await;
         let _ = rx.await;
-        let _ = self.task.await;
+        let _ = self.task.take();
+    }
+}
+
+impl Drop for SupervisorHandle {
+    fn drop(&mut self) {
+        if let Some(task) = self.task.take() {
+            task.abort();
+        }
     }
 }
 

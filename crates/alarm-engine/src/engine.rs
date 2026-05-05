@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use openwebhmi_protocol::{Quality, TagValue};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::sync::broadcast;
-use tokio::task::JoinHandle;
+use tokio::task::AbortHandle;
 use tracing::warn;
 
 use crate::conditions::evaluate;
@@ -18,7 +18,7 @@ pub struct AlarmEngineHandle {
     tag_store: TagStore,
     journal: AlarmJournal,
     events: broadcast::Sender<AlarmEvent>,
-    handles: HashMap<String, JoinHandle<()>>,
+    handles: HashMap<String, AbortHandle>,
     definitions: HashMap<String, AlarmDefinition>,
     acks: Arc<Mutex<HashMap<String, AckRequest>>>,
 }
@@ -150,8 +150,8 @@ fn spawn_path(
     events: broadcast::Sender<AlarmEvent>,
     definitions: HashMap<String, Vec<AlarmDefinition>>,
     acks: Arc<Mutex<HashMap<String, AckRequest>>>,
-) -> JoinHandle<()> {
-    tokio::spawn(async move {
+) -> AbortHandle {
+    let handle = tokio::spawn(async move {
         let mut rx = tag_store.subscribe(&path);
         let mut states = AlarmRuntime::default();
         if let Some(snapshot) = tag_store.get(&path) {
@@ -172,7 +172,9 @@ fn spawn_path(
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
             }
         }
-    })
+    });
+    // Dropping a JoinHandle does not cancel its task; AbortHandle is the cancel-only handle.
+    handle.abort_handle()
 }
 
 #[derive(Default)]

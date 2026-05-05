@@ -338,6 +338,8 @@ struct ReadyWorkerRuntime<'a> {
     events: &'a broadcast::Sender<ScriptEvent>,
 }
 
+/// Cancel-safe: control receives, worker exit waits, and StreamMap fan-in can
+/// be dropped without consuming a control message or unseen tag update.
 async fn run_ready_worker(
     runtime: ReadyWorkerRuntime<'_>,
     worker: &mut WorkerProc,

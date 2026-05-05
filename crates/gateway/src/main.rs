@@ -71,6 +71,9 @@ async fn main() -> anyhow::Result<()> {
     run_gateway(args, CancellationToken::new(), tokio::signal::ctrl_c()).await
 }
 
+/// Cancel-safe: `run_server`, Ctrl-C, and `CancellationToken::cancelled` are
+/// selected so dropping this future just stops waiting; owned service tasks
+/// remain in the JoinSet passed to the drain path.
 async fn run_gateway(
     args: Args,
     shutdown: CancellationToken,
@@ -151,7 +154,18 @@ async fn run_gateway(
     }
 
     let result = tokio::select! {
-        result = run_server(args.bind, store, project_store, driver_handles, auth, tls_config(&args)?) => {
+        result = run_server(
+            ServerRunConfig {
+                bind: args.bind,
+                store,
+                project_store,
+                driver_handles,
+                auth,
+                tls: tls_config(&args)?,
+            },
+            shutdown.clone(),
+            &mut tasks,
+        ) => {
             shutdown.cancel();
             result
         }
@@ -170,6 +184,17 @@ async fn run_gateway(
     result
 }
 
+struct ServerRunConfig {
+    bind: SocketAddr,
+    store: TagStore,
+    project_store: Option<ProjectStore>,
+    driver_handles: project::DriverHandles,
+    auth: server::AuthContext,
+    tls: Option<Arc<ServerConfig>>,
+}
+
+/// Cancel-safe: dropping this helper future cancels the select, and callers
+/// must pass work that is safe to drop at any yield point.
 fn spawn_cancellable<F>(tasks: &mut JoinSet<()>, shutdown: CancellationToken, work: F)
 where
     F: std::future::Future<Output = ()> + Send + 'static,
@@ -182,6 +207,8 @@ where
     });
 }
 
+/// Cancel-safe: dropping the drain future only stops awaiting task completion;
+/// tasks remain owned by the provided JoinSet.
 async fn drain_tasks(tasks: &mut JoinSet<()>) {
     let drained = tokio::time::timeout(SHUTDOWN_GRACE, async {
         while tasks.join_next().await.is_some() {}
@@ -198,6 +225,8 @@ async fn drain_tasks(tasks: &mut JoinSet<()>) {
     }
 }
 
+/// Cancel-safe: the project-change receiver uses Tokio broadcast `recv`, and
+/// shutdown cancellation only drops pending restart requests.
 fn spawn_script_runtime(
     tasks: &mut JoinSet<()>,
     shutdown: CancellationToken,
@@ -286,6 +315,8 @@ fn spawn_script_runtime(
     Some(host)
 }
 
+/// Cancel-safe: the project-change receiver uses Tokio broadcast `recv`, and
+/// shutdown cancellation aborts owned alarm subscription tasks.
 fn spawn_alarm_runtime(
     tasks: &mut JoinSet<()>,
     shutdown: CancellationToken,
@@ -358,6 +389,8 @@ fn spawn_alarm_runtime(
     Ok(())
 }
 
+/// Cancel-safe: the project-change receiver uses Tokio broadcast `recv`, and
+/// shutdown cancellation aborts owned historian recorder tasks.
 fn spawn_history_recorder(
     tasks: &mut JoinSet<()>,
     shutdown: CancellationToken,
@@ -418,14 +451,22 @@ fn spawn_history_recorder(
     Ok(())
 }
 
+/// Cancel-safe: dropping the server future stops accepting new connections;
+/// per-connection handlers already registered in the service JoinSet receive
+/// the shared shutdown token and drain through `drain_tasks`.
 async fn run_server(
-    bind: SocketAddr,
-    store: TagStore,
-    project_store: Option<ProjectStore>,
-    driver_handles: project::DriverHandles,
-    auth: server::AuthContext,
-    tls: Option<Arc<ServerConfig>>,
+    config: ServerRunConfig,
+    shutdown: CancellationToken,
+    tasks: &mut JoinSet<()>,
 ) -> anyhow::Result<()> {
+    let ServerRunConfig {
+        bind,
+        store,
+        project_store,
+        driver_handles,
+        auth,
+        tls,
+    } = config;
     if let Some(tls) = tls {
         let listener = tokio::net::TcpListener::bind(bind)
             .await
@@ -433,7 +474,6 @@ async fn run_server(
         let local_addr = listener.local_addr().context("failed to read local addr")?;
         info!(%local_addr, "gateway listening with TLS");
         let acceptor = TlsAcceptor::from(tls);
-        let mut connections = JoinSet::new();
         loop {
             let (stream, peer_addr) = listener.accept().await.context("accept failed")?;
             let acceptor = acceptor.clone();
@@ -441,7 +481,8 @@ async fn run_server(
             let project_store = project_store.clone();
             let driver_handles = driver_handles.clone();
             let auth = auth.clone();
-            connections.spawn(async move {
+            let shutdown = shutdown.clone();
+            tasks.spawn(async move {
                 match acceptor.accept(stream).await {
                     Ok(stream) => {
                         if let Err(err) = server::handle_connection(
@@ -451,6 +492,7 @@ async fn run_server(
                             project_store,
                             driver_handles,
                             Some(auth),
+                            shutdown,
                         )
                         .await
                         {
@@ -460,7 +502,7 @@ async fn run_server(
                     Err(err) => warn!(%peer_addr, error = %err, "TLS accept failed"),
                 }
             });
-            while let Some(result) = connections.try_join_next() {
+            while let Some(result) = tasks.try_join_next() {
                 if let Err(err) = result {
                     warn!(error = %err, "TLS websocket task failed");
                 }
@@ -473,12 +515,14 @@ async fn run_server(
             let listener = tokio::net::TcpListener::bind(bind)
                 .await
                 .with_context(|| format!("failed to bind gateway listener at {bind}"))?;
-            server::serve_with_project_store_driver_handles_and_auth(
+            server::serve_with_project_store_driver_handles_auth_and_shutdown(
                 listener,
                 store,
                 Some(project_store),
                 driver_handles,
                 auth,
+                shutdown,
+                tasks,
             )
             .await
         }
@@ -486,12 +530,14 @@ async fn run_server(
             let listener = tokio::net::TcpListener::bind(bind)
                 .await
                 .with_context(|| format!("failed to bind gateway listener at {bind}"))?;
-            server::serve_with_project_store_driver_handles_and_auth(
+            server::serve_with_project_store_driver_handles_auth_and_shutdown(
                 listener,
                 store,
                 None,
                 driver_handles,
                 auth,
+                shutdown,
+                tasks,
             )
             .await
         }
@@ -554,7 +600,7 @@ fn init_tracing(log_level: &str) -> anyhow::Result<()> {
         .or_else(|_| EnvFilter::try_new(log_level))
         .context("invalid log filter")?;
 
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
     Ok(())
 }
 
@@ -566,6 +612,11 @@ fn infer_project_store_root(project_path: &std::path::Path) -> Option<PathBuf> {
 mod tests {
     use std::future;
     use std::net::{IpAddr, Ipv4Addr};
+
+    use futures_util::{SinkExt, StreamExt};
+    use tokio_tungstenite::connect_async;
+    use tokio_tungstenite::tungstenite::Message;
+    use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 
     use super::*;
 
@@ -602,5 +653,177 @@ mod tests {
             .expect("gateway should drain before the shutdown deadline")
             .expect("gateway task should not panic")
             .expect("gateway should shut down cleanly");
+    }
+
+    #[tokio::test]
+    async fn shutdown_token_drains_project_gateway_tasks() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let project_path = write_shutdown_project_fixture(tempdir.path());
+        let shutdown = CancellationToken::new();
+        let cancel = shutdown.clone();
+        let args = test_args(tempdir.path(), unused_loopback_addr().await);
+        let args = Args {
+            project: Some(project_path),
+            project_store: Some(tempdir.path().to_path_buf()),
+            backup_bind: Some(unused_loopback_addr().await),
+            ..args
+        };
+
+        let gateway = tokio::spawn(run_gateway(
+            args,
+            shutdown,
+            future::pending::<std::io::Result<()>>(),
+        ));
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        cancel.cancel();
+
+        tokio::time::timeout(SHUTDOWN_GRACE + Duration::from_secs(1), gateway)
+            .await
+            .expect("gateway should drain project tasks before the shutdown deadline")
+            .expect("gateway task should not panic")
+            .expect("gateway should shut down cleanly");
+    }
+
+    #[tokio::test]
+    async fn shutdown_token_sends_websocket_close_frame() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let bind = unused_loopback_addr().await;
+        let shutdown = CancellationToken::new();
+        let cancel = shutdown.clone();
+        let gateway = tokio::spawn(run_gateway(
+            test_args(tempdir.path(), bind),
+            shutdown,
+            future::pending::<std::io::Result<()>>(),
+        ));
+
+        let mut ws = connect_with_retry(bind).await;
+        ws.send(Message::Text(
+            serde_json::to_string(&openwebhmi_protocol::ClientMessage::Ping).unwrap(),
+        ))
+        .await
+        .unwrap();
+        assert!(matches!(
+            ws.next().await,
+            Some(Ok(Message::Text(text)))
+                if matches!(
+                    serde_json::from_str::<openwebhmi_protocol::ServerMessage>(&text),
+                    Ok(openwebhmi_protocol::ServerMessage::Pong)
+                )
+        ));
+
+        cancel.cancel();
+        let close = tokio::time::timeout(Duration::from_secs(1), ws.next())
+            .await
+            .expect("websocket should receive shutdown close within 1s");
+        assert!(matches!(
+            close,
+            Some(Ok(Message::Close(Some(frame))))
+                if frame.code == CloseCode::Away
+                    && frame.reason.as_ref() == "gateway shutting down"
+        ));
+
+        tokio::time::timeout(SHUTDOWN_GRACE + Duration::from_secs(1), gateway)
+            .await
+            .expect("gateway should drain after websocket close")
+            .expect("gateway task should not panic")
+            .expect("gateway should shut down cleanly");
+    }
+
+    fn test_args(root: &std::path::Path, bind: SocketAddr) -> Args {
+        Args {
+            bind,
+            backup_bind: None,
+            log_level: "off".to_string(),
+            project: None,
+            project_store: None,
+            auth_db: root.join("auth.sqlite"),
+            audit_db: root.join("audit.sqlite"),
+            audit_retention_days: 90,
+            jwt_secret: Some("test-secret".to_string()),
+            admin_password: Some("admin-password".to_string()),
+            tls_cert: None,
+            tls_key: None,
+        }
+    }
+
+    async fn unused_loopback_addr() -> SocketAddr {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        listener.local_addr().unwrap()
+    }
+
+    async fn connect_with_retry(
+        addr: SocketAddr,
+    ) -> tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>
+    {
+        let url = format!("ws://{addr}");
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            match connect_async(&url).await {
+                Ok((ws, _)) => return ws,
+                Err(err) if tokio::time::Instant::now() < deadline => {
+                    let _ = err;
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                }
+                Err(err) => panic!("failed to connect to gateway websocket: {err}"),
+            }
+        }
+    }
+
+    fn write_shutdown_project_fixture(root: &std::path::Path) -> PathBuf {
+        let project_dir = root.join("shutdown-fixture");
+        std::fs::create_dir_all(project_dir.join("alarms")).unwrap();
+        std::fs::create_dir_all(project_dir.join("scripts")).unwrap();
+        std::fs::write(
+            project_dir.join("project.toml"),
+            r#"
+schema_version = 1
+name = "shutdown-fixture"
+
+[[drivers]]
+id = "rockwell-1"
+type = "rockwell"
+
+[drivers.config]
+host = "127.0.0.1"
+slot = 0
+connection_timeout_ms = 50
+poll_rate_ms = 50
+
+[[tags]]
+path = "rockwell-1/Pressure"
+driver = "rockwell-1"
+address = "Pressure"
+
+[tags.history]
+rate_ms = 10
+"#,
+        )
+        .unwrap();
+        std::fs::write(
+            project_dir.join("alarms/alarms.json"),
+            r#"[{
+  "id": "pressure-high",
+  "label": "High pressure",
+  "priority": 2,
+  "tag_path": "rockwell-1/Pressure",
+  "condition": { "kind": "high_limit", "threshold": 200.0 },
+  "message": "Pressure high",
+  "enabled": true,
+  "require_ack": true
+}]"#,
+        )
+        .unwrap();
+        std::fs::write(
+            project_dir.join("scripts/scripts.json"),
+            r#"[{
+  "id": "noop",
+  "path": "scripts/noop.py",
+  "enabled": true,
+  "triggers": []
+}]"#,
+        )
+        .unwrap();
+        std::fs::write(project_dir.join("scripts/noop.py"), "# no-op\n").unwrap();
+        project_dir.join("project.toml")
     }
 }

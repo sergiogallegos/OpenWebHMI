@@ -171,6 +171,10 @@ impl WorkerProc {
     }
 
     /// Invoke an `on_tag_change` handler and wait for completion.
+    ///
+    /// NOT cancel-safe: dropping this future mid-await may leave an in-flight
+    /// script invocation running until the worker reports completion or exits.
+    // TODO(v1.1): add explicit trigger cancellation if scripts gain long-lived handlers.
     pub async fn invoke_tag_change(
         &self,
         snapshot: openwebhmi_tag_engine::TagSnapshot,
@@ -206,6 +210,9 @@ impl WorkerProc {
     }
 
     /// Wait for the worker process to exit.
+    ///
+    /// Cancel-safe: dropping the returned future before completion only stops
+    /// waiting and does not signal or reap the process.
     pub async fn wait(&mut self) -> std::io::Result<std::process::ExitStatus> {
         self.child.wait().await
     }

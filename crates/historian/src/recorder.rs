@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use openwebhmi_protocol::TagValue;
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
-use tokio::task::JoinHandle;
+use tokio::task::AbortHandle;
 use tracing::warn;
 
 use crate::store::HistorianStore;
@@ -24,7 +24,7 @@ pub struct HistoryTagConfig {
 pub struct RecorderHandle {
     tag_store: TagStore,
     historian: HistorianStore,
-    handles: HashMap<String, JoinHandle<()>>,
+    handles: HashMap<String, AbortHandle>,
     configs: HashMap<String, HistoryTagConfig>,
 }
 
@@ -105,10 +105,11 @@ fn spawn_one(
     tag_store: TagStore,
     historian: HistorianStore,
     config: HistoryTagConfig,
-) -> JoinHandle<()> {
+) -> AbortHandle {
     tokio::spawn(async move {
         run_one(tag_store, historian, config).await;
     })
+    .abort_handle()
 }
 
 async fn run_one(tag_store: TagStore, historian: HistorianStore, config: HistoryTagConfig) {

@@ -211,6 +211,9 @@ async fn connect_rockwell(driver: &DriverConfig) -> anyhow::Result<RockwellDrive
     Ok(rockwell)
 }
 
+/// Cancel-safe: the subscription stream and write queue receive arms can be
+/// dropped without losing accepted writes; an in-flight driver write may still
+/// complete or fail inside the driver after the task is cancelled.
 async fn run_subscription_until_disconnect(
     driver_id: &str,
     tags: &[TagConfig],

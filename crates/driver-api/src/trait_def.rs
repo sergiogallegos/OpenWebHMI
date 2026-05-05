@@ -62,6 +62,10 @@ pub trait Driver: Send + Sync + 'static {
     /// Drivers with native subscription should override this. The default is a
     /// polling stream at one second, implemented by repeatedly calling
     /// [`Driver::read`].
+    ///
+    /// Cancel-safe contract: implementations must return a stream whose
+    /// `Stream::next` future can be dropped before completion without losing a
+    /// tag update.
     async fn subscribe(
         &self,
         addresses: Vec<TagAddress>,

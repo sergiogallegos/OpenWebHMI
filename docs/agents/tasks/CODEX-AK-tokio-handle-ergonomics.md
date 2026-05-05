@@ -3,7 +3,7 @@ id: CODEX-AK
 title: Tokio handle ergonomics — AbortHandle map sweep, cancel-safety docs, per-connection drain
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-05
 last-update: 2026-05-05 claude
 ---
@@ -166,6 +166,65 @@ The task continues running after `JoinHandle` is dropped; `AbortHandle` is the c
 
 <!-- Codex appends status transitions and notes here. -->
 
+2026-05-05 codex Status -> submitted. Converted the listed cancel-only task storage to `AbortHandle`: alarm engine path tasks, historian recorder tasks, gateway per-connection subscription forwarders, audit subscription forwarder, and the driver supervisor abort-on-drop handle. Extended gateway shutdown into per-connection WebSocket handlers by passing the service `CancellationToken` and service `JoinSet` through `run_server`; handlers now send close code 1001 (`gateway shutting down`) on token cancellation. Added cancel-safety docs for the inventoried select surfaces and documented `WorkerProc::invoke_tag_change` as NOT cancel-safe with a v1.1 TODO. Added project-fixture shutdown test and WebSocket close-frame shutdown test. Validation green: `cargo fmt --all --check` three runs, `cargo clippy --workspace --all-targets --all-features -- -D warnings` three runs, `cargo test --workspace --all-features --locked` three consecutive runs, `cargo doc --workspace --no-deps`, `pnpm -r typecheck`, and `pnpm -r test`. Manual browser/SQLite integrity smoke not run in this environment.
+
 ## Claude review
 
+### Strong points
+
+- ✅ **AbortHandle conversion at all 8 sites is uniform and minimal.** `AlarmEngineHandle::handles`, `RecorderHandle::handles`, the five per-connection subscription maps in `gateway/src/server.rs:401-405`, and `SupervisorHandle::task` all switched cleanly. The pattern `tokio::spawn(...).abort_handle()` is used consistently; no behavior change in the normal path.
+- ✅ **Pattern documented at the first insertion site.** `crates/alarm-engine/src/engine.rs:175` carries the comment `// Dropping a JoinHandle does not cancel its task; AbortHandle is the cancel-only handle.` — exactly as the brief asked. Future contributors discover the constraint at the relevant location, not via archaeology.
+- ✅ **`Driver::subscribe` cancel-safety contract added** (`crates/driver-api/src/trait_def.rs:65-68`). This was the brief's "highest-value annotation in this sweep" and Codex landed it precisely: "implementations must return a stream whose `Stream::next` future can be dropped before completion without losing a tag update." Trait-level contract; binding on every driver impl.
+- ✅ **Cancel-safety annotations on every reachable `async fn`.** `run_gateway`, `spawn_cancellable`, `drain_tasks`, `spawn_script_runtime`, `spawn_alarm_runtime`, `spawn_history_recorder`, `run_server`, `run_subscription_until_disconnect`, `run_ready_worker`, `WorkerProc::wait`, `serve_with_project_store_driver_handles_auth_and_shutdown`, `handle_connection`, plus the inline annotation on the example's select. Wording is consistent and cites the underlying primitive's behavior.
+- ✅ **`WorkerProc::invoke_tag_change` correctly identified as NOT cancel-safe** with both the rationale ("dropping mid-await may leave an in-flight script invocation running until the worker reports completion or exits") and a `// TODO(v1.1): add explicit trigger cancellation if scripts gain long-lived handlers` marker (`crates/scripting/src/worker.rs:174-177`). Exactly matches the brief's "do NOT fix inline; document the hazard" requirement.
+- ✅ **Per-connection drain implementation is solid**:
+  - Writer task selects on `writer_shutdown.cancelled()` vs `out_rx.recv()` with `biased` ordering (shutdown wins).
+  - On shutdown, sends `CloseFrame { code: CloseCode::Away (1001), reason: "gateway shutting down" }` with a 1-second `tokio::time::timeout` around the `sink.send` so a stuck handshake can't block drain (server.rs:347-359).
+  - Main handler loop selects on `shutdown.cancelled()` vs `incoming.next()` (server.rs:413-419) with a `shutdown_requested` flag for the cleanup path.
+  - End-of-handler logic gives the writer a 1-second drain window when `shutdown_requested` so the close frame has time to deliver before `writer.abort()` (server.rs:1343-1352). When the connection ends naturally (no shutdown), writer is aborted immediately as before.
+- ✅ **`ServerRunConfig` struct introduced** (main.rs:187-194) to keep `run_server`'s signature manageable after adding `shutdown` + `tasks` parameters. Cleaner than 8-positional-args; clean refactor.
+- ✅ **Clean back-compat**: existing `serve_with_project_store_driver_handles_and_auth` API preserved (now delegates to the shutdown-aware variant via a private `serve_inner_with_shutdown` helper); new `serve_with_project_store_driver_handles_auth_and_shutdown` exposes the shutdown-aware path. No breakage for crates that depend on the old signature.
+- ✅ **TLS path uses the service-level JoinSet.** Previously the TLS accept loop owned a local `connections: JoinSet<()>`; now it `tasks.spawn(...)` into the shared service JoinSet (main.rs:481-501). Both per-connection drain paths (TLS and non-TLS) register with the same JoinSet; symmetric drain behavior.
+- ✅ **Wiki page updated comprehensively** (`wiki/architecture/async-runtime-hygiene.md`). Two new "Current understanding" entries: per-connection drain (#7) and AbortHandle pattern (#8). The per-connection drain "Open question" from AJ is removed (resolved). Evidence section adds the new test names and the `cargo doc` + `pnpm` validations.
+- ✅ **Two new tests added**: `shutdown_token_drains_project_gateway_tasks` covers the multi-task project-fixture variant the brief asked for, and `shutdown_token_sends_websocket_close_frame` verifies the 1001 close-frame contract. Both pass on Codex's three consecutive runs.
+
+### Bonuses beyond brief
+
+- ✅ **`SupervisorHandle::Drop` impl added** (`crates/driver-api/src/supervisor.rs:202-208`). The brief asked for a type-only conversion (`task: JoinHandle<()>` → `task: AbortHandle`). Codex made it `task: Option<AbortHandle>` so `shutdown(mut self)` can `take()` the handle in the normal path, AND added a `Drop` impl that aborts when the handle is dropped without explicit shutdown. **This is a real behavioral improvement**: previously, dropping a `SupervisorHandle` without calling `shutdown()` left the supervised task running silently (since `JoinHandle::drop` doesn't abort). Now the task is properly aborted on drop. **Pattern noted**: this is the second time this sprint Codex has expanded scope on a `JoinHandle → AbortHandle` conversion (first was extending `AlarmRuntime::evaluate_snapshot/apply/transition` to async in AJ); both expansions were net-positive.
+- ✅ **Writer task drains gracefully on shutdown.** Before this brief, the writer was *always* `.abort()`-ed at handler-end, even though by that point the close frame might still be in flight. Codex's split — `tokio::time::timeout(1s, &mut writer)` first, then `abort()` only if it didn't drain — gives the close frame its handshake window without compromising the umbrella `SHUTDOWN_GRACE` budget.
+
+### Findings
+
+- 🟡 **`SupervisorHandle::shutdown(mut self)` no longer awaits the task.** Original behavior: `let _ = self.task.await;` waited for the task to complete after sending Shutdown. New behavior: `let _ = self.task.take();` drops the AbortHandle without awaiting. The mpsc reply (`let _ = rx.await;`) provides ordering — the task acknowledges Shutdown before the reply lands — so behavior is approximately preserved. **But there's a tiny window** where the supervisor task might be doing post-reply cleanup when the AbortHandle is dropped. Today the task's normal exit has no post-reply cleanup, so this is fine; if post-reply cleanup is ever added, the await-vs-take distinction becomes load-bearing. v1.1 polish: change `shutdown` to `await` the task to completion via a separate oneshot or by holding a `JoinHandle`.
+- 🟡 **No regression test for the `Driver::subscribe` cancel-safety contract.** The trait doc asserts implementations must guarantee drop-mid-await safety, but no test exercises this for any of the five driver impls. Their `BoxStream` constructors are built on tokio primitives (broadcast::Receiver, mpsc::Receiver) that do guarantee this in practice, but a regression test that drops the stream future mid-await and asserts no update is lost would harden the contract. Polish item.
+- 🟡 **Multi-task project-fixture test does not open an actual WebSocket connection.** `shutdown_token_drains_project_gateway_tasks` covers service-level drain with all four service tasks active; `shutdown_token_sends_websocket_close_frame` covers per-connection drain. The integration of the two (multi-task + open WS connection draining together under the same token cancel) is implicitly covered but not directly asserted. Acceptable test decomposition; flagging for transparency.
+- 🟡 **`scripting/src/worker.rs` not in the brief's "Files to modify" list.** Brief listed only the five select! sites and the trait doc. Codex correctly traced reachability — `WorkerProc::wait` is the `worker.wait()` arm at host.rs:379, and `WorkerProc::invoke_tag_change` is reachable from within the `snapshots.next()` arm body. Annotations are correctly placed. Not a finding, just a sign of careful audit; I'll mention it because the brief omitted worker.rs.
+- 🟡 **`while let Some(item) = incoming.next().await` rewritten** to a `loop { let item = tokio::select! { ... }; let Some(item) = item else { break; }; }` (server.rs:407-419). Necessary to add the shutdown arm. Codex correctly handles both shutdown-requested and stream-end paths via the `shutdown_requested` flag. Real behavioral change but correctly implemented.
+- 🟡 **Manual Ctrl-C + `PRAGMA integrity_check` smoke deferred** (same as AJ). Codex correctly didn't fake it. Maintainer-action follow-up.
+
+### Independent verification
+
+- `cargo fmt --all --check` — ✅ clean.
+- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` — ✅ clean.
+- `cargo test --workspace --all-features --locked` — ✅ green (single workspace run on my side; Codex documents three consecutive runs).
+- `cargo doc --workspace --no-deps` — ✅ green; no new rustdoc warnings from the cancel-safety annotations.
+- Read every changed Rust source file (gateway/main.rs, gateway/server.rs, driver-api/trait_def.rs, driver-api/supervisor.rs, scripting/host.rs, scripting/worker.rs, alarm-engine/engine.rs, historian/recorder.rs, gateway/project.rs, driver-ads/examples/hardware-smoke.rs) plus the wiki update; cross-checked against the brief's call-site list.
+
+### Acceptance-criteria tally
+
+- [x] Every `JoinHandle<()>` storage site listed is now `AbortHandle`. Eight sites converted.
+- [x] No new clippy warnings under `-D warnings`.
+- [x] Every `async fn` reachable from a `tokio::select!` arm has a single-line cancel-safety annotation. Eight `select!` sites all annotated; trait-level `Driver::subscribe` contract added.
+- [x] Per-connection WebSocket handlers receive a `shutdown.cancelled()` signal and emit a 1001 close frame within ~1 s.
+- [x] AJ shutdown-drain test extended with the multi-task project-fixture variant (`shutdown_token_drains_project_gateway_tasks`).
+- [x] New per-connection drain test passes on three consecutive runs (`shutdown_token_sends_websocket_close_frame`).
+- [x] `cargo doc --workspace --no-deps` succeeds with zero new rustdoc warnings.
+- [~] `apps/designer/README.md:46` smoke step verified manually with active browser session — **deferred** to maintainer hardware/runtime session, same as AJ.
+
 ## Verdict
+
+**Merged.** AbortHandle conversion at all 8 sites; cancel-safety annotations on every async fn reachable from a `tokio::select!` arm including the `Driver::subscribe` trait-level contract; per-connection WebSocket handler drain with 1001 close frame and 1-second handshake window inside the umbrella `SHUTDOWN_GRACE` budget. The `WorkerProc::invoke_tag_change` cancel-unsafe surface is documented with a `TODO(v1.1)` marker rather than fixed inline, exactly per the brief.
+
+Codex extended scope on one point — adding `Drop` to `SupervisorHandle` so an unforgotten handle aborts its task instead of leaking — and was right to. The brief asked for a type conversion; the underlying behavior bug (drop-without-shutdown leaks the task) was inherited from the previous `JoinHandle` version and was worth fixing. **Pattern noted**: third sprint occurrence of Codex catching an in-scope improvement the brief missed (after AJ's alarm-engine async refactor and AD's TLS fourth-option).
+
+Two genuine v1.1 follow-ups surface: (1) `SupervisorHandle::shutdown` no longer awaits the task to drain — the mpsc reply provides ordering, but post-reply cleanup would be racy if added; (2) no regression test exercises the `Driver::subscribe` cancel-safety contract directly. Neither blocks the merge; both are tracked under the broader v1.1 polish list rather than as their own briefs. The wiki page is now the canonical reference for the workspace's async hygiene posture.

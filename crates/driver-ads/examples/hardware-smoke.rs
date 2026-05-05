@@ -245,6 +245,8 @@ async fn main() -> anyhow::Result<()> {
 
     let mut count = 0u64;
     loop {
+        // Cancel-safe: timeout sleep and driver subscription Stream::next can
+        // both be dropped here without consuming an unseen update.
         tokio::select! {
             _ = &mut timeout => break,
             update = stream.next() => match update {
