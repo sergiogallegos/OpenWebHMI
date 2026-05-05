@@ -8,7 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-*(no open Phase 4 tasks)*
+| CODEX-AL | API polish — TagPath + DriverId newtypes, #[non_exhaustive] sweep, ScriptHost cheap-clone | codex | open | 2026-05-05 claude | [`CODEX-AL-api-polish.md`](tasks/CODEX-AL-api-polish.md) |
 
 ### Phase 4 dependency graph
 
