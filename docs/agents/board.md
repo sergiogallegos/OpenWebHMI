@@ -8,15 +8,23 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-*(no open Phase 4 tasks)*
+| CODEX-AJ | Async hygiene — blocking SQLite + coordinated shutdown + scripting fan-in | codex | open | 2026-05-05 claude | [`CODEX-AJ-async-hygiene.md`](tasks/CODEX-AJ-async-hygiene.md) |
 
 ### Phase 4 dependency graph
 
 ```
-(all driver + component + audit + backup ladder items merged)
+(v1.0 feature ladder complete — AE/AF/AI/AG/AD/AH/AC merged)
+        │
+        └── quality follow-ups (review pass 2 — Rust 1.95 idioms vs tokio/axum/ripgrep)
+                ├── CODEX-AJ  async hygiene (Tier 1: blocking SQLite, shutdown coord, scripting fan-in)  ← open
+                ├── CODEX-AK  tokio handle ergonomics (JoinSet inside subsystems, #[must_use], cancel-safety docs)
+                ├── CODEX-AL  API polish (newtypes, builder/Config split, #[non_exhaustive], cheap-clone handles)
+                └── CODEX-AM  stdlib + deps modernization (thiserror 2.x, format-capture, missing-docs consistency)
 ```
 
-**🎉 Phase 4 ladder complete.** AE (audit log), AF (backup/restore), AI (historian import closeout) all merged. Driver slice was AG (toolchain) → AD (ADS validation) → AH (ADS native notifications). Component slice closed at AC (25 components). Remaining v1.0 closeout items live outside the agent-task ladder: plugin SDK, performance baseline, pre-1.0 hardware-validation 24h soak gate, plus the v1.1 polish list flagged across AE/AF/AI verdicts (SessionExpired hook, wiki/protocol/* pages, SQL-side audit-log filter pushdown, alarm-journal merge dedupe, designer session disconnect on replace).
+**🎉 Phase 4 v1.0 feature ladder complete.** AE (audit log), AF (backup/restore), AI (historian import closeout) all merged. Driver slice was AG (toolchain) → AD (ADS validation) → AH (ADS native notifications). Component slice closed at AC (25 components). Remaining v1.0 closeout items live outside the agent-task ladder: plugin SDK, performance baseline, pre-1.0 hardware-validation 24h soak gate, plus the v1.1 polish list flagged across AE/AF/AI verdicts (SessionExpired hook, wiki/protocol/* pages, SQL-side audit-log filter pushdown, alarm-journal merge dedupe, designer session disconnect on replace).
+
+**Quality sweep (review pass 2 — Rust 1.95 + edition 2024 idioms vs tokio/axum/ripgrep).** CODEX-AG was the mechanical edition migration; this is the deferred idiom modernization, sliced four ways. CODEX-AJ (Tier 1, runtime-health gaps) leads; AK/AL/AM open after AJ merges to avoid blurring correctness fixes with surface cleanup.
 
 ## Phase 3 — Core SCADA features
 
