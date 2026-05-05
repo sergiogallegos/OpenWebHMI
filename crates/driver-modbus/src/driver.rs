@@ -156,12 +156,7 @@ impl Driver for ModbusDriver {
             "Modbus",
             "Modbus TCP/RTU",
             env!("CARGO_PKG_VERSION"),
-            Capabilities {
-                native_subscribe: false,
-                browse: false,
-                batch_read: true,
-                batch_write: true,
-            },
+            Capabilities::new(false, false, true, true),
         )
     }
 

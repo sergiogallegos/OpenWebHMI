@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::sync::broadcast;
 use tokio::task::AbortHandle;
@@ -18,7 +18,7 @@ pub struct AlarmEngineHandle {
     tag_store: TagStore,
     journal: AlarmJournal,
     events: broadcast::Sender<AlarmEvent>,
-    handles: HashMap<String, AbortHandle>,
+    handles: HashMap<TagPath, AbortHandle>,
     definitions: HashMap<String, AlarmDefinition>,
     acks: Arc<Mutex<HashMap<String, AckRequest>>>,
 }
@@ -144,11 +144,11 @@ pub fn spawn_alarm_engine(
 }
 
 fn spawn_path(
-    path: String,
+    path: TagPath,
     tag_store: TagStore,
     journal: AlarmJournal,
     events: broadcast::Sender<AlarmEvent>,
-    definitions: HashMap<String, Vec<AlarmDefinition>>,
+    definitions: HashMap<TagPath, Vec<AlarmDefinition>>,
     acks: Arc<Mutex<HashMap<String, AckRequest>>>,
 ) -> AbortHandle {
     let handle = tokio::spawn(async move {
@@ -191,7 +191,7 @@ impl AlarmRuntime {
     async fn evaluate_snapshot(
         &mut self,
         snapshot: &TagSnapshot,
-        definitions: &HashMap<String, Vec<AlarmDefinition>>,
+        definitions: &HashMap<TagPath, Vec<AlarmDefinition>>,
         journal: &AlarmJournal,
         events: &broadcast::Sender<AlarmEvent>,
         acks: &Arc<Mutex<HashMap<String, AckRequest>>>,
@@ -358,8 +358,8 @@ fn definitions_by_id(definitions: Vec<AlarmDefinition>) -> HashMap<String, Alarm
 
 fn definitions_for_path(
     definitions: &HashMap<String, AlarmDefinition>,
-) -> HashMap<String, Vec<AlarmDefinition>> {
-    let mut by_path = HashMap::<String, Vec<AlarmDefinition>>::new();
+) -> HashMap<TagPath, Vec<AlarmDefinition>> {
+    let mut by_path = HashMap::<TagPath, Vec<AlarmDefinition>>::new();
     for definition in definitions.values() {
         by_path
             .entry(definition.tag_path.clone())
@@ -369,7 +369,7 @@ fn definitions_for_path(
     by_path
 }
 
-fn tag_paths(definitions: &HashMap<String, AlarmDefinition>) -> HashSet<String> {
+fn tag_paths(definitions: &HashMap<String, AlarmDefinition>) -> HashSet<TagPath> {
     definitions
         .values()
         .map(|definition| definition.tag_path.clone())

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// Configuration for a Rockwell EtherNet/IP connection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
+#[non_exhaustive]
 pub struct RockwellConfig {
     /// PLC host or `host:port` endpoint.
     pub host: String,

@@ -48,12 +48,7 @@ mod tests {
             vendor: "OpenWebHMI".to_string(),
             family: "test".to_string(),
             crate_version: "0.0.1".to_string(),
-            capabilities: Capabilities {
-                native_subscribe: true,
-                browse: true,
-                batch_read: false,
-                batch_write: false,
-            },
+            capabilities: Capabilities::new(true, true, false, false),
         };
         let metadata_json = serde_json::to_string(&metadata).unwrap();
         assert_eq!(

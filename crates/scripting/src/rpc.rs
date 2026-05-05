@@ -1,13 +1,13 @@
 //! JSON frame types for the CPython worker channel.
 
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use serde::{Deserialize, Serialize};
 
 /// A tag snapshot passed to a script trigger.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TagChangeArgs {
     /// Full tag path.
-    pub tag_path: String,
+    pub tag_path: TagPath,
     /// Current value.
     pub value: TagValue,
     /// Current quality.
@@ -117,14 +117,14 @@ pub enum RpcMethod {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TagReadArgs {
     /// Full tag path.
-    pub path: String,
+    pub path: TagPath,
 }
 
 /// Arguments for `tag.write`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TagWriteArgs {
     /// Full tag path.
-    pub path: String,
+    pub path: TagPath,
     /// Value to publish.
     pub value: TagValue,
 }

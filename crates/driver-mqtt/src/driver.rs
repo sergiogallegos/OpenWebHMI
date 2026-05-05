@@ -46,12 +46,7 @@ impl Driver for MqttDriver {
             "MQTT",
             "MQTT + Sparkplug B",
             env!("CARGO_PKG_VERSION"),
-            Capabilities {
-                native_subscribe: true,
-                browse: true,
-                batch_read: false,
-                batch_write: true,
-            },
+            Capabilities::new(true, true, false, true),
         )
     }
 

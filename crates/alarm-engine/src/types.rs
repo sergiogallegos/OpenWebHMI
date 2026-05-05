@@ -1,6 +1,6 @@
 //! Public alarm types.
 
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use serde::{Deserialize, Serialize};
 
 /// Static alarm definition loaded from a project.
@@ -13,7 +13,7 @@ pub struct AlarmDefinition {
     /// Alarm priority, where `1` is highest and `5` is lowest.
     pub priority: u8,
     /// Tag path evaluated by this alarm.
-    pub tag_path: String,
+    pub tag_path: TagPath,
     /// Condition that activates this alarm.
     pub condition: AlarmCondition,
     /// Message template. `{value}` is replaced with the current tag value.
@@ -112,7 +112,7 @@ pub struct AlarmEvent {
     /// New state.
     pub state: AlarmState,
     /// Evaluated tag path.
-    pub tag_path: String,
+    pub tag_path: TagPath,
     /// Current tag value.
     pub value: TagValue,
     /// Current tag quality.

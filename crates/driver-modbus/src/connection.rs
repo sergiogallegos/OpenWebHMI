@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// Driver connection and polling configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
+#[non_exhaustive]
 pub struct ModbusConfig {
     /// Transport-specific endpoint.
     #[serde(flatten)]

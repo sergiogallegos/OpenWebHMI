@@ -3,7 +3,7 @@ id: CODEX-AL
 title: API polish — TagPath + DriverId newtypes, #[non_exhaustive] sweep, ScriptHost cheap-clone
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-05-05
 last-update: 2026-05-05 claude
 ---
@@ -200,6 +200,75 @@ When `#[non_exhaustive]` lands on `ClientMessage` / `ServerMessage`, every match
 
 <!-- Codex appends status transitions and notes here. -->
 
+2026-05-05 codex Status -> submitted. Added `TagPath` and `DriverId` transparent newtypes in `openwebhmi-protocol` and migrated runtime tag-path surfaces through protocol messages, tag-engine snapshots/store APIs, historian configs/store APIs, alarm definitions/events, audit tag-write payloads, scripting RPC/sink APIs, and gateway write/subscription routing. Gateway `DriverHandles` is keyed by `DriverId`; `TagAddress` remains driver-native. Added `#[non_exhaustive]` to `ClientMessage`, `ServerMessage`, driver configs, backup/restore options, audit event/query types, public driver/auth error enums, and related growable public metadata; fixed the gateway `ClientMessage` match with a wildcard warn arm. Refactored `ScriptHost` into a cheap-clone value type with an internal `Arc`, replacing the three `Arc<ScriptHost>` gateway exposures. Tests added: `crates/protocol/tests/identifiers.rs` for JSON byte identity, type separation, and wildcard matching; `ScriptHost` clone identity test. Validation green: `cargo fmt --all --check` x3, `cargo clippy --workspace --all-targets --all-features -- -D warnings` x3, `cargo test --workspace --all-features --locked` x3, `cargo doc --workspace --no-deps`, `pnpm -r typecheck`, and `pnpm -r test`. Manual browser/project smoke was not run in this environment. Note: `ProjectStore` schema structs still carry tag paths/driver ids as `String` because `openwebhmi-protocol` depends on project-store for wire `View`/`ArtifactKind`; this boundary is documented in `wiki/architecture/api-surface-stability.md` as a v1.1 design follow-up.
+
 ## Claude review
 
+### Strong points
+
+- ✅ **`string_newtype!` macro** (`crates/protocol/src/lib.rs:16-77`) DRYs up the boilerplate. Both `TagPath` and `DriverId` come from one declaration each (lines 79-93). Future identifier newtypes (`ProjectId`, `ScriptId`, `AlarmId`, `SessionId`, `UserId` — the v1.1 follow-ups) drop in as one-line additions. Right structural call.
+- ✅ **`Borrow<str>` impl included.** Brief listed `AsRef<str>` and `Deref` but not `Borrow<str>`. Codex correctly identified that without `Borrow<str>`, every HashMap lookup via `&str` against `HashMap<TagPath, _>` would force conversion at the call site. The `Borrow<str>` impl is load-bearing for the gateway's `DriverHandles: HashMap<DriverId, _>` lookups elsewhere. Bonus that's actually critical.
+- ✅ **`PartialOrd, Ord` derives, `From<&String>`, `From<&Self>`** — minor ergonomic adds beyond brief. Make the newtypes feel like first-class string types in sorted collections and at trait boundaries.
+- ✅ **`TagValue` and `Quality` doc comments** explicitly note "intentionally exhaustive" with rationale (lines 191-194, 209-211). Per brief discipline; future contributors don't accidentally add `#[non_exhaustive]` here.
+- ✅ **`#[non_exhaustive]` sweep correctly applied**: `ClientMessage`, `ServerMessage`, `AuditQuery`, plus all 5 driver configs (`config.rs` / `connection.rs` files in each driver crate got 1-line additions), `RestoreOptions`, `BackupOptions`, the public error enums in `auth`, `audit-log`, `driver-api`. Exhaustive coverage of the growth surfaces.
+- ✅ **Wildcard match arm** at `gateway/src/server.rs` has the exact pattern brief specified: `_ => { warn!(message = ?client_message, "unhandled client message kind"); }`. Preserves observability when new variants land.
+- ✅ **`ScriptHost` cheap-clone refactor structurally clean**: new `ScriptHostInner` struct holds the previously-direct fields; `ScriptHost { inner: Arc<ScriptHostInner> }` with `#[derive(Clone)]`. `task: Mutex<Option<JoinHandle<()>>>` — `Mutex` for interior mutability through `Arc`, `Option` for `take()` on shutdown. Both required, both correct.
+- ✅ **Comprehensive identifier test** at `crates/protocol/tests/identifiers.rs`:
+  - `identifier_newtypes_are_transparent_json_strings` — wire-format byte-identical round-trip.
+  - `tag_write_json_shape_matches_pre_newtype_wire_form` — TagWrite specifically (the most load-bearing message), asserts byte-identical pre/post-newtype JSON.
+  - `tag_path_and_driver_id_are_not_interchangeable_types` — TypeId comparison + function-arg overload proves the type-safety win.
+  - `non_exhaustive_messages_are_matched_with_wildcard_arms` — verifies the annotation enforces `_ =>`.
+- ✅ **`script_host_clone_shares_inner_state` test** uses `Arc::ptr_eq(&host.inner, &clone.inner)` — the canonical cheap-clone identity check.
+- ✅ **`DriverHandles` keys by `DriverId`** (the brief's mildly-preferred option). Type-consistency at the gateway routing layer.
+- ✅ **`TagAddress` correctly NOT migrated** (per brief discipline). Wiki page explicitly calls out the distinction so future contributors don't conflate the PLC-side address with the runtime tag path.
+- ✅ **Wiki page (`wiki/architecture/api-surface-stability.md`)** is honest and complete. Lists what AL accomplished, evidence (with the new test names), and the **two** legitimate "Open questions": (1) ProjectStore schema caveat (see findings); (2) other identifier newtypes as v1.1 follow-ups.
+- ✅ **Diff size much smaller than estimated** — 48 files / +399 / -266 (vs the brief's 1500-2500 estimate). The macro DRYs up the boilerplate; most call sites are 1-character type changes. Same correctness, less to review.
+- ✅ **Internal scripting refactors tracked correctly**: `tag_paths: &'a [String]` → `&'a [TagPath]` in `ReadyWorkerRuntime`, `StreamMap<String, BroadcastStream<TagSnapshot>>` → `StreamMap<TagPath, BroadcastStream<TagSnapshot>>` in `run_ready_worker`. Internal types follow the public newtype, no boundary leak.
+
+### Bonuses beyond brief
+
+- ✅ **Honest scope-boundary discipline** on the `ProjectStore` schema. `crates/protocol/src/lib.rs:13` re-exports `View`/`ArtifactKind` from `openwebhmi_project_store`, which means promoting `View.tag_path` to `TagPath` would create a circular crate dependency (project-store imports protocol's TagPath; protocol re-exports project-store's View). Codex correctly stopped at the boundary, documented the caveat in the wiki, and explicitly flagged it as a v1.1 design follow-up. Not trying to force the migration through is the correct call.
+- ✅ **Macro design choice** — using `string_newtype!` as a declarative macro (rather than copy-pasting the impl block twice) means the v1.1 identifier-newtype additions cost one line of code each. Anticipates the follow-up work.
+
+### Findings
+
+- 🟡 **`ProjectStore` schema caveat owned but not closed.** `View.tag_path` and `View.driver_id` (project-store schema types reachable from project JSON) still carry these as `String`. Closing this requires either (a) moving `View`/`ArtifactKind` from `project-store` to `protocol`, (b) defining the identifier newtypes in a new lower-level crate that both depend on, or (c) inverting the dependency so `protocol` is consumed by `project-store`. Each is a real architectural decision. **Tracked** as v1.1 design follow-up in the wiki page's "Open questions". Not a merge blocker.
+- 🟡 **Manual project-load smoke deferred** (same as AJ/AK). Codex correctly didn't fake it. The wire-format round-trip tests provide JSON shape assurance; a real project load + tag write + alarm ack + history query would catch any deserialization-edge-case regression that the unit tests miss. Maintainer-action item.
+- 🟡 **No verification of the v1.1 design follow-up plan.** The wiki "Open questions" #1 lists three candidate approaches for the ProjectStore schema migration but doesn't recommend one. When AL2 (or whatever picks this up) is briefed, that decision needs to be made first.
+
+### Independent verification
+
+- `cargo fmt --all --check` — ✅ clean.
+- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` — ✅ clean.
+- `cargo test --workspace --all-features --locked` — ✅ green (single workspace run on my side; Codex documents three consecutive runs).
+- `cargo doc --workspace --no-deps` — ✅ green; newtype doc comments render cleanly.
+- `pnpm -r typecheck` — ✅ green. **Critical AL gate**: TS shape preserved, `tag_path: string` and `driver_id: string` in protocol-ts unchanged. The `#[serde(transparent)]` annotation honored by the ts-rs derive without manual `#[ts(type = "string")]` override.
+- `pnpm -r test` — ✅ green.
+- Read the load-bearing files (protocol/src/lib.rs newtype + non_exhaustive sweep, scripting/src/host.rs cheap-clone, gateway/src/server.rs wildcard arm, the new tests, the new wiki page) plus spot-check of driver crates and the `DriverHandles: HashMap<DriverId, _>` migration.
+
+### Acceptance-criteria tally
+
+- [x] `pub struct TagPath(String)` and `pub struct DriverId(String)` defined in `crates/protocol`. Both `Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize` (last two via `#[serde(transparent)]`), with `From<&str>`, `From<String>`, `From<&String>`, `From<&Self>`, `AsRef<str>`, `Borrow<str>`, `Deref<Target=str>`, `Display` impls.
+- [x] Every site in the workspace that carries a tag path uses `TagPath`; driver instance ids use `DriverId`. ProjectStore schema types deferred per documented v1.1 architectural caveat.
+- [x] `#[non_exhaustive]` added to the brief's growth surfaces (driver configs, message enums, restore/backup options, audit event/query, public error enums). `TagValue`/`Quality` doc-commented as intentionally exhaustive.
+- [x] Every match against `ClientMessage` / `ServerMessage` has a `_ =>` arm with a `warn!` log.
+- [x] `ScriptHost` is `#[derive(Clone)]` cheap-clone. The three `Arc<ScriptHost>` exposures (`server.rs:43, 84`, `main.rs:238`) take or return `ScriptHost` directly.
+- [x] Wire-format round-trip test confirms JSON byte-identical (`identifier_newtypes_are_transparent_json_strings`, `tag_write_json_shape_matches_pre_newtype_wire_form`).
+- [x] `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` clean.
+- [x] `pnpm -r typecheck` + `pnpm -r test` green.
+- [~] Manual smoke deferred to maintainer hardware/runtime session (same as AJ/AK).
+
 ## Verdict
+
+**Merged.** TagPath + DriverId newtypes via a `string_newtype!` macro that makes future identifier newtypes one-liners; transparent JSON shape preserved (verified by `pnpm -r typecheck` keeping protocol-ts unchanged + byte-identical round-trip tests); `#[non_exhaustive]` sweep across the brief's growth surfaces with `TagValue`/`Quality` documented as intentionally exhaustive; `ClientMessage` wildcard arm with `warn!`-level observability; `ScriptHost` cheap-clone refactor with `Arc<ScriptHostInner>` and a `Mutex<Option<JoinHandle>>` to make `shutdown(self)` work cleanly under cheap-clone semantics; comprehensive new test coverage including TypeId-based proof that `TagPath ≠ DriverId` at the type level.
+
+The diff turned out smaller than briefed (~400 net lines vs the 1500-2500 estimate) because the macro DRYs the newtype boilerplate and most call-site changes are 1-character type renames. The `Borrow<str>` impl beyond brief is load-bearing — without it, every `&str` lookup against a `HashMap<TagPath, _>` would force conversion at the call site.
+
+Codex held scope-discipline on the **ProjectStore schema caveat**: `protocol::lib.rs:13` re-exports `View`/`ArtifactKind` from `project-store`, so promoting `View.tag_path` to `TagPath` would create a circular crate dependency. Codex correctly stopped, documented three architectural-decision options in the wiki, and tracked it as v1.1 design work rather than forcing the migration through. **This is the fourth time this sprint Codex has caught an in-scope boundary the brief missed** (after AJ's alarm-engine async refactor, AK's SupervisorHandle::Drop, and now this); pattern noted across the verdicts.
+
+Three v1.1 follow-ups surface and are tracked in the wiki:
+1. ProjectStore schema migration (architectural decision required first).
+2. Other identifier newtypes — `ProjectId`, `ScriptId`, `AlarmId`, `SessionId`, `UserId` — drop in as one-line `string_newtype!` additions once the pattern is settled.
+3. The deferred manual project-load smoke (same as AJ/AK; maintainer hardware/runtime session).
+
+Phase 4 quality sweep status: AJ + AK + AL merged. **CODEX-AM** (`thiserror = "2"` / format-capture / missing-docs lint consistency) is the last queued Tier 4 task. None of the AJ/AK/AL items blocked v1.0; all four reviews were tightly scoped, three caught in-scope brief gaps, all four merged on first review.

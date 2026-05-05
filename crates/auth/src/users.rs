@@ -238,6 +238,7 @@ impl UserStore {
 
 /// User-store error.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum UserError {
     /// SQLite error.
     #[error(transparent)]

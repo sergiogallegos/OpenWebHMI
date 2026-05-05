@@ -20,6 +20,7 @@ Status values:
 - [architecture/audit-log.md](architecture/audit-log.md) — SQLite-backed security audit journal, gateway hooks, administrator-only query/subscribe protocol, and remaining scale questions. `active`
 - [architecture/backup-restore.md](architecture/backup-restore.md) — `.owhmi` archive core, manifest schema, path traversal checks, historian/alarm SQLite snapshot export/import semantics, audit hooks, and gateway HTTP side-channel flow. `active`
 - [architecture/async-runtime-hygiene.md](architecture/async-runtime-hygiene.md) — Blocking-store work offloaded from Tokio workers, gateway cancellation/drain behavior, and event-driven script trigger fan-in. `active`
+- [architecture/api-surface-stability.md](architecture/api-surface-stability.md) — Rust API stability decisions for TagPath/DriverId newtypes, non-exhaustive public surfaces, and ScriptHost cheap-clone handles. `active`
 
 Planned high-value pages:
 - `architecture/protocol-evolution.md` — How the WebSocket message schema is versioned. `seed`

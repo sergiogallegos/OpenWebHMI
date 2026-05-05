@@ -87,6 +87,7 @@ impl SessionManager {
 
 /// Session error.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum SessionError {
     /// JWT library error.
     #[error(transparent)]

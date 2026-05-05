@@ -127,13 +127,9 @@ async fn subscribe_maps_data_partial_error_and_read_failure_quality() {
             failure: None,
         },
     ]);
-    let driver = RockwellDriver::with_client(
-        Box::new(mock),
-        RockwellConfig {
-            poll_rate_ms: 25,
-            ..RockwellConfig::default()
-        },
-    );
+    let mut config = RockwellConfig::default();
+    config.poll_rate_ms = 25;
+    let driver = RockwellDriver::with_client(Box::new(mock), config);
 
     let mut stream = driver
         .subscribe(vec![

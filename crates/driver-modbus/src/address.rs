@@ -414,6 +414,7 @@ pub enum EncodedValue {
 
 /// Address parse failure.
 #[derive(Debug, Error, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ModbusAddressError {
     /// Address did not contain `<unit>/<area>/<addr...>`.
     #[error("invalid Modbus address shape: {0}")]

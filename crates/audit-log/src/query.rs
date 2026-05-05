@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Audit query filter and pagination request.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct AuditQuery {
     /// Inclusive lower timestamp bound.
     pub from_ts_ms: Option<u64>,

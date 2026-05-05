@@ -3,7 +3,7 @@
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use rusqlite::{Connection, DatabaseName, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
@@ -48,14 +48,15 @@ impl HistorianStore {
     /// Write one sample.
     pub fn write_sample(
         &self,
-        tag_path: &str,
+        tag_path: impl Into<TagPath>,
         ts_ms: u64,
         value: &TagValue,
         quality: Quality,
     ) -> anyhow::Result<()> {
+        let tag_path = tag_path.into();
         let mut conn = self.lock()?;
         let tx = conn.transaction()?;
-        let tag_id = intern_tag(&tx, tag_path)?;
+        let tag_id = intern_tag(&tx, &tag_path)?;
         tx.execute(
             "INSERT OR REPLACE INTO tag_history (tag_id, ts_ms, value, quality)
              VALUES (?1, ?2, ?3, ?4)",
@@ -73,13 +74,14 @@ impl HistorianStore {
     /// Read raw or aggregated samples for a tag.
     pub fn read(
         &self,
-        tag_path: &str,
+        tag_path: impl Into<TagPath>,
         t_start_ms: u64,
         t_end_ms: u64,
         aggregation: Aggregation,
         max_points: u32,
     ) -> anyhow::Result<Vec<HistoryPoint>> {
-        let points = self.read_raw_unbounded(tag_path, t_start_ms, t_end_ms)?;
+        let tag_path = tag_path.into();
+        let points = self.read_raw_unbounded(&tag_path, t_start_ms, t_end_ms)?;
         Ok(aggregate(
             &points,
             t_start_ms,
@@ -132,7 +134,7 @@ impl HistorianStore {
 
     fn read_raw_unbounded(
         &self,
-        tag_path: &str,
+        tag_path: &TagPath,
         t_start_ms: u64,
         t_end_ms: u64,
     ) -> anyhow::Result<Vec<HistoryPoint>> {
@@ -190,18 +192,18 @@ fn init_schema(conn: &Connection) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn intern_tag(conn: &Connection, tag_path: &str) -> anyhow::Result<i64> {
+fn intern_tag(conn: &Connection, tag_path: &TagPath) -> anyhow::Result<i64> {
     conn.execute(
         "INSERT OR IGNORE INTO tag_dictionary (tag_path) VALUES (?1)",
-        params![tag_path],
+        params![tag_path.as_str()],
     )?;
     tag_id(conn, tag_path)?.ok_or_else(|| anyhow::anyhow!("failed to intern tag path"))
 }
 
-fn tag_id(conn: &Connection, tag_path: &str) -> anyhow::Result<Option<i64>> {
+fn tag_id(conn: &Connection, tag_path: &TagPath) -> anyhow::Result<Option<i64>> {
     conn.query_row(
         "SELECT tag_id FROM tag_dictionary WHERE tag_path = ?1",
-        params![tag_path],
+        params![tag_path.as_str()],
         |row| row.get(0),
     )
     .optional()

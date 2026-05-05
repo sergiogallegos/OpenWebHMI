@@ -36,6 +36,7 @@ pub enum MqttTransport {
 
 /// Configured topic/tag mapping.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct TopicConfig {
     /// OpenWebHMI tag address.
     pub address: String,
@@ -50,6 +51,7 @@ pub struct TopicConfig {
 /// MQTT driver configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
+#[non_exhaustive]
 pub struct MqttConfig {
     /// Broker host.
     pub host: String,

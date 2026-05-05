@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use openwebhmi_protocol::TagValue;
+use openwebhmi_protocol::{TagPath, TagValue};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::task::AbortHandle;
 use tracing::warn;
@@ -13,7 +13,7 @@ use crate::store::HistorianStore;
 #[derive(Debug, Clone, PartialEq)]
 pub struct HistoryTagConfig {
     /// Tag path to record.
-    pub path: String,
+    pub path: TagPath,
     /// Minimum interval between recorded samples.
     pub rate_ms: u64,
     /// Numeric deadband. Non-numeric values ignore it.
@@ -24,8 +24,8 @@ pub struct HistoryTagConfig {
 pub struct RecorderHandle {
     tag_store: TagStore,
     historian: HistorianStore,
-    handles: HashMap<String, AbortHandle>,
-    configs: HashMap<String, HistoryTagConfig>,
+    handles: HashMap<TagPath, AbortHandle>,
+    configs: HashMap<TagPath, HistoryTagConfig>,
 }
 
 impl RecorderHandle {
@@ -185,7 +185,7 @@ fn numeric_value(value: &TagValue) -> Option<f64> {
 }
 
 /// Diff helper used by gateway hot-reload integration.
-pub fn configs_by_path(configs: Vec<HistoryTagConfig>) -> HashMap<String, HistoryTagConfig> {
+pub fn configs_by_path(configs: Vec<HistoryTagConfig>) -> HashMap<TagPath, HistoryTagConfig> {
     configs
         .into_iter()
         .map(|config| (config.path.clone(), config))

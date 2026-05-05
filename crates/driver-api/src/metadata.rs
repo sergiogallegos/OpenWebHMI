@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Static metadata reported by a driver implementation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct DriverMetadata {
     /// Device vendor name.
     pub vendor: String,
@@ -17,6 +18,7 @@ pub struct DriverMetadata {
 
 /// Capability flags used by the gateway and designer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct Capabilities {
     /// Driver can stream updates without supervisor polling.
     pub native_subscribe: bool,
@@ -36,4 +38,19 @@ impl Capabilities {
         batch_read: false,
         batch_write: false,
     };
+
+    /// Create capability flags.
+    pub const fn new(
+        native_subscribe: bool,
+        browse: bool,
+        batch_read: bool,
+        batch_write: bool,
+    ) -> Self {
+        Self {
+            native_subscribe,
+            browse,
+            batch_read,
+            batch_write,
+        }
+    }
 }

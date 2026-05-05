@@ -2,7 +2,7 @@
 
 use openwebhmi_audit_log::{AuditEvent, AuditLog, WriteSource};
 use openwebhmi_driver_api::TagAddress;
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use openwebhmi_scripting::{TagWriteError, TagWriteSink};
 use openwebhmi_tag_engine::TagStore;
 use tracing::warn;
@@ -36,7 +36,7 @@ impl GatewayTagWriteSink {
         }
     }
 
-    fn audit(&self, path: &str, value: TagValue, success: bool, error: Option<String>) {
+    fn audit(&self, path: &TagPath, value: TagValue, success: bool, error: Option<String>) {
         let Some(audit_log) = &self.audit_log else {
             return;
         };
@@ -45,7 +45,7 @@ impl GatewayTagWriteSink {
             None,
             None,
             AuditEvent::TagWrite {
-                path: path.to_string(),
+                path: path.clone(),
                 value,
                 success,
                 source: WriteSource::Script,
@@ -58,7 +58,7 @@ impl GatewayTagWriteSink {
 }
 
 impl TagWriteSink for GatewayTagWriteSink {
-    fn enqueue(&self, path: &str, value: TagValue) -> Result<(), TagWriteError> {
+    fn enqueue(&self, path: &TagPath, value: TagValue) -> Result<(), TagWriteError> {
         let Some((driver_id, address)) = split_tag_path(path) else {
             self.store.publish(path, value.clone(), Quality::Good);
             self.audit(path, value, true, None);
@@ -105,7 +105,8 @@ mod tests {
         let store = TagStore::new();
         let sink = GatewayTagWriteSink::new(DriverHandles::new(), store.clone());
 
-        sink.enqueue("mem/derived", TagValue::Real(42.0)).unwrap();
+        sink.enqueue(&TagPath::new("mem/derived"), TagValue::Real(42.0))
+            .unwrap();
 
         assert_eq!(
             store.get("mem/derived").unwrap().value,
@@ -123,7 +124,8 @@ mod tests {
             Some(audit_log.clone()),
         );
 
-        sink.enqueue("mem/derived", TagValue::Real(42.0)).unwrap();
+        sink.enqueue(&TagPath::new("mem/derived"), TagValue::Real(42.0))
+            .unwrap();
 
         let (entries, total) = audit_log
             .query(&openwebhmi_audit_log::AuditQuery::default())

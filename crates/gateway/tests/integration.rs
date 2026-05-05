@@ -7,7 +7,7 @@ use openwebhmi_alarm_engine::{AlarmCondition, AlarmDefinition, AlarmJournal, spa
 use openwebhmi_auth::{Role, SessionManager, UserStore};
 use openwebhmi_gateway::{server, sim_provider};
 use openwebhmi_project_store::{ScriptConfig, ScriptTriggerConfig};
-use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagValue};
+use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagPath, TagValue};
 use openwebhmi_scripting::{MemorySink, ScriptEvent, ScriptHost, ScriptHostOptions, ScriptStatus};
 use openwebhmi_tag_engine::TagStore;
 use tempfile::TempDir;
@@ -33,7 +33,7 @@ async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscrib
     send_client(
         &mut ws,
         ClientMessage::TagSubscribe {
-            paths: vec!["system/sim/sin".to_string()],
+            paths: vec![TagPath::new("system/sim/sin")],
         },
     )
     .await;
@@ -70,7 +70,7 @@ async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscrib
     send_client(
         &mut ws,
         ClientMessage::TagUnsubscribe {
-            paths: vec!["system/sim/sin".to_string()],
+            paths: vec![TagPath::new("system/sim/sin")],
         },
     )
     .await;
@@ -106,7 +106,7 @@ async fn websocket_gateway_requires_auth_and_accepts_valid_session() {
     send_client(
         &mut anonymous,
         ClientMessage::TagSubscribe {
-            paths: vec!["system/sim/sin".to_string()],
+            paths: vec![TagPath::new("system/sim/sin")],
         },
     )
     .await;
@@ -146,7 +146,7 @@ async fn websocket_gateway_requires_auth_and_accepts_valid_session() {
     send_client(
         &mut authorized,
         ClientMessage::TagSubscribe {
-            paths: vec!["system/sim/sin".to_string()],
+            paths: vec![TagPath::new("system/sim/sin")],
         },
     )
     .await;
@@ -225,7 +225,7 @@ def pressure_changed(tag):
     )
     .unwrap();
     let store = TagStore::new();
-    let host = Arc::new(ScriptHost::spawn(
+    let host = ScriptHost::spawn(
         "phase1-demo",
         store.clone(),
         Arc::new(MemorySink::new(store.clone())),
@@ -239,7 +239,7 @@ def pressure_changed(tag):
             handler_timeout_ms: None,
         }],
         ScriptHostOptions::default(),
-    ));
+    );
     let mut host_events = host.subscribe_events();
     server::set_default_script_host(host);
     timeout(Duration::from_secs(5), async {
@@ -325,7 +325,7 @@ fn assert_valid_sin_update(message: ServerMessage) {
             quality,
             ..
         } => {
-            assert_eq!(path, "system/sim/sin");
+            assert_eq!(path, TagPath::new("system/sim/sin"));
             assert_eq!(quality, Quality::Good);
             match value {
                 TagValue::Real(value) => assert!((-1.0..=1.0).contains(&value)),

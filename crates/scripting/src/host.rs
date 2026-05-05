@@ -2,10 +2,11 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use openwebhmi_project_store::ScriptConfig;
+use openwebhmi_protocol::TagPath;
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use rand::Rng;
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -85,10 +86,15 @@ pub enum ScriptEvent {
 }
 
 /// Running host for project scripts.
+#[derive(Clone)]
 pub struct ScriptHost {
+    inner: Arc<ScriptHostInner>,
+}
+
+struct ScriptHostInner {
     control: mpsc::Sender<ControlMessage>,
     events: broadcast::Sender<ScriptEvent>,
-    task: tokio::task::JoinHandle<()>,
+    task: Mutex<Option<tokio::task::JoinHandle<()>>>,
 }
 
 /// Cloneable handle to a running script host.
@@ -134,29 +140,34 @@ impl ScriptHost {
             .await;
         });
         ScriptHost {
-            control: task_control,
-            events,
-            task,
+            inner: Arc::new(ScriptHostInner {
+                control: task_control,
+                events,
+                task: Mutex::new(Some(task)),
+            }),
         }
     }
 
     /// Return a cloneable handle for tests and embedding code.
     pub fn handle(&self) -> ScriptHostHandle {
         ScriptHostHandle {
-            control: self.control.clone(),
-            events: self.events.clone(),
+            control: self.inner.control.clone(),
+            events: self.inner.events.clone(),
         }
     }
 
     /// Subscribe to script events.
     pub fn subscribe_events(&self) -> broadcast::Receiver<ScriptEvent> {
-        self.events.subscribe()
+        self.inner.events.subscribe()
     }
 
     /// Stop the host task.
     pub async fn shutdown(self) {
-        let _ = self.control.send(ControlMessage::Shutdown).await;
-        let _ = self.task.await;
+        let _ = self.inner.control.send(ControlMessage::Shutdown).await;
+        let task = self.inner.task.lock().ok().and_then(|mut task| task.take());
+        if let Some(task) = task {
+            let _ = task.await;
+        }
     }
 }
 
@@ -333,7 +344,7 @@ struct ReadyWorkerRuntime<'a> {
     write_sink: Arc<dyn TagWriteSink>,
     project_id: &'a str,
     script_id: &'a str,
-    tag_paths: &'a [String],
+    tag_paths: &'a [TagPath],
     timeout: Duration,
     events: &'a broadcast::Sender<ScriptEvent>,
 }
@@ -360,7 +371,7 @@ async fn run_ready_worker(
                 BroadcastStream::new(runtime.store.subscribe(path)),
             )
         })
-        .collect::<StreamMap<String, BroadcastStream<TagSnapshot>>>();
+        .collect::<StreamMap<TagPath, BroadcastStream<TagSnapshot>>>();
 
     loop {
         tokio::select! {
@@ -405,7 +416,7 @@ async fn run_ready_worker(
     }
 }
 
-fn warn_fan_in_lag(script_id: &str, path: &str, skipped: u64) {
+fn warn_fan_in_lag(script_id: &str, path: &TagPath, skipped: u64) {
     warn!(
         script_id = %script_id,
         %path,
@@ -429,9 +440,13 @@ mod tests {
     use std::io::{self, Write};
     use std::sync::{Arc, Mutex};
 
+    use openwebhmi_protocol::TagPath;
+    use openwebhmi_tag_engine::TagStore;
     use tracing_subscriber::fmt::MakeWriter;
 
-    use super::warn_fan_in_lag;
+    use crate::MemorySink;
+
+    use super::{ScriptHost, ScriptHostOptions, warn_fan_in_lag};
 
     #[derive(Clone, Default)]
     struct CapturedLogs {
@@ -473,7 +488,7 @@ mod tests {
             .finish();
 
         tracing::subscriber::with_default(subscriber, || {
-            warn_fan_in_lag("script-a", "tag.fast", 17);
+            warn_fan_in_lag("script-a", &TagPath::new("tag.fast"), 17);
         });
 
         let output = String::from_utf8(logs.bytes.lock().unwrap().clone()).unwrap();
@@ -481,5 +496,21 @@ mod tests {
         assert!(output.contains("script-a"));
         assert!(output.contains("tag.fast"));
         assert!(output.contains("17"));
+    }
+
+    #[tokio::test]
+    async fn script_host_clone_shares_inner_state() {
+        let store = TagStore::new();
+        let host = ScriptHost::spawn(
+            "phase1-demo",
+            store.clone(),
+            Arc::new(MemorySink::new(store)),
+            Vec::new(),
+            ScriptHostOptions::default(),
+        );
+        let clone = host.clone();
+
+        assert!(Arc::ptr_eq(&host.inner, &clone.inner));
+        clone.shutdown().await;
     }
 }

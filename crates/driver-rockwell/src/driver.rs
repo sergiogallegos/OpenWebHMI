@@ -57,12 +57,7 @@ impl Driver for RockwellDriver {
             "Rockwell",
             "EtherNet/IP-CIP",
             env!("CARGO_PKG_VERSION"),
-            Capabilities {
-                native_subscribe: true,
-                browse: false,
-                batch_read: true,
-                batch_write: true,
-            },
+            Capabilities::new(true, false, true, true),
         )
     }
 

@@ -18,7 +18,9 @@ use openwebhmi_auth::{Permission, Role, SessionManager, UserPatch, UserStore, Ve
 use openwebhmi_backup::{BackupOptions, ImportMode, RestoreOptions};
 use openwebhmi_historian::{Aggregation, HistorianStore};
 use openwebhmi_project_store::ProjectStore;
-use openwebhmi_protocol::{AlarmState, ArtifactKind, AuthUser, ClientMessage, ServerMessage};
+use openwebhmi_protocol::{
+    AlarmState, ArtifactKind, AuthUser, ClientMessage, ServerMessage, TagPath,
+};
 use openwebhmi_scripting::{ScriptEvent, ScriptHost, ScriptStatus};
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
@@ -40,7 +42,7 @@ const OUTBOUND_CAPACITY: usize = 256;
 static DEFAULT_HISTORIAN: OnceLock<HistorianStore> = OnceLock::new();
 static DEFAULT_ALARM_JOURNAL: OnceLock<AlarmJournal> = OnceLock::new();
 static DEFAULT_ALARM_ENGINE: OnceLock<Arc<Mutex<AlarmEngineHandle>>> = OnceLock::new();
-static DEFAULT_SCRIPT_HOST: OnceLock<Arc<ScriptHost>> = OnceLock::new();
+static DEFAULT_SCRIPT_HOST: OnceLock<ScriptHost> = OnceLock::new();
 static DEFAULT_AUDIT_LOG: OnceLock<AuditLog> = OnceLock::new();
 static BACKUP_DOWNLOADS: OnceLock<Mutex<HashMap<String, BackupDownload>>> = OnceLock::new();
 
@@ -81,7 +83,7 @@ pub fn set_default_alarm_engine(engine: Arc<Mutex<AlarmEngineHandle>>) {
 }
 
 /// Set the process-wide script host used by websocket script-event handlers.
-pub fn set_default_script_host(host: Arc<ScriptHost>) {
+pub fn set_default_script_host(host: ScriptHost) {
     let _ = DEFAULT_SCRIPT_HOST.set(host);
 }
 
@@ -397,7 +399,7 @@ where
         _ => None,
     };
     let mut current_view_allowed_roles: Option<Vec<String>> = None;
-    let mut subscriptions: HashMap<String, AbortHandle> = HashMap::new();
+    let mut subscriptions: HashMap<TagPath, AbortHandle> = HashMap::new();
     let mut project_subscriptions: HashMap<String, AbortHandle> = HashMap::new();
     let mut alarm_subscriptions: HashMap<String, AbortHandle> = HashMap::new();
     let mut script_subscriptions: HashMap<String, AbortHandle> = HashMap::new();
@@ -1002,18 +1004,15 @@ where
                     send_unavailable(&out_tx);
                     continue;
                 };
-                let options = BackupOptions {
-                    historian_sqlite: None,
-                    alarm_journal_sqlite: None,
-                    historian_store: include_historian
-                        .then(|| DEFAULT_HISTORIAN.get().cloned())
-                        .flatten(),
-                    alarm_journal: include_alarm_journal
-                        .then(|| DEFAULT_ALARM_JOURNAL.get().cloned())
-                        .flatten(),
-                    audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
-                    user: session.as_ref().map(|session| session.username.clone()),
-                };
+                let mut options = BackupOptions::default();
+                options.historian_store = include_historian
+                    .then(|| DEFAULT_HISTORIAN.get().cloned())
+                    .flatten();
+                options.alarm_journal = include_alarm_journal
+                    .then(|| DEFAULT_ALARM_JOURNAL.get().cloned())
+                    .flatten();
+                options.audit_log = DEFAULT_AUDIT_LOG.get().cloned();
+                options.user = session.as_ref().map(|session| session.username.clone());
                 let export_project_store = project_store.clone();
                 let export_project_id = project_id.clone();
                 let export_result = tokio::task::spawn_blocking(move || {
@@ -1268,17 +1267,16 @@ where
                     );
                     continue;
                 };
-                let query = StoredAuditQuery {
-                    from_ts_ms: query.from_ts_ms,
-                    to_ts_ms: query.to_ts_ms,
-                    user: query.user,
-                    kinds: query.kinds,
-                    limit: query.limit,
-                    offset: query.offset,
-                };
+                let mut stored_query = StoredAuditQuery::default();
+                stored_query.from_ts_ms = query.from_ts_ms;
+                stored_query.to_ts_ms = query.to_ts_ms;
+                stored_query.user = query.user;
+                stored_query.kinds = query.kinds;
+                stored_query.limit = query.limit;
+                stored_query.offset = query.offset;
                 let audit_log = audit_log.clone();
                 let query_result =
-                    tokio::task::spawn_blocking(move || audit_log.query(&query)).await;
+                    tokio::task::spawn_blocking(move || audit_log.query(&stored_query)).await;
                 let query_result = match query_result {
                     Ok(result) => result,
                     Err(err) => {
@@ -1321,6 +1319,9 @@ where
                     },
                 );
             }
+            _ => {
+                warn!(message = ?client_message, "unhandled client message kind");
+            }
         }
     }
 
@@ -1360,7 +1361,7 @@ fn handle_tag_write(
     driver_handles: &DriverHandles,
     session: Option<&VerifiedSession>,
     peer_addr: SocketAddr,
-    path: String,
+    path: TagPath,
     value: openwebhmi_protocol::TagValue,
 ) {
     let Some((driver_id, address)) = split_tag_path(&path) else {
@@ -1650,18 +1651,14 @@ where
     let import_project_store = project_store.clone();
     let import_body = request.body.clone();
     let user = session.username;
+    let mut options = RestoreOptions::default();
+    options.mode = mode;
+    options.historian_store = DEFAULT_HISTORIAN.get().cloned();
+    options.alarm_journal = DEFAULT_ALARM_JOURNAL.get().cloned();
+    options.audit_log = DEFAULT_AUDIT_LOG.get().cloned();
+    options.user = Some(user);
     let import_result = tokio::task::spawn_blocking(move || {
-        openwebhmi_backup::import_project(
-            &import_project_store,
-            &import_body,
-            RestoreOptions {
-                mode,
-                historian_store: DEFAULT_HISTORIAN.get().cloned(),
-                alarm_journal: DEFAULT_ALARM_JOURNAL.get().cloned(),
-                audit_log: DEFAULT_AUDIT_LOG.get().cloned(),
-                user: Some(user),
-            },
-        )
+        openwebhmi_backup::import_project(&import_project_store, &import_body, options)
     })
     .await;
     let manifest = match import_result {
@@ -1931,7 +1928,7 @@ fn spawn_project_change_forwarder(
     .abort_handle()
 }
 
-fn spawn_forwarder(path: String, store: TagStore, out_tx: OutboundTx) -> AbortHandle {
+fn spawn_forwarder(path: TagPath, store: TagStore, out_tx: OutboundTx) -> AbortHandle {
     tokio::spawn(async move {
         let mut rx = store.subscribe(&path);
         loop {

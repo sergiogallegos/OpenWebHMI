@@ -40,6 +40,7 @@ pub enum AdsBackend {
 
 /// Beckhoff ADS driver configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct AdsConfig {
     /// ADS backend selection.
     #[serde(default)]

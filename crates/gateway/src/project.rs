@@ -13,7 +13,7 @@ use openwebhmi_historian::HistoryTagConfig;
 use openwebhmi_project_store::{
     AlarmConditionConfig, DriverConfig, Project, ProjectStore, TagConfig,
 };
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{DriverId, Quality, TagPath, TagValue};
 use openwebhmi_tag_engine::TagStore;
 use tokio::sync::mpsc;
 use tokio::time;
@@ -24,7 +24,7 @@ const RECONNECT_BACKOFF: Duration = Duration::from_millis(250);
 const WRITE_QUEUE_CAPACITY: usize = 64;
 
 /// Handles for project drivers keyed by project-local driver id.
-pub type DriverHandles = HashMap<String, DriverHandle>;
+pub type DriverHandles = HashMap<DriverId, DriverHandle>;
 
 /// Lightweight command handle for a running project driver.
 #[derive(Debug, Clone)]
@@ -81,13 +81,14 @@ pub fn spawn_project(project: Project, store: TagStore) -> anyhow::Result<Driver
     let mut handles = DriverHandles::new();
 
     for driver in project.drivers {
-        let tags = tags_by_driver.get(&driver.id).cloned().unwrap_or_default();
+        let driver_id = DriverId::from(&driver.id);
+        let tags = tags_by_driver.get(&driver_id).cloned().unwrap_or_default();
         if tags.is_empty() {
             continue;
         }
 
         let (tx, rx) = mpsc::channel(WRITE_QUEUE_CAPACITY);
-        handles.insert(driver.id.clone(), DriverHandle { tx });
+        handles.insert(driver_id, DriverHandle { tx });
         let store = store.clone();
         tokio::spawn(async move {
             run_driver(driver, tags, store, rx).await;
@@ -104,7 +105,7 @@ pub fn history_configs(project: &Project) -> Vec<HistoryTagConfig> {
         .iter()
         .filter_map(|tag| {
             tag.history.as_ref().map(|history| HistoryTagConfig {
-                path: tag.path.clone(),
+                path: TagPath::from(&tag.path),
                 rate_ms: history.rate_ms.unwrap_or(1_000),
                 deadband: history.deadband.unwrap_or(0.0),
             })
@@ -122,7 +123,7 @@ pub fn alarm_definitions(project: &Project) -> anyhow::Result<Vec<AlarmDefinitio
                 id: alarm.id.clone(),
                 label: alarm.label.clone(),
                 priority: alarm.priority,
-                tag_path: alarm.tag_path.clone(),
+                tag_path: TagPath::from(&alarm.tag_path),
                 condition: alarm_condition(&alarm.condition)?,
                 message: alarm.message.clone(),
                 enabled: alarm.enabled,
@@ -156,11 +157,11 @@ fn alarm_condition(condition: &AlarmConditionConfig) -> anyhow::Result<AlarmCond
     })
 }
 
-fn group_tags_by_driver(project: &Project) -> HashMap<String, Vec<TagConfig>> {
-    let mut grouped: HashMap<String, Vec<TagConfig>> = HashMap::new();
+fn group_tags_by_driver(project: &Project) -> HashMap<DriverId, Vec<TagConfig>> {
+    let mut grouped: HashMap<DriverId, Vec<TagConfig>> = HashMap::new();
     for tag in &project.tags {
         grouped
-            .entry(tag.driver.clone())
+            .entry(DriverId::from(&tag.driver))
             .or_default()
             .push(tag.clone());
     }

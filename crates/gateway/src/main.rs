@@ -235,7 +235,7 @@ fn spawn_script_runtime(
     project: &openwebhmi_project_store::Project,
     driver_handles: project::DriverHandles,
     audit_log: Option<AuditLog>,
-) -> Option<Arc<ScriptHost>> {
+) -> Option<ScriptHost> {
     let scripts = project
         .scripts
         .iter()
@@ -256,13 +256,13 @@ fn spawn_script_runtime(
         store.clone(),
         audit_log,
     ));
-    let host = Arc::new(ScriptHost::spawn(
+    let host = ScriptHost::spawn(
         project.id.clone(),
         store,
         write_sink,
         scripts,
         ScriptHostOptions::default(),
-    ));
+    );
     server::set_default_script_host(host.clone());
     let shutdown_handle = host.handle();
     if let Some(project_store) = project_store {

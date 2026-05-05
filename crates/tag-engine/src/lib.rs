@@ -24,14 +24,14 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use tokio::sync::broadcast;
 
 /// A snapshot of a tag's last-known state.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TagSnapshot {
     /// Full tag path.
-    pub path: String,
+    pub path: TagPath,
     /// Current value.
     pub value: TagValue,
     /// Current quality.
@@ -53,7 +53,7 @@ struct TagSlot {
 /// Cheap to clone — the inner state is shared via `Arc`.
 #[derive(Clone)]
 pub struct TagStore {
-    inner: Arc<RwLock<HashMap<String, TagSlot>>>,
+    inner: Arc<RwLock<HashMap<TagPath, TagSlot>>>,
 }
 
 impl TagStore {
@@ -68,17 +68,16 @@ impl TagStore {
     ///
     /// If no slot exists yet for `path`, one is created. Sends to a slot with
     /// no subscribers are silently dropped — that's the broadcast contract.
-    pub fn publish(&self, path: &str, value: TagValue, quality: Quality) {
+    pub fn publish(&self, path: impl Into<TagPath>, value: TagValue, quality: Quality) {
+        let path = path.into();
         let snap = TagSnapshot {
-            path: path.to_string(),
+            path: path.clone(),
             value,
             quality,
             ts: now_ms(),
         };
         let mut guard = self.inner.write().expect("tag store rwlock poisoned");
-        let slot = guard
-            .entry(path.to_string())
-            .or_insert_with(make_empty_slot);
+        let slot = guard.entry(path).or_insert_with(make_empty_slot);
         slot.last = Some(snap.clone());
         let _ = slot.tx.send(snap);
     }
@@ -87,18 +86,18 @@ impl TagStore {
     ///
     /// Does not replay the last-known value. Use [`get`](Self::get) to read
     /// the current snapshot after subscribing, if one is needed.
-    pub fn subscribe(&self, path: &str) -> broadcast::Receiver<TagSnapshot> {
+    pub fn subscribe(&self, path: impl Into<TagPath>) -> broadcast::Receiver<TagSnapshot> {
+        let path = path.into();
         let mut guard = self.inner.write().expect("tag store rwlock poisoned");
-        let slot = guard
-            .entry(path.to_string())
-            .or_insert_with(make_empty_slot);
+        let slot = guard.entry(path).or_insert_with(make_empty_slot);
         slot.tx.subscribe()
     }
 
     /// Read the current snapshot for `path`, if any has been published.
-    pub fn get(&self, path: &str) -> Option<TagSnapshot> {
+    pub fn get(&self, path: impl Into<TagPath>) -> Option<TagSnapshot> {
+        let path = path.into();
         let guard = self.inner.read().expect("tag store rwlock poisoned");
-        guard.get(path).and_then(|s| s.last.clone())
+        guard.get(&path).and_then(|s| s.last.clone())
     }
 
     /// Number of paths with at least one published value or one subscriber.
@@ -148,7 +147,7 @@ mod tests {
         store.publish("a/b", TagValue::Real(1.0), Quality::Good);
 
         let snap = store.get("a/b").expect("snapshot should exist");
-        assert_eq!(snap.path, "a/b");
+        assert_eq!(snap.path.as_str(), "a/b");
         assert_eq!(snap.value, TagValue::Real(1.0));
         assert_eq!(snap.quality, Quality::Good);
         assert!(snap.ts > 0, "ts should be populated");

@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use openwebhmi_gateway::{project, server, sim_provider};
-use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagValue};
+use openwebhmi_protocol::{ClientMessage, Quality, ServerMessage, TagPath, TagValue};
 use openwebhmi_tag_engine::TagStore;
 use tokio::process::{Child, Command};
 use tokio::time::{sleep, timeout};
@@ -84,7 +84,7 @@ async fn write_tag(
     value: TagValue,
 ) {
     let message = ClientMessage::TagWrite {
-        path: path.to_string(),
+        path: TagPath::new(path),
         value,
     };
     ws.send(Message::Text(serde_json::to_string(&message).unwrap()))
@@ -99,7 +99,7 @@ async fn subscribe(
     paths: &[&str],
 ) {
     let message = ClientMessage::TagSubscribe {
-        paths: paths.iter().map(|path| (*path).to_string()).collect(),
+        paths: paths.iter().map(|path| TagPath::new(*path)).collect(),
     };
     ws.send(Message::Text(serde_json::to_string(&message).unwrap()))
         .await
@@ -118,7 +118,7 @@ async fn assert_status(
         if let ServerMessage::TagUpdate { path, value, .. } =
             next_message(ws, Duration::from_millis(750)).await
         {
-            if path == "system/drivers/rockwell-1/status"
+            if path.as_str() == "system/drivers/rockwell-1/status"
                 && matches!(value, openwebhmi_protocol::TagValue::String(value) if value == expected)
             {
                 return;
@@ -166,7 +166,7 @@ async fn assert_setpoint_value(
                 value: TagValue::Real(value),
                 quality: Quality::Good,
                 ..
-            } if path == "rockwell-1/Setpoint" && (value - expected).abs() < 0.001 => {
+            } if path.as_str() == "rockwell-1/Setpoint" && (value - expected).abs() < 0.001 => {
                 return;
             }
             _ => {}
@@ -190,7 +190,7 @@ async fn assert_status_and_pressure(
         let message = next_message(ws, Duration::from_millis(750)).await;
         match &message {
             ServerMessage::TagUpdate { path, value, .. }
-                if path == "system/drivers/rockwell-1/status"
+                if path.as_str() == "system/drivers/rockwell-1/status"
                     && matches!(value, openwebhmi_protocol::TagValue::String(value) if value == expected_status) =>
             {
                 saw_status = true;
@@ -213,7 +213,7 @@ fn is_pressure_quality(message: ServerMessage, expected: Quality) -> bool {
     matches!(
         message,
         ServerMessage::TagUpdate { path, quality, .. }
-            if path == "rockwell-1/Pressure" && quality == expected
+            if path.as_str() == "rockwell-1/Pressure" && quality == expected
     )
 }
 

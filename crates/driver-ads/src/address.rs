@@ -55,6 +55,7 @@ impl fmt::Display for AdsAddress {
 
 /// ADS address parse failure.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AdsAddressError {
     /// Missing `:` between port and symbol.
     #[error("ADS address must be '<port>:<symbol>'")]

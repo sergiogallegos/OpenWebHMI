@@ -7,6 +7,18 @@ use openwebhmi_project_store::{ArtifactKind, ProjectStore};
 use openwebhmi_protocol::{Quality, TagValue};
 use std::io::Write;
 
+fn backup_options(configure: impl FnOnce(&mut BackupOptions)) -> BackupOptions {
+    let mut options = BackupOptions::default();
+    configure(&mut options);
+    options
+}
+
+fn restore_options(configure: impl FnOnce(&mut RestoreOptions)) -> RestoreOptions {
+    let mut options = RestoreOptions::default();
+    configure(&mut options);
+    options
+}
+
 #[test]
 fn export_import_round_trip_preserves_project_artifacts() {
     let source_dir = tempfile::tempdir().unwrap();
@@ -18,11 +30,10 @@ fn export_import_round_trip_preserves_project_artifacts() {
     let archive = openwebhmi_backup::export_project(
         &source,
         "demo",
-        BackupOptions {
-            historian_sqlite: Some(b"history".to_vec()),
-            alarm_journal_sqlite: Some(b"alarms".to_vec()),
-            ..BackupOptions::default()
-        },
+        backup_options(|options| {
+            options.historian_sqlite = Some(b"history".to_vec());
+            options.alarm_journal_sqlite = Some(b"alarms".to_vec());
+        }),
     )
     .unwrap();
     let manifest =
@@ -79,11 +90,10 @@ fn export_uses_online_backup_for_live_sqlite_stores() {
     let archive = openwebhmi_backup::export_project(
         &source,
         "demo",
-        BackupOptions {
-            historian_store: Some(historian),
-            alarm_journal: Some(alarm_journal),
-            ..BackupOptions::default()
-        },
+        backup_options(|options| {
+            options.historian_store = Some(historian);
+            options.alarm_journal = Some(alarm_journal);
+        }),
     )
     .unwrap();
     let entries = read_archive_entries(&archive);
@@ -124,19 +134,17 @@ fn historian_rows_round_trip_through_export_import() {
     let archive = openwebhmi_backup::export_project(
         &source,
         "demo",
-        BackupOptions {
-            historian_store: Some(source_historian.clone()),
-            ..BackupOptions::default()
-        },
+        backup_options(|options| {
+            options.historian_store = Some(source_historian.clone());
+        }),
     )
     .unwrap();
     openwebhmi_backup::import_project(
         &target,
         &archive,
-        RestoreOptions {
-            historian_store: Some(target_historian.clone()),
-            ..RestoreOptions::default()
-        },
+        restore_options(|options| {
+            options.historian_store = Some(target_historian.clone());
+        }),
     )
     .unwrap();
 
@@ -174,19 +182,17 @@ fn alarm_transitions_round_trip_through_export_import() {
     let archive = openwebhmi_backup::export_project(
         &source,
         "demo",
-        BackupOptions {
-            alarm_journal: Some(source_journal.clone()),
-            ..BackupOptions::default()
-        },
+        backup_options(|options| {
+            options.alarm_journal = Some(source_journal.clone());
+        }),
     )
     .unwrap();
     openwebhmi_backup::import_project(
         &target,
         &archive,
-        RestoreOptions {
-            alarm_journal: Some(target_journal.clone()),
-            ..RestoreOptions::default()
-        },
+        restore_options(|options| {
+            options.alarm_journal = Some(target_journal.clone());
+        }),
     )
     .unwrap();
 
@@ -223,22 +229,20 @@ fn replace_mode_wipes_target_historian_and_alarm_journal() {
     let archive = openwebhmi_backup::export_project(
         &source,
         "demo",
-        BackupOptions {
-            historian_store: Some(source_historian),
-            alarm_journal: Some(source_journal),
-            ..BackupOptions::default()
-        },
+        backup_options(|options| {
+            options.historian_store = Some(source_historian);
+            options.alarm_journal = Some(source_journal);
+        }),
     )
     .unwrap();
     openwebhmi_backup::import_project(
         &target,
         &archive,
-        RestoreOptions {
-            mode: ImportMode::Replace,
-            historian_store: Some(target_historian.clone()),
-            alarm_journal: Some(target_journal.clone()),
-            ..RestoreOptions::default()
-        },
+        restore_options(|options| {
+            options.mode = ImportMode::Replace;
+            options.historian_store = Some(target_historian.clone());
+            options.alarm_journal = Some(target_journal.clone());
+        }),
     )
     .unwrap();
 
@@ -268,10 +272,9 @@ fn malicious_archive_path_is_rejected() {
     let err = openwebhmi_backup::import_project(
         &target,
         &archive,
-        RestoreOptions {
-            mode: ImportMode::Replace,
-            ..RestoreOptions::default()
-        },
+        restore_options(|options| {
+            options.mode = ImportMode::Replace;
+        }),
     )
     .unwrap_err();
 
@@ -307,10 +310,9 @@ fn replace_mode_removes_target_orphan_artifacts() {
     openwebhmi_backup::import_project(
         &target,
         &archive,
-        RestoreOptions {
-            mode: ImportMode::Replace,
-            ..RestoreOptions::default()
-        },
+        restore_options(|options| {
+            options.mode = ImportMode::Replace;
+        }),
     )
     .unwrap();
 

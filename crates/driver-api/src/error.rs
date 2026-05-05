@@ -8,6 +8,7 @@ pub type DriverResult<T> = Result<T, DriverError>;
 
 /// Stable error classes returned by drivers.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum DriverError {
     /// Driver is not currently connected.
     #[error("driver is not connected")]

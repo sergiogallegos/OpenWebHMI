@@ -1,5 +1,5 @@
 use openwebhmi_audit_log::{AuditEvent, AuditLog, AuditQuery, WriteSource};
-use openwebhmi_protocol::TagValue;
+use openwebhmi_protocol::{TagPath, TagValue};
 
 #[test]
 fn audit_events_round_trip_and_query_filters() {
@@ -13,7 +13,7 @@ fn audit_events_round_trip_and_query_filters() {
                 reason: None,
             },
             1 => AuditEvent::TagWrite {
-                path: format!("driver/tag-{idx}"),
+                path: TagPath::new(format!("driver/tag-{idx}")),
                 value: TagValue::Int(idx as i64),
                 success: true,
                 source: WriteSource::WebSocket,
@@ -31,13 +31,10 @@ fn audit_events_round_trip_and_query_filters() {
             .unwrap();
     }
 
-    let (entries, total) = log
-        .query(&AuditQuery {
-            user: Some("user-1".into()),
-            limit: 100,
-            ..AuditQuery::default()
-        })
-        .unwrap();
+    let mut query = AuditQuery::default();
+    query.user = Some("user-1".into());
+    query.limit = 100;
+    let (entries, total) = log.query(&query).unwrap();
     assert_eq!(total, 10);
     assert!(
         entries
@@ -45,14 +42,11 @@ fn audit_events_round_trip_and_query_filters() {
             .all(|entry| entry.user.as_deref() == Some("user-1"))
     );
 
-    let (entries, total) = log
-        .query(&AuditQuery {
-            kinds: vec!["TagWrite".into()],
-            limit: 5,
-            offset: 2,
-            ..AuditQuery::default()
-        })
-        .unwrap();
+    let mut query = AuditQuery::default();
+    query.kinds = vec!["TagWrite".into()];
+    query.limit = 5;
+    query.offset = 2;
+    let (entries, total) = log.query(&query).unwrap();
     assert_eq!(total, 13);
     assert_eq!(entries.len(), 5);
     assert!(
@@ -61,14 +55,11 @@ fn audit_events_round_trip_and_query_filters() {
             .all(|entry| entry.kind.kind_name() == "TagWrite")
     );
 
-    let (entries, total) = log
-        .query(&AuditQuery {
-            from_ts_ms: Some(1_010),
-            to_ts_ms: Some(1_019),
-            limit: 100,
-            ..AuditQuery::default()
-        })
-        .unwrap();
+    let mut query = AuditQuery::default();
+    query.from_ts_ms = Some(1_010);
+    query.to_ts_ms = Some(1_019);
+    query.limit = 100;
+    let (entries, total) = log.query(&query).unwrap();
     assert_eq!(total, 10);
     assert_eq!(entries.len(), 10);
 }

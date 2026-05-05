@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use openwebhmi_project_store::{ScriptConfig, ScriptTriggerConfig};
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use openwebhmi_scripting::{
     MemorySink, ScriptEvent, ScriptHost, ScriptHostOptions, ScriptStatus, TagWriteError,
     TagWriteSink,
@@ -284,7 +284,7 @@ impl RecordingSink {
 }
 
 impl TagWriteSink for RecordingSink {
-    fn enqueue(&self, path: &str, value: TagValue) -> Result<(), TagWriteError> {
+    fn enqueue(&self, path: &TagPath, value: TagValue) -> Result<(), TagWriteError> {
         self.writes.lock().unwrap().push((path.to_string(), value));
         Ok(())
     }
@@ -339,8 +339,8 @@ struct BusySink {
 }
 
 impl TagWriteSink for BusySink {
-    fn enqueue(&self, path: &str, value: TagValue) -> Result<(), TagWriteError> {
-        if path == "rockwell-1/Setpoint" {
+    fn enqueue(&self, path: &TagPath, value: TagValue) -> Result<(), TagWriteError> {
+        if path.as_str() == "rockwell-1/Setpoint" {
             return Err(TagWriteError::Busy(path.to_string()));
         }
         self.memory.enqueue(path, value)

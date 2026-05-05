@@ -174,6 +174,7 @@ fn parse_sparkplug(raw: &str) -> Result<MqttAddress, MqttAddressError> {
 
 /// MQTT address parse failure.
 #[derive(Debug, Error, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MqttAddressError {
     /// Address shape is invalid.
     #[error("invalid MQTT address shape: {0}")]

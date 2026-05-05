@@ -96,6 +96,7 @@ impl FromStr for OpcUaAddress {
 
 /// OPC UA address parse failure.
 #[derive(Debug, Error, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum OpcUaAddressError {
     /// Address did not match `ns=<index>;<form>=<id>`.
     #[error("invalid OPC UA address shape: {0}")]

@@ -48,12 +48,7 @@ impl Driver for OpcUaDriver {
             "OPC Foundation",
             "OPC UA",
             env!("CARGO_PKG_VERSION"),
-            Capabilities {
-                native_subscribe: true,
-                browse: true,
-                batch_read: true,
-                batch_write: true,
-            },
+            Capabilities::new(true, true, true, true),
         )
     }
 

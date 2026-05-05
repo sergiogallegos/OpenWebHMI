@@ -1,6 +1,6 @@
 //! Tag write routing for script-driven writes.
 
-use openwebhmi_protocol::{Quality, TagValue};
+use openwebhmi_protocol::{Quality, TagPath, TagValue};
 use openwebhmi_tag_engine::TagStore;
 use thiserror::Error;
 
@@ -11,7 +11,7 @@ pub trait TagWriteSink: Send + Sync + 'static {
     /// This returns after the write has been accepted by the sink. Driver
     /// sinks should mirror websocket write semantics and not wait for the PLC
     /// to acknowledge the write.
-    fn enqueue(&self, path: &str, value: TagValue) -> Result<(), TagWriteError>;
+    fn enqueue(&self, path: &TagPath, value: TagValue) -> Result<(), TagWriteError>;
 }
 
 /// Error returned when a script tag write cannot be accepted.
@@ -45,7 +45,7 @@ impl MemorySink {
 }
 
 impl TagWriteSink for MemorySink {
-    fn enqueue(&self, path: &str, value: TagValue) -> Result<(), TagWriteError> {
+    fn enqueue(&self, path: &TagPath, value: TagValue) -> Result<(), TagWriteError> {
         self.store.publish(path, value, Quality::Good);
         Ok(())
     }

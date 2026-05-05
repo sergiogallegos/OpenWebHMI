@@ -21,6 +21,7 @@ pub enum AuthMode {
 /// OPC UA client configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
+#[non_exhaustive]
 pub struct OpcUaConfig {
     /// Endpoint URL, for example `opc.tcp://127.0.0.1:4855/`.
     pub endpoint: String,

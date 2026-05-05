@@ -13,6 +13,96 @@ use serde::{Deserialize, Serialize};
 
 pub use openwebhmi_project_store::{ArtifactKind, ChangeAction, View};
 
+macro_rules! string_newtype {
+    ($(#[$meta:meta])* $name:ident) => {
+        $(#[$meta])*
+        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+        #[serde(transparent)]
+        pub struct $name(String);
+
+        impl $name {
+            /// Construct from any string-like input.
+            pub fn new(value: impl Into<String>) -> Self {
+                Self(value.into())
+            }
+
+            /// Borrow the underlying string slice.
+            pub fn as_str(&self) -> &str {
+                &self.0
+            }
+
+            /// Consume and return the underlying string.
+            pub fn into_string(self) -> String {
+                self.0
+            }
+        }
+
+        impl From<&str> for $name {
+            fn from(value: &str) -> Self {
+                Self(value.to_owned())
+            }
+        }
+
+        impl From<String> for $name {
+            fn from(value: String) -> Self {
+                Self(value)
+            }
+        }
+
+        impl From<&String> for $name {
+            fn from(value: &String) -> Self {
+                Self(value.clone())
+            }
+        }
+
+        impl From<&$name> for $name {
+            fn from(value: &$name) -> Self {
+                value.clone()
+            }
+        }
+
+        impl AsRef<str> for $name {
+            fn as_ref(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl std::borrow::Borrow<str> for $name {
+            fn borrow(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl std::ops::Deref for $name {
+            type Target = str;
+
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                self.0.fmt(f)
+            }
+        }
+    };
+}
+
+string_newtype! {
+    /// Fully qualified path to a tag in the runtime, for example `rockwell-1/Pressure`.
+    ///
+    /// Wire format is a transparent JSON string.
+    TagPath
+}
+
+string_newtype! {
+    /// Project-local driver instance id, for example `rockwell-1`.
+    ///
+    /// Wire format is a transparent JSON string.
+    DriverId
+}
+
 /// User record exposed to administrator clients.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuthUser {
@@ -51,6 +141,7 @@ pub struct HistoryPoint {
 
 /// Audit query filter sent over the wire.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct AuditQuery {
     /// Inclusive lower timestamp bound.
     pub from_ts_ms: Option<u64>,
@@ -100,6 +191,9 @@ pub enum ProjectImportMode {
 ///
 /// The runtime carries quality + timestamp alongside this value via
 /// [`crate::ServerMessage::TagUpdate`].
+///
+/// This enum is intentionally exhaustive: adding a variant changes the v1 JSON
+/// schema and should force callers to review value handling.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "value", rename_all = "lowercase")]
 pub enum TagValue {
@@ -114,6 +208,9 @@ pub enum TagValue {
 }
 
 /// Quality of a tag value, OPC UA–style.
+///
+/// This enum is intentionally exhaustive: the v1 wire schema treats these as
+/// the bounded quality states clients must handle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Quality {
@@ -130,6 +227,7 @@ pub enum Quality {
 /// Messages from a client to the gateway.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind")]
+#[non_exhaustive]
 pub enum ClientMessage {
     /// Authenticate with username/password credentials.
     #[serde(rename = "auth.login")]
@@ -179,13 +277,13 @@ pub enum ClientMessage {
     #[serde(rename = "tag.subscribe")]
     TagSubscribe {
         /// Tag paths in `provider/path/with/slashes` form.
-        paths: Vec<String>,
+        paths: Vec<TagPath>,
     },
     /// Unsubscribe from previously-subscribed tag paths.
     #[serde(rename = "tag.unsubscribe")]
     TagUnsubscribe {
         /// Tag paths to unsubscribe from.
-        paths: Vec<String>,
+        paths: Vec<TagPath>,
     },
     /// Write one tag through its owning driver.
     ///
@@ -196,7 +294,7 @@ pub enum ClientMessage {
     #[serde(rename = "tag.write")]
     TagWrite {
         /// Full tag path including provider.
-        path: String,
+        path: TagPath,
         /// Value to write.
         value: TagValue,
     },
@@ -228,7 +326,7 @@ pub enum ClientMessage {
         #[serde(default)]
         request_id: Option<String>,
         /// Tag path to query.
-        tag_path: String,
+        tag_path: TagPath,
         /// Inclusive start time in Unix epoch milliseconds.
         t_start_ms: u64,
         /// Inclusive end time in Unix epoch milliseconds.
@@ -370,6 +468,7 @@ pub enum ClientMessage {
 /// Messages from the gateway to a client.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind")]
+#[non_exhaustive]
 pub enum ServerMessage {
     /// Authentication result.
     #[serde(rename = "auth.result")]
@@ -395,7 +494,7 @@ pub enum ServerMessage {
         /// State.
         state: AlarmState,
         /// Tag path.
-        tag_path: String,
+        tag_path: TagPath,
         /// Current value.
         value: TagValue,
         /// Current quality.
@@ -417,7 +516,7 @@ pub enum ServerMessage {
     #[serde(rename = "tag.update")]
     TagUpdate {
         /// Full tag path including provider.
-        path: String,
+        path: TagPath,
         /// Current value.
         value: TagValue,
         /// Current quality.
@@ -450,7 +549,7 @@ pub enum ServerMessage {
         /// Optional request id from the read request.
         request_id: Option<String>,
         /// Tag path queried.
-        tag_path: String,
+        tag_path: TagPath,
         /// Returned points.
         points: Vec<HistoryPoint>,
     },

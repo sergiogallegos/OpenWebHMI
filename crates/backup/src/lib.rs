@@ -34,6 +34,7 @@ pub enum ImportMode {
 
 /// Optional database snapshots to include in an export.
 #[derive(Clone, Default)]
+#[non_exhaustive]
 pub struct BackupOptions {
     /// Optional historian SQLite snapshot bytes.
     pub historian_sqlite: Option<Vec<u8>>,
@@ -51,6 +52,7 @@ pub struct BackupOptions {
 
 /// Import options.
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct RestoreOptions {
     /// Import mode.
     pub mode: ImportMode,
@@ -78,6 +80,7 @@ impl Default for RestoreOptions {
 
 /// Archive manifest stored at `manifest.json`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct BackupManifest {
     /// Archive schema version.
     pub schema_version: u32,
@@ -95,6 +98,7 @@ pub struct BackupManifest {
 
 /// One project artifact entry in the manifest.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct ManifestArtifact {
     /// Archive path.
     pub path: String,

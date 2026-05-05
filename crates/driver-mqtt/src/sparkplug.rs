@@ -190,6 +190,7 @@ fn metric_to_update(metric: Metric) -> Result<Option<SparkplugMetricUpdate>, Spa
 
 /// Sparkplug B parse failure.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum SparkplugError {
     /// Protobuf decode failed.
     #[error("Sparkplug payload decode failed: {0}")]

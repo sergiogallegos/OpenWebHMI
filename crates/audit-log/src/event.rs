@@ -1,7 +1,7 @@
 //! Audit event and persisted entry types.
 
 use openwebhmi_auth::Role;
-use openwebhmi_protocol::TagValue;
+use openwebhmi_protocol::{TagPath, TagValue};
 use serde::{Deserialize, Serialize};
 
 /// One persisted audit entry with actor metadata.
@@ -24,6 +24,7 @@ pub struct AuditEntry {
 /// Security-relevant event payload.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[non_exhaustive]
 pub enum AuditEvent {
     /// Login attempt result.
     AuthLogin {
@@ -47,7 +48,7 @@ pub enum AuditEvent {
     /// Tag write attempt.
     TagWrite {
         /// Full tag path.
-        path: String,
+        path: TagPath,
         /// Requested value.
         value: TagValue,
         /// Whether the write was accepted.
