@@ -85,7 +85,7 @@
 | CODEX-AI | Historian + alarm-journal import path in `crates/backup` — closes AF's v1.0 gap | codex | `79e0ec4` | 4 |
 | CODEX-AJ | Async hygiene — blocking SQLite spawn_blocking, coordinated shutdown, scripting fan-in | codex | `8022426` | 4 |
 | CODEX-AK | Tokio handle ergonomics — AbortHandle map sweep, cancel-safety docs, per-connection drain | codex | `3bde658` | 4 |
-| CODEX-AL | API polish — TagPath + DriverId newtypes, #[non_exhaustive] sweep, ScriptHost cheap-clone | codex | _pending_ | 4 |
+| CODEX-AL | API polish — TagPath + DriverId newtypes, #[non_exhaustive] sweep, ScriptHost cheap-clone | codex | `79ee864` | 4 |
 
 ## Conventions
 
