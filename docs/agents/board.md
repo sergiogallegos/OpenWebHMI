@@ -8,7 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-*(no open Phase 4 tasks)*
+| CODEX-AK | Tokio handle ergonomics — AbortHandle map sweep, cancel-safety docs, per-connection drain | codex | open | 2026-05-05 claude | [`CODEX-AK-tokio-handle-ergonomics.md`](tasks/CODEX-AK-tokio-handle-ergonomics.md) |
 
 ### Phase 4 dependency graph
 
