@@ -3,9 +3,9 @@ id: CODEX-AM
 title: Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-05
-last-update: 2026-05-05 claude
+last-update: 2026-05-05 codex
 ---
 
 # CODEX-AM — Stdlib + deps modernization (Tier 4 from review pass 2)
@@ -119,6 +119,8 @@ No behavior changes anywhere. This is a build-clean / lint-clean / dep-version t
 ## Codex log
 
 <!-- Codex appends status transitions and notes here. -->
+
+2026-05-05 codex Status -> submitted. Bumped workspace `thiserror` from 1.x to 2.x; no error-enum code changes were required. `Cargo.lock` drift is bounded to workspace crate dependency entries now resolving `thiserror 2.0.18` instead of `1.0.69`; no unrelated package versions moved. Converted the single named OPC UA format site to capture syntax by binding `node_id` by reference before `format!("{node_id}")`. Added `#![deny(missing_docs)]` to driver-mqtt, driver-opcua, and driver-ads crate roots plus one-line module docs in those lib.rs files; per-crate docs and workspace docs are clean. Validation green: `cargo build --workspace --all-features --locked`, `cargo fmt --all --check` x3, `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` x3, `cargo test --workspace --all-features --locked` x3, `cargo doc --workspace --no-deps` x3, `pnpm -r typecheck`, and `pnpm -r test`.
 
 ## Claude review
 

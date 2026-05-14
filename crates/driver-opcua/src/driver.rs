@@ -233,7 +233,8 @@ struct SubscriptionForwarder {
 impl OnSubscriptionNotification for SubscriptionForwarder {
     fn on_data_value(&mut self, notification: DataValue, item: &MonitoredItem) {
         let ts_ms = now_ms();
-        let address = TagAddress::new(format!("{}", item.item_to_monitor().node_id));
+        let node_id = &item.item_to_monitor().node_id;
+        let address = TagAddress::new(format!("{node_id}"));
         let quality = status_to_quality(notification.status());
         let value = data_value_to_tag_value(notification)
             .unwrap_or_else(|err| TagValue::String(err.to_string()));

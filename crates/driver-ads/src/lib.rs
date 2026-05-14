@@ -3,9 +3,15 @@
 //! Address syntax is `<port>:<symbol>`, for example
 //! `851:MAIN.fbMotor.fActualSpeed`.
 
+#![deny(missing_docs)]
+
+/// ADS address parsing.
 pub mod address;
+/// ADS connection configuration.
 pub mod connection;
+/// ADS driver implementation.
 pub mod driver;
+/// ADS symbol table and value codec helpers.
 pub mod symbols;
 #[cfg(windows)]
 mod twincat_router;

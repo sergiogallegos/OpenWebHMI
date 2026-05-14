@@ -8,7 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | open | 2026-05-05 claude | [`CODEX-AM-stdlib-deps-modernization.md`](tasks/CODEX-AM-stdlib-deps-modernization.md) |
+| CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | submitted | 2026-05-05 codex | [`CODEX-AM-stdlib-deps-modernization.md`](tasks/CODEX-AM-stdlib-deps-modernization.md) |
 
 ### Phase 4 dependency graph
 
