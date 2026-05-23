@@ -82,6 +82,47 @@ After opening or amending a task brief, write a hand-off message the maintainer 
 
 Don't restate the entire brief — Codex reads the task file. The hand-off message is the bridge.
 
+## Code quality and testing discipline
+
+Cross-cutting rules. Apply to every PR Codex submits, every review Claude writes, and every commit either agent ships. These are *contracts*, not preferences — landing code that breaks one of them is a regression even if all tests pass.
+
+### Honesty
+
+- **Never overstate what you got done.** Commits, PR descriptions, hand-off messages, and Codex-log entries describe what *actually* shipped, not what was attempted. If something was deferred (manual smoke, hardware validation, a partial item), say so by name in the same sentence as the claim it qualifies. Pattern proven across CODEX-AJ / -AK / -AL / -AI: Codex called out "Manual smoke not run in this environment" in every submission; that's the bar.
+- **"I tested it" only after running it.** Claiming a test passed without having executed it is a fabrication, not a shortcut. Codex's "three consecutive runs" log entries are the discipline.
+- **Own brief errors.** When a Claude-authored brief was wrong, the verdict says so by name. See CODEX-AH (`nTransMode = 4` vs the brief's `3`), CODEX-AJ (alarm-engine subscription path the brief missed), CODEX-AL (ProjectStore identifier boundary). These are *strong points*, not embarrassments.
+
+### Testing
+
+- **All changes must be tested. If you're not testing your changes, you're not done.** Adapted from ruff/bun. Behavior changes need behavior tests; mechanical changes need at minimum a "does it still compile and the existing suite still passes" verification on three consecutive runs.
+- **Your test is NOT VALID if it passes without the fix.** Regression tests must demonstrably catch the bug they're guarding against. Run the test against the pre-fix code at least once; if it passes, the test isn't testing what you think.
+- **Add to existing test files; don't fragment.** New tests join the closest existing file unless the new behavior is genuinely a new module's concern. Pattern: AJ extended `crates/historian/tests/store.rs` rather than creating `recorder_spawn_blocking.rs`; AK extended the AJ shutdown test rather than creating a new file.
+- **No flaky tests. No `sleep()`, `setTimeout()`, or wall-clock waits in tests.** Use deterministic synchronization (channels, oneshots, `tokio::time::pause()` + `advance()`, explicit `JoinHandle::await`). The repo's "known-flaky integration tests" history is the warning; don't add to it.
+- **No hardcoded ports.** Bind to `127.0.0.1:0` and read the assigned port back from the listener.
+
+### Rust code quality
+
+- **No `panic!`, `unwrap()`, `unreachable!`, or `expect()` in production code.** Production = anything reachable from a non-test, non-startup, non-`main` execution path. Exceptions are explicit: `tag-engine`'s `expect("rwlock poisoned")` is an acceptable panic policy for non-recoverable state and is documented in code. New exceptions need a one-line comment explaining the invariant being asserted. Test code, startup config validation, and `fn main` are exempt.
+- **`#[expect(...)]` over `#[allow(...)]` for clippy lints.** `#[allow]` silences forever; `#[expect]` flips into a warning if the underlying code stops triggering the lint. Codify the lint's *expected* presence; let the compiler tell you when reality changes. AJ landed `#[allow(dead_code)]` on `driver-ads/src/driver.rs` as an incidental — convert these to `#[expect]` as they're touched.
+- **Let chains over nested `if let`.** Rust 1.88+ / edition 2024. Codebase is on 1.95 per `rust-toolchain.toml`. Prefer `if let Some(x) = opt && x.is_valid() { ... }` over `if let Some(x) = opt { if x.is_valid() { ... } }`.
+- **Top-level imports only.** No `use foo::Bar;` inside function bodies (except to break a cyclic-import that can't be resolved structurally — rare, and gets a `// cyclic-import workaround` comment).
+- **Full variable names, no abbreviations.** `version` not `ver`; `tag_path` not `tp`; `historian` not `hist`. The codebase already follows this; codifying it.
+- **Comments explain WHY, not WHAT.** Default: no comments. Add one when the *invariant*, *workaround*, or *hidden constraint* would surprise a reader. Don't narrate well-named code. Don't reference the current task or callers — that belongs in the commit message. Pattern: AK's `// Dropping a JoinHandle does not cancel its task; AbortHandle is the cancel-only handle.` at the first AbortHandle insertion site — that's the shape.
+- **No `--release` builds during development.** Release builds lack debug assertions and compile slower. The full validation matrix is `cargo build --workspace --all-features --locked` (debug), `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`, `cargo test --workspace --all-features --locked`, `cargo doc --workspace --no-deps`. Release builds only when reproducing a performance issue.
+- **`#![deny(missing_docs)]` is the bar for every crate.** `driver-rockwell`, `driver-modbus`, `driver-api` already meet it; CODEX-AM brings the remaining drivers up. New crates land with this attribute from day one.
+
+### Dependency management
+
+- **Never `cargo update` all dependencies.** Use `cargo update --precise <crate>@<version>` when a specific bump is needed. Lockfile drift across unrelated dependencies hides supply-chain regressions and inflates review surface.
+- **Workspace `=`-pinned versions stay pinned** until the task is explicitly a version bump. The current `=`-pinned set: `tokio-modbus`, `async-opcua`, `rumqttc`, `rumqttd`, `prost`, `jsonpath-rust`, `ads`. Pinning is load-bearing (driver-side compatibility); unpinning needs a brief.
+- **`Cargo.lock` diff is bounded.** A dep bump should touch the bumped crate + its proc-macro counterpart + direct transitives. Anything wider is a red flag — investigate before committing.
+
+### "Why this and not the alternative?"
+
+- **Before making a non-obvious choice, ask the question pre-emptively.** If the answer is "I don't know," that's the cue to spend five minutes investigating before writing the code. Codex's pattern of catching brief gaps (AJ alarm-engine, AK SupervisorHandle::Drop, AL ProjectStore boundary) all came from asking this question; the brief described what to do, and the question surfaced what the brief missed.
+- **If neighboring code does something differently than you're about to, find out why before deviating.** Three identical `spawn_blocking` wraps in `gateway/src/server.rs` are not three opinions — they're one shape, agreed-on, and your fourth wrap should match unless you have a stated reason. When in doubt, copy the neighbor.
+- **Don't take a bug report's suggested fix at face value.** The reporter knows the symptom; you have to verify which layer to fix. The brief is similarly suggestive — if the brief's "Files to modify" list is incomplete (AJ missed the alarm-engine subscription path), update the brief in the verdict and own the gap, don't silently work around it.
+
 ## Phase ladder reminder (as of last commit)
 
 - Phases 0, 1 complete (v0.1.0 tagged)
