@@ -6,9 +6,11 @@ OpenWebHMI is an open-source SCADA/HMI platform — Rust gateway + Tauri designe
 
 OpenWebHMI uses a two-agent collaboration model:
 
-- **Codex** writes the code.
-- **Claude** authors task briefs, reviews submissions, merges, and updates the bookkeeping.
+- **Codex** primarily writes the code; may also review, merge, and push.
+- **Claude** primarily authors task briefs, reviews submissions, merges, and updates the bookkeeping; may also write code and push.
 - **Maintainer** routes messages between the two agents, makes strategic decisions, and runs manual smoke validations.
+
+Either agent may run the review/merge lifecycle — Claude via `.claude/skills/openwebhmi-merge/`, Codex via `.agents/skills/openwebhmi-merge/`. The skill content is mirrored; only the agent-name conventions in the verdict/log lines differ.
 
 ## How to resume any session
 

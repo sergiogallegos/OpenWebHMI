@@ -8,7 +8,7 @@ Scope:
 - `crates/AGENTS.md` — Rust-specific subset (auto-loaded under `crates/`).
 - `apps/AGENTS.md`, `packages/AGENTS.md` — TypeScript-specific subsets (auto-loaded under those trees).
 - `wiki/AGENTS.md` — engineering-wiki governance (auto-loaded under `wiki/`).
-- `CLAUDE.md` — Claude-specific operating procedure: review/merge lifecycle, brief authoring, hand-off message format.
+- `CLAUDE.md` — review/merge lifecycle, brief authoring, hand-off message format. Either agent may run the merge skill (Claude: `.claude/skills/openwebhmi-merge/`; Codex: `.agents/skills/openwebhmi-merge/`).
 - `VISION.md` — what OpenWebHMI is, non-goals, what we won't merge.
 - `docs/agents/README.md` — cross-agent task lifecycle (open → submitted → merged).
 
