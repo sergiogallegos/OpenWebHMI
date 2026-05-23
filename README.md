@@ -78,7 +78,9 @@ The CPython 3 scripting layer is the headline differentiator: `numpy`, `pandas`,
 | [`docs/stack-rationale.md`](docs/stack-rationale.md) | Why **Rust + Python + TypeScript** vs Ignition's Java/Jython or Optix's C# — and why the Python side unlocks AI/ML and predictive maintenance natively |
 | [`docs/scale-estimates.md`](docs/scale-estimates.md) | Expected LOC per component for v1.0 (target floor: **2M+**), with the actual count tracked over time |
 | [`docs/contributing.md`](docs/contributing.md) | How to add drivers, components, scripts; PR workflow; local dev setup |
-| [`AGENTS.md`](AGENTS.md) | Rules for AI agents (and humans) maintaining the wiki and decision record |
+| [`AGENTS.md`](AGENTS.md) | Codebase-wide code, test, and dependency rules for any agent (Codex, Claude Code) — auto-loaded |
+| [`VISION.md`](VISION.md) | What OpenWebHMI is, non-goals, and what we won't merge |
+| [`wiki/AGENTS.md`](wiki/AGENTS.md) | Engineering-wiki governance — layered docs, source authority, page format |
 | [`docs/agents/`](docs/agents/) | Cross-LLM collaboration protocol — Claude designs/reviews, Codex develops/debugs, all hand-offs durable in markdown |
 | [`wiki/`](wiki/) | Synthesized engineering knowledge — vendor quirks, validation results, decision rationale |
 | [`apps/website/`](apps/website/) | Public marketing + docs site (Astro). Hosted at [`openwebhmi.com`](https://openwebhmi.com) (DNS via Cloudflare) |

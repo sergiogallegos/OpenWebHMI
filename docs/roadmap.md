@@ -162,7 +162,7 @@ These hold across every phase:
 3. **One process per gateway.** No microservices, no clustering before 1.0.
 4. **Two-language rule for plugins.** Drivers are Rust; components are TS; scripts are Python. Don't add a fourth.
 5. **Project artifacts are JSON files in a directory.** No proprietary blob format. Git-friendly.
-6. **Wiki is updated when behavior is learned, not when a PR ships.** The wiki is for synthesized knowledge — see [`AGENTS.md`](../AGENTS.md).
+6. **Wiki is updated when behavior is learned, not when a PR ships.** The wiki is for synthesized knowledge — see [`wiki/AGENTS.md`](../wiki/AGENTS.md).
 
 ---
 

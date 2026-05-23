@@ -67,7 +67,7 @@ Mapped to `EipClient` constructor + `RoutePath` per the crate's docs.
 
 ## Evidence
 
-All evidence below is sourced from the upstream `rust-ethernet-ip` repo at the **`v0.7.0` release**, which points to commit **`592bfa716309e3388cf8143c4095622d6302a7f6`** (released 2026-04-08, observed by OpenWebHMI maintainers on 2026-04-26). Per AGENTS.md §2, this commit hash is the load-bearing source identifier — it survives upstream history rewrites, README edits, and tag deletions. URLs below are the channels through which the source was inspected; the commit hash is the artifact itself.
+All evidence below is sourced from the upstream `rust-ethernet-ip` repo at the **`v0.7.0` release**, which points to commit **`592bfa716309e3388cf8143c4095622d6302a7f6`** (released 2026-04-08, observed by OpenWebHMI maintainers on 2026-04-26). Per `wiki/AGENTS.md` §2 (source authority hierarchy), this commit hash is the load-bearing source identifier — it survives upstream history rewrites, README edits, and tag deletions. URLs below are the channels through which the source was inspected; the commit hash is the artifact itself.
 
 | Claim | Source | URL (channel) |
 |---|---|---|

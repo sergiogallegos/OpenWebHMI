@@ -33,7 +33,8 @@ __pycache__/
 *.swp
 .zed/
 .obsidian/
-.claude/
+.claude/*
+!.claude/skills/
 
 # OS
 .DS_Store

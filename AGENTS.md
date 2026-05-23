@@ -1,176 +1,126 @@
 # AGENTS.md
 
-> Rules of engagement for **AI agents** (and humans following the same playbook) working in this repository.
+Codebase-wide rules for any agent working in this repository (Codex, Claude Code, or a human following the same playbook). Loaded automatically by Codex CLI and by Claude Code when the working directory is inside this repo.
 
-This file is the contract between contributors and the OpenWebHMI knowledge surface. Read it before making non-trivial changes. It is **distinct from** `docs/contributing.md` — that file is for contributors writing code; this file is for anyone (especially AI agents) maintaining the engineering knowledge wiki and ensuring it stays load-bearing rather than ornamental.
+Scope:
 
-The model here is adapted from the same author's `rust-ethernet-ip` repo, with adjustments for OpenWebHMI being a much larger surface (gateway, drivers, designer, runtime, scripting).
+- This file — **codebase-wide code, test, and dependency rules**.
+- `crates/AGENTS.md` — Rust-specific subset (auto-loaded under `crates/`).
+- `apps/AGENTS.md`, `packages/AGENTS.md` — TypeScript-specific subsets (auto-loaded under those trees).
+- `wiki/AGENTS.md` — engineering-wiki governance (auto-loaded under `wiki/`).
+- `CLAUDE.md` — Claude-specific operating procedure: review/merge lifecycle, brief authoring, hand-off message format.
+- `VISION.md` — what OpenWebHMI is, non-goals, what we won't merge.
+- `docs/agents/README.md` — cross-agent task lifecycle (open → submitted → merged).
 
----
+Read `VISION.md` before doing anything that might cross a "won't merge" line.
 
-## 1. Three-layer architecture
-
-OpenWebHMI's documentation lives in three distinct layers. **Do not blur them.**
+## Map
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│  Layer 1: Raw sources                                       │
-│  - Code in this repo (gateway, drivers, designer, runtime)  │
-│  - Tests + their results                                    │
-│  - Vendor specifications (Rockwell EDS, OPC UA, etc.)       │
-│  - Upstream crate / package source                          │
-│  - Validation logs from real-hardware runs                  │
-│  - GitHub issues / discussions                              │
-└────────────────────────────────────────────────────────────┘
-                            │
-                            ▼ (synthesized)
-┌────────────────────────────────────────────────────────────┐
-│  Layer 2: Wiki — `wiki/`                                    │
-│  - Synthesized engineering knowledge                        │
-│  - Cites sources from Layer 1                               │
-│  - Records decisions, open questions, conflicts             │
-│  - Maintainer + agent-facing                                │
-└────────────────────────────────────────────────────────────┘
-                            │
-                            ▼ (referenced)
-┌────────────────────────────────────────────────────────────┐
-│  Layer 3: User docs — `docs/` + `README.md`                 │
-│  - Architecture, roadmap, feature matrix, contributing      │
-│  - Contributor + user-facing                                │
-│  - Stable surface; changes when behavior changes            │
-└────────────────────────────────────────────────────────────┘
+crates/             Rust workspace
+  gateway/            single binary: tags, drivers, historian, alarms, auth, scripting
+  driver-api/         Driver trait + supervisor
+  driver-*            five v1 drivers (rockwell, opcua, modbus, mqtt, ads)
+  historian/          time-series storage + read API
+  alarm-engine/       state machine + journal
+  auth/               local users, roles, JWT, per-view ACLs
+  scripting/          CPython 3.11+ host + worker subprocesses
+  project-store/      versioned project storage
+  audit-log/          security event journal
+  backup/             project + historian + alarm-journal export/import
+  protocol/           wire types shared with TS via codegen
+apps/               TypeScript apps (Vite/React/Tauri)
+  runtime-web/        browser HMI runtime
+  designer/           Tauri designer
+  website/            public marketing + docs (Astro)
+packages/           TypeScript libraries
+  component-library/  HMI components (bindings, write-back tagPath pattern)
+  protocol-ts/        TS protocol types (paired with crates/protocol)
+docs/               user-facing docs (architecture, roadmap, contributing, etc.)
+docs/agents/        cross-agent task board, log, briefs
+wiki/               synthesized engineering knowledge (vendor quirks, decisions)
+examples/           simulators (sim-rockwell, etc.)
+scripts/            local dev + maintenance scripts
 ```
 
-**Critical boundaries:**
+## Commands
 
-- The wiki **must not** duplicate `README.md`, `docs/architecture.md`, `docs/roadmap.md`, `docs/feature-matrix.md`, or `docs/contributing.md`. If a wiki page starts re-explaining the system to users, that's a sign it should be folded back into `docs/`.
-- The wiki **must not** be a raw notes dump. Entries are synthesized — they answer "what do we now know?" or "what did we decide and why?", with sources cited.
-- `docs/` **must not** carry decision rationale that's still being debated. Half-decided design tensions live in the wiki until they harden.
-- When user-facing docs need updating, those updates take priority over wiki entries.
+Rust toolchain is pinned by `rust-toolchain.toml` (currently 1.95, edition 2024). Node version is pinned in `.github/workflows/ci.yml`. Package manager is **pnpm** — never `npm` or `yarn` in this repo.
 
-## 2. Source authority hierarchy
+Full validation matrix (debug builds; `--release` only when reproducing a perf issue):
 
-When sources disagree, this is the precedence:
-
-1. **Current code + tests** in this repo — highest authority for "what we built".
-2. **Real-hardware validation runs** — highest authority for "what the world actually does".
-3. **Vendor specifications** (Rockwell EDS, OPC UA spec, ISA-88 batch model, etc.) — authoritative for protocol/standard behavior.
-4. **Upstream crate / library source** (e.g. `rust-ethernet-ip` source code) — authoritative for "what the dependency does".
-5. **Vendor documentation** — authoritative until contradicted by 1–4.
-6. **Issues, discussions, chat logs** — lowest authority. Useful for context, never load-bearing on their own.
-
-When 1–4 conflict, **flag the conflict on the page**. Do not silently pick a winner. Open an issue if the conflict needs a decision.
-
-## 3. Page format
-
-Every wiki page follows this skimmable structure:
-
-```markdown
----
-status: active | seed | needs-review | historical
-last-validated: YYYY-MM-DD
----
-
-# Page title
-
-## Summary
-One paragraph. Headline conclusion + scope.
-
-## Current understanding
-Numbered or bulleted. Each claim cites a source.
-
-## Evidence
-Links to: code paths, test runs, vendor docs, validation logs, upstream issues.
-
-## Open questions
-What's not yet known. Each item names what would resolve it.
-
-## Related pages
-Other wiki pages; user-facing docs that depend on this.
+```
+cargo build --workspace --all-features --locked
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo test --workspace --all-features --locked
+cargo doc --workspace --no-deps
+cargo fmt --check
+pnpm -r typecheck
+pnpm -r test
+pnpm -r build              # for the apps/* and packages/* that have build scripts
 ```
 
-Add a `Limitations`, `Upgrade workflow`, or other section as the page warrants — but the four above are the spine.
+For known-flaky integration tests, three consecutive green runs is the bar before claiming the run.
 
-## 4. Status markers
+## Code rules
 
-- **`seed`** — placeholder; structure exists, content is thin. Don't trust it for decisions yet.
-- **`active`** — current best understanding; trust this. Most pages should be here.
-- **`needs-review`** — known to be possibly stale (recent code change in the area, time has passed since `last-validated`, etc.). Verify before acting on it.
-- **`historical`** — superseded; kept for context. Should link to the page that replaced it.
+- **No `panic!`, `unwrap()`, `unreachable!()`, or `expect()` in production code.** Production = anything reachable from a non-test, non-startup, non-`main` path. Documented exceptions get a one-line `// invariant: ...` comment explaining the assertion. `tag-engine`'s `expect("rwlock poisoned")` is the existing precedent.
+- **`#[expect(...)]` over `#[allow(...)]` for clippy lints.** `#[allow]` silences forever; `#[expect]` flips into a warning if the underlying code stops triggering the lint. When touching code that has an `#[allow]`, convert it.
+- **Let chains over nested `if let`.** Rust 1.88+ / edition 2024 syntax. Prefer `if let Some(x) = opt && x.is_valid() { ... }` over the nested form.
+- **Top-level imports only.** No `use foo::Bar;` inside function bodies, except to break a cyclic-import that can't be resolved structurally — rare, and gets a `// cyclic-import workaround` comment.
+- **Full variable names.** `version` not `ver`; `tag_path` not `tp`; `historian` not `hist`. The codebase already follows this.
+- **`#![deny(missing_docs)]` is the bar for every crate.** New crates land with this attribute from day one. `driver-rockwell`, `driver-modbus`, `driver-api`, `driver-opcua`, `driver-mqtt`, `driver-ads` are all on the list.
+- **Comments explain WHY, not WHAT.** Default: no comments. Add one when the *invariant*, *workaround*, or *hidden constraint* would surprise a reader. Don't narrate well-named code. Don't reference the current task or callers — that belongs in the commit message.
+- **If neighboring code does something differently than you're about to, find out why before deviating.** Three identical `spawn_blocking` wraps in `gateway/src/server.rs` are not three opinions — they're one shape, agreed-on. Match the neighbor unless you have a stated reason.
+- **Ask "why this and not the alternative?" before non-obvious choices.** If the answer is "I don't know," spend five minutes investigating before writing the code.
 
-When `last-validated` is older than 6 months, flip the status to `needs-review` until the next maintainer pass.
+## Tests
 
-## 5. When to write or update a wiki page
+- **All changes must be tested. If you're not testing your changes, you're not done.** Behavior changes need behavior tests. Mechanical changes need at minimum compile + existing suite green on three consecutive runs.
+- **Your test is NOT VALID if it passes without the fix.** Regression tests must demonstrably catch the bug they're guarding against. Run the test against the pre-fix code at least once.
+- **Add to existing test files; don't fragment.** New tests join the closest existing file unless the new behavior is genuinely a new module's concern.
+- **No flaky tests. No `sleep()`, `setTimeout()`, or wall-clock waits.** Use deterministic synchronization: channels, oneshots, `tokio::time::pause()` + `advance()`, explicit `JoinHandle::await`.
+- **No hardcoded ports.** Bind to `127.0.0.1:0` and read the assigned port back from the listener.
 
-**Do** create or update a wiki page when:
+## Dependencies
 
-- Real-hardware behavior is observed (validation run, bug report from production).
-- A non-obvious design decision is made (with the rejected alternatives).
-- A vendor or upstream-library quirk is discovered that affects how we use it.
-- Two sources disagree and one needs to be flagged as authoritative.
-- A previously-open question has been resolved.
+- **Never `cargo update` all dependencies.** Use `cargo update --precise <crate>@<version>` when a specific bump is needed. Lockfile drift across unrelated deps hides supply-chain regressions and inflates review surface.
+- **`=`-pinned workspace versions stay pinned** until the task is explicitly a version bump. Current set: `tokio-modbus`, `async-opcua`, `rumqttc`, `rumqttd`, `prost`, `jsonpath-rust`, `ads`. Pinning is load-bearing.
+- **License gate**: MIT, Apache-2.0, BSD, or compatible only. GPL/AGPL/SSPL deps do not land. See `VISION.md` for the full policy.
+- **`Cargo.lock` diff is bounded.** Bumped crate + proc-macro counterpart + direct transitives. Wider = investigate before committing.
 
-**Don't** create a wiki page for:
+## Honesty
 
-- Code patterns or naming conventions — those belong in code review and CONTRIBUTING.
-- Architectural overviews of the whole system — that's `docs/architecture.md`.
-- The list of features — that's `docs/feature-matrix.md`.
-- Project status / current priorities — that's `docs/roadmap.md` and GitHub issues.
-- "Notes from a debugging session" with no synthesis — write the synthesis or don't write the page.
+- **Never overstate what shipped.** Commits, PR descriptions, hand-off messages, and `## Codex log` entries describe what *actually* ran, not what was attempted. If something was deferred (manual smoke, hardware validation, a partial item), say so by name in the same sentence as the claim it qualifies.
+- **"I tested it" only after running it.** Claiming a test passed without having executed it is a fabrication.
+- **Own brief errors.** When a Claude-authored brief was wrong, the verdict says so by name. See CODEX-AH (`nTransMode = 4` vs the brief's `3`), CODEX-AJ (alarm-engine subscription path), CODEX-AL (ProjectStore identifier boundary). These are strong points, not embarrassments.
+- **Don't undersell load-bearing items as "polish".** If a "v1.1 polish" item actually breaks demo-HMI headline behavior, it's a closeout blocker.
 
-## 6. Indexing discipline
+## Git
 
-After every wiki change:
+- Rust + TS changes can ship in the same commit when they're paired (protocol additions, designer/runtime changes that depend on each other). Don't artificially split.
+- Commit messages: conventional-commits prefix (`feat`, `fix`, `docs`, `chore`, `refactor`, `test`) + crate or area scope. The `docs/agents/log.md` history is a good style reference.
+- Lifecycle three-place updates (task frontmatter + `board.md` + `log.md`) commit together.
+- Pushing to the remote is not automatic. Push when the maintainer explicitly asks, or when an unambiguous task convention requires it (backfilling a merge ref). See `docs/agents/README.md` for the full push policy.
 
-1. **`wiki/index.md`** — if the page is new, add a one-line entry under the right category. If the page's scope changed materially, update its line.
-2. **`wiki/log.md`** — append a one-line entry with date, author, page, and what changed. **Newest at bottom. Never edit prior entries.**
+## Don't
 
-`index.md` is a *catalog*. `log.md` is a *journal*. They serve different purposes; both are required.
+The full "will not merge" list lives in `VISION.md`. The frequently-tripped subset:
 
-## 7. Agent responsibilities
+- No stub protocol implementations (drivers must speak the real wire protocol).
+- No tests that pass without the fix.
+- No `cargo update`-all lockfile drift.
+- No telemetry / phone-home by default.
+- No commercial vendor SDKs requiring NDAs or license keys.
+- No fourth language (Rust + TS + Python is the set).
+- No designer changes that alter the runtime contract without a paired runtime change in the same PR.
+- No "I tested it" in a commit message when you didn't run it.
 
-When acting in this repo as an AI agent, you should:
+## See also
 
-### 7.1 When ingesting new sources (validation logs, vendor docs, issues, etc.)
-
-1. Identify which wiki pages are affected.
-2. Update those pages with the new information, citing the source.
-3. Update `wiki/index.md` if scope changed.
-4. Append to `wiki/log.md`.
-5. **Preserve traceability** — every claim links to or cites its source.
-
-### 7.2 When answering a question
-
-1. Search the wiki first.
-2. If the wiki has the answer, answer from it (and cite the wiki page).
-3. If the wiki is silent, consult the underlying sources (code, tests, vendor docs).
-4. **Once you've synthesized an answer, file it back into the wiki.** Don't leave durable knowledge in chat.
-
-### 7.3 When making code changes
-
-1. If the change invalidates a wiki claim, update the page in the **same PR**, not later.
-2. If the change introduces a new, durable behavior, add it to the wiki.
-3. Bump `last-validated` on any page you touched and verified.
-
-### 7.4 When you encounter a conflict between sources
-
-1. Don't pick a winner silently. Document both positions on the relevant page.
-2. Mark the page `needs-review`.
-3. Open an issue if a decision is required.
-
-## 8. What this file is not
-
-- **Not a code style guide.** That's in code review and language-specific tooling.
-- **Not a roadmap.** That's `docs/roadmap.md`.
-- **Not a how-to-contribute guide for code.** That's `docs/contributing.md`.
-- **Not the cross-agent collaboration protocol.** Multiple LLM agents (Claude for design + review, Codex for development) coordinate through `docs/agents/` — see [`docs/agents/README.md`](docs/agents/README.md). That protocol governs *task hand-offs and review workflow*; this file governs *the wiki's trustworthiness*. Both apply.
-
-This file governs how the wiki stays trustworthy. Everything else has its own home.
-
-## 9. Bootstrapping note
-
-The wiki is currently mostly **seed**. As Phase 0 and Phase 1 work happens, pages will fill in based on what we actually learn — not on what we predict we'll need. Pages that stay `seed` for more than two phases without content should probably be deleted, not kept as aspirational stubs.
-
----
-
-If you're an AI agent reading this for the first time in a session: confirm you've read it before making changes that touch the wiki, `docs/`, or any architectural decision. If you're a human: same expectation, just less ceremoniously.
+- `VISION.md` — what we're building, non-goals, won't-merge.
+- `CLAUDE.md` — Claude-specific lifecycle, brief authoring, hand-off format.
+- `docs/agents/README.md` — task lifecycle, status flow, who-edits-what.
+- `docs/architecture.md` — system topology and component contracts.
+- `docs/roadmap.md` — phase plan.
+- `wiki/AGENTS.md` — engineering-wiki governance.

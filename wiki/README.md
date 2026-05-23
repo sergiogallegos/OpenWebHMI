@@ -41,7 +41,7 @@ When working on the project (human or AI), the workflow is:
 2. **After learning something durable** (validating a behavior, choosing between two designs, hitting a vendor quirk): write or update the relevant page, with sources cited.
 3. **Index it**: every new page gets one line in `index.md`. Every meaningful update gets one line in `log.md`.
 
-For agents specifically: see [`AGENTS.md`](../AGENTS.md) for the source-authority rules and page-format expectations.
+For agents specifically: see [`AGENTS.md`](AGENTS.md) for the source-authority rules and page-format expectations. The repo-root [`AGENTS.md`](../AGENTS.md) covers codebase-wide code/test rules — different scope.
 
 ## Page status markers
 

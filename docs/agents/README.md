@@ -103,7 +103,7 @@ The cost of stalling on small details is higher than the cost of a v1.1 polish i
 
 ### Decisions
 
-If a task surfaces a decision that affects more than just this task, claude records it in `wiki/architecture/` (per `AGENTS.md`'s wiki rules) and links to it from the task file. Don't bury cross-cutting decisions in a task file alone.
+If a task surfaces a decision that affects more than just this task, claude records it in `wiki/architecture/` (per `wiki/AGENTS.md`'s wiki rules) and links to it from the task file. Don't bury cross-cutting decisions in a task file alone.
 
 ### Out of scope for this protocol
 
@@ -170,6 +170,8 @@ If `board.md` and a task file's frontmatter disagree, the **task file frontmatte
 
 ## Relationship to other docs
 
-- **`AGENTS.md`** at repo root — rules for the engineering wiki (`wiki/`). Different scope. Both apply simultaneously: a wiki entry might be created as a side effect of a task, in which case follow `AGENTS.md` rules for the wiki edit and this protocol for the task edit.
+- **`AGENTS.md`** at repo root — codebase-wide code, test, and dependency rules for any agent. Auto-loaded by Codex and Claude Code.
+- **`wiki/AGENTS.md`** — engineering-wiki governance (layered docs, source authority, page format). Auto-loaded under `wiki/`. A wiki entry created as a side effect of a task follows `wiki/AGENTS.md` for the wiki edit and this protocol for the task edit.
+- **`VISION.md`** at repo root — what OpenWebHMI is, non-goals, and what we won't merge.
 - **`docs/contributing.md`** — for human contributors. Humans don't need this protocol; it's purely an LLM-to-LLM channel.
 - **`docs/architecture.md`** / **`docs/roadmap.md`** — the substantive design context that briefs reference. Briefs link in; they do not duplicate.
