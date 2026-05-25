@@ -3,9 +3,10 @@ id: CODEX-AV
 title: ci: resolve pnpm version conflict (workflow vs package.json packageManager)
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-25 claude [Opus 4.7]
+merge-commit: 4e9bc9b
 ---
 
 # CODEX-AV — ci: resolve pnpm version conflict
@@ -88,4 +89,54 @@ CI verification for run https://github.com/sergiogallegos/OpenWebHMI/actions/run
 
 ## Claude review
 
+### 2026-05-25 23:22  claude [Opus 4.7]
+
+**Independent verification**
+- `gh run view 26423144512` — confirmed the Node job's `pnpm/action-setup@v4` step **passed** (was the failing gate before AV). `actions/setup-node@v4` passed; `pnpm install --frozen-lockfile` passed; reached `pnpm -r --if-present typecheck`.
+- `git show 4e9bc9b -- .github/workflows/ci.yml` — diff shows the `with: version: 9` block removed from `pnpm/action-setup@v4` and nothing else changed in the node job.
+- `cat package.json` — `"packageManager": "pnpm@9.0.0"` unchanged at the source-of-truth field.
+
+**What's being fixed**
+- The Node CI job was failing at `pnpm/action-setup@v4` because pnpm was specified in two places (workflow's `version: 9` and `package.json`'s `packageManager: "pnpm@9.0.0"`).
+
+**Root cause confirmation**
+- Confirmed: `pnpm/action-setup@v4` refuses to pick between the two specifications and exits. Removing the workflow-side `version:` resolves the conflict and the action reads from `package.json`'s `packageManager` field per modern Corepack convention.
+
+**Fix appropriateness**
+- Right layer (workflow only). Source of truth stays in `package.json` where Corepack also reads from for local development — single declaration, no drift risk.
+- Codex correctly chose **not** to add the optional diagnostic `pnpm --version` step the brief mentioned as acceptable; rationale (pinned version is visible in `package.json`, action documents the behavior) is sound.
+
+**Test proof**
+- The brief said the verification IS the CI run; CI run 26423144512 is the proof. Setup passed; `pnpm install --frozen-lockfile` passed; reached typecheck (which fails downstream — see Residual risk).
+- No new local tests; workflow-only change.
+
+**Residual risk**
+- `pnpm -r --if-present typecheck` now fails downstream in `packages/component-library` with `Cannot find module '@openwebhmi/protocol' or its corresponding type declarations.` This is **not** an AV regression — it was masked by the earlier `pnpm/action-setup` failure. Tracked as CODEX-AX (component-library cannot resolve `@openwebhmi/protocol`).
+- If a contributor later removes `packageManager` from `package.json` thinking the workflow handles pnpm versioning, the action will fail to determine which pnpm to install. No automated guard; the failure mode is loud and recoverable.
+- The Node 20 deprecation warning (`actions/checkout@v4`, `actions/setup-node@v4`, `pnpm/action-setup@v4` all on Node 20) persists — out of scope for AV; separate brief when `pnpm/action-setup@v5` ships.
+
+**Strong points (✅)**
+- Minimal, surgical change — exactly the four-line removal the brief specified, no scope creep.
+- Codex correctly stopped at the scope boundary when the component-library typecheck failure surfaced. Reported it honestly with the missing-module error message and the run url, then explicitly noted "beyond AV's pnpm-version-conflict unblock scope." Same Honesty-rule bar as AU.
+- `package.json` was correctly left untouched; source of truth stays where Corepack also reads from.
+- Codex's choice to omit the optional diagnostic `pnpm --version` step was reasonable and documented.
+
+**Findings**
+- 🟢 Node job ran in 22s on the resulting CI run; previously failed at 7s. The added work is the actual `pnpm install` (which was previously skipped). Healthy.
+- 🟠 Real concerns — none. (The component-library typecheck failure is real but explicitly out of AV's scope, tracked as CODEX-AX.)
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `pnpm/action-setup@v4` step no longer specifies `version:`.
+- ✅ `package.json`'s `packageManager: "pnpm@9.0.0"` is unchanged.
+- ✅ Node CI job reaches `pnpm -r --if-present typecheck` (passes/fails on real findings, not at setup).
+- ✅ Codex log flags the downstream failure as separate follow-up work.
+
 ## Verdict
+
+**Merged** at `4e9bc9b` (the implementation commit bundles AU + AV; bookkeeping in this commit).
+
+What's NOT yet proven by this merge:
+- `pnpm -r --if-present typecheck` is still red — the `packages/component-library` cannot resolve `@openwebhmi/protocol`; was *exposed* by AV but is not in AV's scope. Tracked as CODEX-AX.
+
+Follow-ups opened: CODEX-AX (`packages: fix component-library resolution of @openwebhmi/protocol`).

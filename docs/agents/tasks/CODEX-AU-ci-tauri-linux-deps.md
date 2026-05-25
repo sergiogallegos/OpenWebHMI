@@ -3,9 +3,10 @@ id: CODEX-AU
 title: ci: install Tauri Linux build deps so the Rust job's clippy step succeeds
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-25 claude [Opus 4.7]
+merge-commit: 4e9bc9b
 ---
 
 # CODEX-AU — ci: install Tauri Linux build deps
@@ -92,4 +93,55 @@ CI verification for run https://github.com/sergiogallegos/OpenWebHMI/actions/run
 
 ## Claude review
 
+### 2026-05-25 23:20  claude [Opus 4.7]
+
+**Independent verification**
+- `gh run view 26423144512` — confirmed the Rust job's `Install Tauri Linux build deps` step passed; install took 23s of the 5m40s total job time.
+- Same run: `cargo fmt --all -- --check` passed; `cargo clippy --workspace --all-targets -- -D warnings` **passed** (this was the failing gate before AU).
+- `git show 4e9bc9b -- .github/workflows/ci.yml` — diff is exactly the install step from the brief, placed after `actions/checkout@v4` and before the rustup/cache actions, with the comment the brief asked for (`# Tauri v2 Linux prereqs - update when src-tauri Cargo.toml's tauri pin changes.`).
+
+**What's being fixed**
+- The Rust CI job's `cargo clippy --workspace --all-targets` was failing at the `glib-sys` build script because the Ubuntu runner lacks the Tauri designer's Linux system libraries.
+
+**Root cause confirmation**
+- Confirmed: `glib-sys` is pulled in transitively from `apps/designer/src-tauri/`; the missing libraries (`glib-2.0`, `gtk-3`, `webkit2gtk-4.1`, `libsoup-3`, `pkg-config`) are not preinstalled on `ubuntu-latest`. Fix is environment-side, not code-side.
+
+**Fix appropriateness**
+- Lands at the right layer (workflow only; no `Cargo.toml` / `src-tauri/` changes). Step placement is correct: after checkout (needs the repo to know `src-tauri` exists), before cache (so the cache key isn't invalidated by missing libs).
+- The Tauri version pin was correctly cited by Codex (`tauri = "2"` / `tauri-build = "2"`) and the package list matches Tauri v2's documented Linux prereqs for the Ubuntu 24.04 runner family.
+
+**Test proof**
+- The brief said the verification IS the CI run; CI run 26423144512 is the proof. Install step passed; clippy passed; reached `cargo test` (which fails downstream — see Residual risk).
+- No new local tests; workflow-only change.
+
+**Residual risk**
+- `cargo test --workspace --locked` now fails downstream at `crates/gateway/tests/integration.rs::websocket_gateway_forwards_script_events_by_project` (timeout waiting for a message). This is **not** an AU regression — it was masked by the earlier `glib-sys` build failure. Tracked as CODEX-AW (gateway WS integration test timeout).
+- Tauri version drift: if `apps/designer/src-tauri/Cargo.toml`'s `tauri` pin moves to v3+ later, the apt package list will need to change too. The inline comment in `ci.yml` flags this. No automated guard.
+- Ubuntu 24.04 ships `libwebkit2gtk-4.1-dev`; if the GitHub `ubuntu-latest` ever rolls back to 22.04, the package name needs to be `4.0-dev`. Low likelihood.
+
+**Strong points (✅)**
+- Minimal, surgical change — exactly the one-line-class fix the brief specified, no scope creep.
+- Inline comment in `ci.yml:18` matches the brief's risk note about Tauri version drift verbatim — future maintainers see the dependency contract.
+- Codex correctly stopped at the scope boundary when the downstream `cargo test` failure surfaced. Reported it honestly with the test name and the run url, then explicitly noted "beyond AU's system-dependency unblock scope." Per CLAUDE.md "Honesty" rule, that's the bar.
+- Tauri version was cited specifically (`tauri = "2"` / `tauri-build = "2"`) before picking the package list — answered the brief's "pick the right version's prereqs" instruction by checking the pin first.
+
+**Findings**
+- 🟢 The `Install Tauri Linux build deps` step took 23s on the runner; the brief estimated ~10s. Within the same order of magnitude, no action needed; documenting in case future cost-optimization care is wanted.
+- 🟡 Workflow comment uses ASCII hyphens; the brief sample used em-dashes. Cosmetic only.
+- 🟠 Real concerns — none. (The downstream `cargo test` failure is real but explicitly out of AU's scope, tracked as CODEX-AW.)
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `.github/workflows/ci.yml` `rust` job has the install step.
+- ✅ Package list matches Tauri v2 Linux prerequisites; Tauri version cited in Codex log.
+- ✅ Rust CI job reaches `cargo test` (passes/fails on real findings, not at build-script).
+- ✅ Job duration noted (5m40s total; install 23s).
+
 ## Verdict
+
+**Merged** at `4e9bc9b` (the implementation commit bundles AU + AV; bookkeeping in this commit).
+
+What's NOT yet proven by this merge:
+- `cargo test --workspace --locked` is still red — the gateway WS integration test timeout was *exposed* by AU but is not in AU's scope. Tracked as CODEX-AW.
+
+Follow-ups opened: CODEX-AW (`tests: stabilize gateway WS script-event integration test`).

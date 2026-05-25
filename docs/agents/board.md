@@ -16,8 +16,8 @@
 | CODEX-AR | Raspberry Pi deployment guide — hardware spec, build, systemd, known limits | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AR-raspberry-pi-deployment.md`](tasks/CODEX-AR-raspberry-pi-deployment.md) |
 | CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AS-widget-export-import.md`](tasks/CODEX-AS-widget-export-import.md) |
 | CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
-| CODEX-AU | ci: install Tauri Linux build deps so the Rust job's clippy step succeeds | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AU-ci-tauri-linux-deps.md`](tasks/CODEX-AU-ci-tauri-linux-deps.md) |
-| CODEX-AV | ci: resolve pnpm version conflict (workflow vs package.json packageManager) | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AV-ci-pnpm-version-conflict.md`](tasks/CODEX-AV-ci-pnpm-version-conflict.md) |
+| CODEX-AW | tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout) | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AW-gateway-ws-test-timeout.md`](tasks/CODEX-AW-gateway-ws-test-timeout.md) |
+| CODEX-AX | packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AX-component-library-protocol-resolution.md`](tasks/CODEX-AX-component-library-protocol-resolution.md) |
 
 ### Phase 4 dependency graph
 
@@ -39,14 +39,18 @@
         │       ├── CODEX-AS  Widget export/import between projects         ← open
         │       └── CODEX-AT  Material Design widget pack (demo subset)     ← open (depends on AO for shared CSS-variable contract)
         │
-        └── CI hygiene (unblock main CI — opened 2026-05-25)
-                ├── CODEX-AU  ci: install Tauri Linux build deps             ← submitted (CI run pending)
-                └── CODEX-AV  ci: resolve pnpm version conflict              ← submitted (CI run pending)
+        ├── CI hygiene (unblock main CI — opened 2026-05-25)
+        │       ├── CODEX-AU  ci: install Tauri Linux build deps             ← merged 4e9bc9b
+        │       └── CODEX-AV  ci: resolve pnpm version conflict              ← merged 4e9bc9b
+        │
+        └── CI hygiene follow-ups (downstream failures exposed by AU+AV — opened 2026-05-25)
+                ├── CODEX-AW  gateway WS script-event integration test timeout  ← open (exposed by AU; gates Rust job green)
+                └── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← open (exposed by AV; gates Node job green)
 ```
 
 Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.
 
-CI hygiene tasks (AU + AV) should land before any task whose verification relies on CI signal — currently no in-flight task strictly requires CI green, but the next merge cycle benefits from the unblock.
+CI hygiene tasks AU + AV merged at `4e9bc9b`. Each unblocked the job's setup gate but exposed a downstream failure (AW = gateway WS test timeout; AX = component-library module resolution). Neither downstream failure is an AU/AV regression — both were masked by the earlier setup-step breakage. AW + AX are the actual "CI fully green" gate.
 
 **🎉 Phase 4 v1.0 feature ladder complete.** AE (audit log), AF (backup/restore), AI (historian import closeout) all merged. Driver slice was AG (toolchain) → AD (ADS validation) → AH (ADS native notifications). Component slice closed at AC (25 components). Remaining v1.0 closeout items live outside the agent-task ladder: plugin SDK, performance baseline, pre-1.0 hardware-validation 24h soak gate, plus the v1.1 polish list flagged across AE/AF/AI verdicts (SessionExpired hook, wiki/protocol/* pages, SQL-side audit-log filter pushdown, alarm-journal merge dedupe, designer session disconnect on replace).
 
@@ -112,6 +116,8 @@ CI hygiene tasks (AU + AV) should land before any task whose verification relies
 | CODEX-AJ | Async hygiene — blocking SQLite spawn_blocking, coordinated shutdown, scripting fan-in | codex | `8022426` | 4 |
 | CODEX-AK | Tokio handle ergonomics — AbortHandle map sweep, cancel-safety docs, per-connection drain | codex | `3bde658` | 4 |
 | CODEX-AL | API polish — TagPath + DriverId newtypes, #[non_exhaustive] sweep, ScriptHost cheap-clone | codex | `79ee864` | 4 |
+| CODEX-AU | ci: install Tauri Linux build deps so the Rust job's clippy step succeeds | codex | `4e9bc9b` | 4 |
+| CODEX-AV | ci: resolve pnpm version conflict (workflow vs package.json packageManager) | codex | `4e9bc9b` | 4 |
 
 ## Conventions
 
