@@ -9,18 +9,36 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | submitted | 2026-05-05 codex | [`CODEX-AM-stdlib-deps-modernization.md`](tasks/CODEX-AM-stdlib-deps-modernization.md) |
+| CODEX-AN | audit-log CFR21 Part 11 framing + tamper-evident hash chain | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AN-audit-log-cfr21-hash-chain.md`](tasks/CODEX-AN-audit-log-cfr21-hash-chain.md) |
+| CODEX-AO | Designer Theme Editor UI — pulled deferred v0.2 Stretch item forward | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AO-theme-editor-ui.md`](tasks/CODEX-AO-theme-editor-ui.md) |
+| CODEX-AP | Recipes — process-control recipe management (load/save/apply named tag-value sets) | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AP-recipes.md`](tasks/CODEX-AP-recipes.md) |
+| CODEX-AQ | Historian capacity + retention callout — docs, plus optional retention-policy MVP | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AQ-historian-capacity-callout.md`](tasks/CODEX-AQ-historian-capacity-callout.md) |
+| CODEX-AR | Raspberry Pi deployment guide — hardware spec, build, systemd, known limits | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AR-raspberry-pi-deployment.md`](tasks/CODEX-AR-raspberry-pi-deployment.md) |
+| CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AS-widget-export-import.md`](tasks/CODEX-AS-widget-export-import.md) |
+| CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
 
 ### Phase 4 dependency graph
 
 ```
 (v1.0 feature ladder complete — AE/AF/AI/AG/AD/AH/AC merged)
         │
-        └── quality follow-ups (review pass 2 — Rust 1.95 idioms vs tokio/axum/ripgrep)
-                ├── CODEX-AJ  async hygiene (Tier 1: blocking SQLite, shutdown coord, scripting fan-in)  ← open
-                ├── CODEX-AK  tokio handle ergonomics (JoinSet inside subsystems, #[must_use], cancel-safety docs)
-                ├── CODEX-AL  API polish (newtypes, builder/Config split, #[non_exhaustive], cheap-clone handles)
-                └── CODEX-AM  stdlib + deps modernization (thiserror 2.x, format-capture, missing-docs consistency)
+        ├── quality follow-ups (review pass 2 — Rust 1.95 idioms vs tokio/axum/ripgrep)
+        │       ├── CODEX-AJ  async hygiene                      ← merged 8022426
+        │       ├── CODEX-AK  tokio handle ergonomics            ← merged 3bde658
+        │       ├── CODEX-AL  API polish                         ← merged 79ee864
+        │       └── CODEX-AM  stdlib + deps modernization        ← submitted (awaiting review)
+        │
+        └── v1.x improvements (competitor feature-parity sweep — opened 2026-05-25)
+                ├── CODEX-AN  audit-log CFR21 framing + hash chain         ← open (top priority — pharma/medical procurement gate)
+                ├── CODEX-AO  Theme Editor UI (v0.2 Stretch pulled forward) ← open
+                ├── CODEX-AP  Recipes (process-control management)          ← open (post-1.0; depends on AN for full audit coverage)
+                ├── CODEX-AQ  Historian capacity + retention callout        ← open (mostly docs)
+                ├── CODEX-AR  Raspberry Pi deployment guide                 ← open (docs + optional cross-compile script)
+                ├── CODEX-AS  Widget export/import between projects         ← open
+                └── CODEX-AT  Material Design widget pack (demo subset)     ← open (depends on AO for shared CSS-variable contract)
 ```
+
+Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.
 
 **🎉 Phase 4 v1.0 feature ladder complete.** AE (audit log), AF (backup/restore), AI (historian import closeout) all merged. Driver slice was AG (toolchain) → AD (ADS validation) → AH (ADS native notifications). Component slice closed at AC (25 components). Remaining v1.0 closeout items live outside the agent-task ladder: plugin SDK, performance baseline, pre-1.0 hardware-validation 24h soak gate, plus the v1.1 polish list flagged across AE/AF/AI verdicts (SessionExpired hook, wiki/protocol/* pages, SQL-side audit-log filter pushdown, alarm-journal merge dedupe, designer session disconnect on replace).
 
