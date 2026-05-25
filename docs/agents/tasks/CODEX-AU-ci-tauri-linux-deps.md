@@ -3,9 +3,9 @@ id: CODEX-AU
 title: ci: install Tauri Linux build deps so the Rust job's clippy step succeeds
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AU — ci: install Tauri Linux build deps
@@ -80,6 +80,12 @@ No new local tests; the workflow change is verified by CI itself. Document the r
 - **The validator pre-commit hook is unaffected** — workflow-only change; `docs/agents/` not touched.
 
 ## Codex log
+
+### 2026-05-25 22:31 codex [gpt-5]
+Status -> in-progress. Codex started the CI hygiene task after maintainer direction to handle AU and AV first.
+
+### 2026-05-25 22:31 codex [gpt-5]
+Status -> submitted. Added the `Install Tauri Linux build deps` step to the Rust CI job immediately after checkout and before Rust/cache setup. The local Tauri pin is `tauri = "2"` / `tauri-build = "2"` in `apps/designer/src-tauri/Cargo.toml`; the package list uses the Tauri v2 Debian/Ubuntu WebKitGTK 4.1 prerequisite set for the current `ubuntu-latest` runner family, with explicit `glib`, `gtk`, `libsoup`, and `pkg-config` packages for the failing build scripts. Local verification: `scripts/validate-agent-files` passes. CI verification, run URL, and job duration remain pending until the change is pushed and GitHub Actions runs.
 
 ## Claude review
 

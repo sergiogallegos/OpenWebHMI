@@ -16,8 +16,8 @@
 | CODEX-AR | Raspberry Pi deployment guide — hardware spec, build, systemd, known limits | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AR-raspberry-pi-deployment.md`](tasks/CODEX-AR-raspberry-pi-deployment.md) |
 | CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AS-widget-export-import.md`](tasks/CODEX-AS-widget-export-import.md) |
 | CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
-| CODEX-AU | ci: install Tauri Linux build deps so the Rust job's clippy step succeeds | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AU-ci-tauri-linux-deps.md`](tasks/CODEX-AU-ci-tauri-linux-deps.md) |
-| CODEX-AV | ci: resolve pnpm version conflict (workflow vs package.json packageManager) | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AV-ci-pnpm-version-conflict.md`](tasks/CODEX-AV-ci-pnpm-version-conflict.md) |
+| CODEX-AU | ci: install Tauri Linux build deps so the Rust job's clippy step succeeds | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AU-ci-tauri-linux-deps.md`](tasks/CODEX-AU-ci-tauri-linux-deps.md) |
+| CODEX-AV | ci: resolve pnpm version conflict (workflow vs package.json packageManager) | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AV-ci-pnpm-version-conflict.md`](tasks/CODEX-AV-ci-pnpm-version-conflict.md) |
 
 ### Phase 4 dependency graph
 
@@ -40,8 +40,8 @@
         │       └── CODEX-AT  Material Design widget pack (demo subset)     ← open (depends on AO for shared CSS-variable contract)
         │
         └── CI hygiene (unblock main CI — opened 2026-05-25)
-                ├── CODEX-AU  ci: install Tauri Linux build deps             ← open (Rust job has been red for 5+ pushes)
-                └── CODEX-AV  ci: resolve pnpm version conflict              ← open (Node job has been red for 5+ pushes)
+                ├── CODEX-AU  ci: install Tauri Linux build deps             ← submitted (CI run pending)
+                └── CODEX-AV  ci: resolve pnpm version conflict              ← submitted (CI run pending)
 ```
 
 Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.

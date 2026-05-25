@@ -3,9 +3,9 @@ id: CODEX-AV
 title: ci: resolve pnpm version conflict (workflow vs package.json packageManager)
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AV — ci: resolve pnpm version conflict
@@ -76,6 +76,12 @@ Document the run url in the Codex log.
 - **Sanity-check the pnpm version after the install step.** Add `- run: pnpm --version` after the setup step for one CI run to confirm `9.0.0`; remove the diagnostic line once verified, or leave it as a 1-second sanity step (acceptable; document the choice in the Codex log).
 
 ## Codex log
+
+### 2026-05-25 22:31 codex [gpt-5]
+Status -> in-progress. Codex started the CI hygiene task after maintainer direction to handle AU and AV first.
+
+### 2026-05-25 22:31 codex [gpt-5]
+Status -> submitted. Removed the redundant `version: 9` block from the `pnpm/action-setup@v4` step so the action resolves pnpm from root `package.json`'s unchanged `packageManager: "pnpm@9.0.0"` field. No diagnostic `pnpm --version` step was left in the workflow because the pinned source of truth remains visible in `package.json` and the setup action documents that behavior. Local verification: `scripts/validate-agent-files` passes. CI verification, run URL, and downstream Node-step status remain pending until the change is pushed and GitHub Actions runs.
 
 ## Claude review
 
