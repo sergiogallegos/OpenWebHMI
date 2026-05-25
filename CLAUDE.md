@@ -35,7 +35,7 @@ When Codex submits (status `submitted` in the task frontmatter):
    ```
    Plus any task-specific extras (e.g. component-library `build`, designer `build:vite`, three consecutive runs for known-flaky integration tests).
 2. Read the changed/new files — at minimum the impl module, the test file, and any wiki entry the brief asked for.
-3. Write the `## Claude review` section with strong points (✅), findings (🟡 polish, 🟠 real concern), and acceptance-criteria tally.
+3. Write the `## Claude review` section using the nine-part contract in [`docs/agents/review-template.md`](docs/agents/review-template.md): independent verification, what's being fixed, root cause confirmation, fix appropriateness, test proof, residual risk, strong points (✅), findings (🟢/🟡/🟠/🔴), acceptance-criteria tally.
 4. Set frontmatter `status: merged`, write the `## Verdict` section, update `board.md` (move row to Done, record merge commit), append to `log.md`.
 5. Commit + push. Backfill the merge commit hash into board.md and the verdict in a follow-up commit.
 
@@ -66,9 +66,11 @@ owner: codex
 phase: <0..4>
 status: open
 created: YYYY-MM-DD
-last-update: YYYY-MM-DD claude
+last-update: YYYY-MM-DD claude [Opus 4.7]
 ---
 ```
+
+The `last-update` field carries the underlying model in square brackets (e.g. `claude [Opus 4.7]`, `codex [gpt-5]`) so the maintainer can audit model-vs-quality over time. Same convention applies to entry headers inside `## Codex log` and `## Claude review` (`### YYYY-MM-DD HH:MM <author> [<model>]`) and to lines in `log.md`. See [`docs/agents/README.md`](docs/agents/README.md) for the full format spec.
 
 Then sections: `## Brief` with goal + context to read first + files to create + behavior + test requirements + acceptance criteria + out of scope + risks/gotchas. Plus empty `## Codex log`, `## Claude review`, `## Verdict`. Mirror existing briefs (CODEX-X / W / Y / AB are the recent shape templates).
 
@@ -136,7 +138,11 @@ After Phase 4 driver + component slices complete, the remaining v1.0 ladder: plu
 
 ## Project-specific gotchas
 
-- **Toolchain drift:** Rust is pinned by `rust-toolchain.toml` and CI Node is pinned in `.github/workflows/ci.yml`; include both versions when reporting environment-specific verification failures.
-- **CODEX-V plumbing**: `system.tag.write` from Python scripts routes through `GatewayTagWriteSink` (driver-prefixed paths → per-driver write mpsc; memory-tag paths → `TagStore::publish`). When briefing Python-related tasks, don't say "publish directly" — that's the v1.0 brief error that prompted CODEX-V.
-- **Read/write asymmetry in components**: bindings give the read path but not the write path. Write-back inputs need a separate `tagPath` config prop (NumericInput / Slider / Dropdown / ToggleSwitch all follow this). v1.1 architectural fix: extend the binding system to expose the bound path for write-back use.
-- **MQTT TLS in CI**: `rumqttd 0.20.0` is plaintext-only. Real TLS testing uses an external Mosquitto-with-CA fixture (manual smoke step #27 in designer README).
+Surface-specific lore lives under [`docs/agents/notes/`](docs/agents/notes/) — load on demand when touching the relevant surface.
+
+- [`notes/toolchain-drift.md`](docs/agents/notes/toolchain-drift.md) — Rust + Node version pinning; what to ask when verification claims don't reproduce.
+- [`notes/python-tag-write-routing.md`](docs/agents/notes/python-tag-write-routing.md) — `system.tag.write` routes through `GatewayTagWriteSink` (CODEX-V plumbing); don't say "publish directly" in briefs.
+- [`notes/binding-write-asymmetry.md`](docs/agents/notes/binding-write-asymmetry.md) — component bindings expose read paths but not write paths; the `tagPath?: string` prop pattern is the v1.0 workaround.
+- [`notes/mqtt-tls-in-ci.md`](docs/agents/notes/mqtt-tls-in-ci.md) — `rumqttd 0.20.0` is plaintext-only; real TLS validation is a maintainer-run manual-smoke gate.
+
+Don't restate these inline in briefs. Link to the note; that's the durable reference.

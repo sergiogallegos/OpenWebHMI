@@ -25,6 +25,12 @@ docs/agents/
 ├── README.md                       # this file — the protocol
 ├── board.md                        # status of every task at a glance
 ├── log.md                          # append-only chronological transcript
+├── review-template.md              # nine-part Claude-review contract
+├── notes/                          # surface-specific durable lore
+│   ├── binding-write-asymmetry.md
+│   ├── mqtt-tls-in-ci.md
+│   ├── python-tag-write-routing.md
+│   └── toolchain-drift.md
 └── tasks/
     ├── CODEX-A-protocol-ts.md
     ├── CODEX-B-gateway.md
@@ -76,17 +82,31 @@ Every task file has these sections, in this order:
 
 ### Entry format
 
-Within `## Codex log` and `## Claude review`, each entry starts with a header line:
+Within `## Codex log` and `## Claude review`, each entry starts with a header line that carries the agent **and** the underlying model in square brackets:
 
 ```markdown
-### 2026-04-26 14:30  codex
+### 2026-04-26 14:30  codex [gpt-5]
 <content>
 
-### 2026-04-26 15:10  claude — review pass 1
+### 2026-04-26 15:10  claude [Opus 4.7] — review pass 1
 <content>
 ```
 
 Entries are appended, never edited. If something written earlier was wrong, write a new entry that supersedes it; don't edit the old one.
+
+### Agent + model tags
+
+Every entry written into this directory carries the underlying model so the maintainer can audit model-vs-quality over time:
+
+- **Log lines** in `log.md` — `YYYY-MM-DD HH:MM <author> [<model>] <task-id> <event>`. Example: `2026-05-25 14:30  claude [Opus 4.7]  CODEX-AM  merged at f02eef5`.
+- **Task frontmatter `last-update`** — `YYYY-MM-DD <author> [<model>]`. Example: `last-update: 2026-05-25 claude [Opus 4.7]`.
+- **Entry headers** in `## Codex log` and `## Claude review` — `### YYYY-MM-DD HH:MM <author> [<model>]` as shown above.
+
+The `[<model>]` value is the underlying model name as the maintainer would say it — `Opus 4.7`, `Sonnet 4.6`, `Haiku 4.5`, `gpt-5`, `gpt-5.5`. Match what the maintainer uses in chat; don't invent variants.
+
+This convention is **load-bearing for new entries dated 2026-05-17 or later** and is checked by `scripts/validate-agent-files`. Older entries without model tags are grandfathered — don't backfill them.
+
+Agent + model tags belong **only** in `docs/agents/`. They must not appear in commit messages, PR descriptions, public docs, or anywhere in the git history surfaced to NuGet / crates.io / npm consumers — see the Voice section below.
 
 ### Asking questions
 
@@ -138,6 +158,23 @@ This directory and its referenced docs are public artifacts. Personal phrasing l
 ## Commit and push expectations
 
 Both agents may stage and commit edits to task files, `board.md`, and `log.md` as part of normal task work. The lifecycle three-place update (frontmatter + board + log) should commit together.
+
+Use `scripts/agent-commit "<message>" <file> [file...]` when practical. It unstages the full index first, stages only the named files, rejects wildcard staging, blocks obvious secret filenames, and blocks amend commits unless `--amend-anyway` is passed with explicit maintainer direction. Direct `git commit` remains valid when specific files are staged manually — `agent-commit` is the safer default for agent-driven commits, not a hard requirement.
+
+## Local agent validation
+
+Run `scripts/install-hooks` once per clone to opt into the repo-local pre-commit hook. The hook runs `scripts/validate-agent-files` only when staged files under `docs/agents/` change — it's a no-op for any commit that doesn't touch this directory.
+
+CI runs the same validator (`validate-agent-files` job in `.github/workflows/ci.yml`) for every push and pull request. The validator catches:
+
+- Missing or malformed frontmatter on task files (`id`, `title`, `owner`, `phase`, `status`, `created`, `last-update`).
+- Status drift between a task file's frontmatter and the `board.md` row.
+- Tasks listed under a Phase table whose status is `merged` or `rejected` (should be in Done).
+- Tasks listed under Done whose status isn't `merged`.
+- Done rows missing or with a malformed merge commit hash.
+- Log lines that don't parse, and entries dated 2026-05-17 or later that lack the `[<model>]` tag.
+
+Fix violations rather than disabling the check. If the validator catches drift in pre-existing files (e.g. a task file whose `status:` was never updated after merge), fix the frontmatter — the validator is the source of truth.
 
 **Pushing to the remote is not automatic:**
 

@@ -53,13 +53,17 @@ Record what you ran in the `## Claude review` section. Environment mismatches be
 
 ## Verdict shape
 
-Write a `## Claude review` section with three parts:
+Write a `## Claude review` section using the structured template at [`docs/agents/review-template.md`](../../../docs/agents/review-template.md). The fixed nine-part contract is:
 
-1. **Strong points** — what landed well. Lead with the load-bearing items (the thing the brief asked for that's now done correctly). Mark with `✅`.
-2. **Findings** — issues found. Use the project convention:
-   - `🟡 polish` — cosmetic, can be a v1.1 item. Don't undersell load-bearing items as polish; if a "polish" item actually breaks demo-HMI headline behavior, it's a closeout blocker.
-   - `🟠 real concern` — needs fixing in this PR or a follow-up task.
-3. **Acceptance-criteria tally** — go through the brief's acceptance criteria one by one, mark met / not-met / partially.
+1. **Independent verification** — commands you actually ran, with pass/fail and one-line result.
+2. **What's being fixed** — one line restating the bug or feature.
+3. **Root cause confirmation** — confirmed/not investigated, with file:line or symbol citations.
+4. **Fix appropriateness** — judgment on whether the change lands at the right layer.
+5. **Test proof** — tests added or rerun, edge cases uncovered, flaky-test runs.
+6. **Residual risk** — manual-smoke deferrals, hardware gaps, environment mismatches, partial scope.
+7. **Strong points (✅)** — citation-anchored positives worth preserving. Lead with load-bearing items.
+8. **Findings** — `🟢` factual / `🟡` polish / `🟠` real concern / `🔴` defect. Don't undersell load-bearing items as polish; if a "polish" item actually breaks demo-HMI headline behavior, it's a closeout blocker.
+9. **Acceptance criteria tally** — copy each criterion from the brief, mark `✅` / partially `🟡` / `❌` / `(deferred)`.
 
 Then write the `## Verdict` section:
 
@@ -67,6 +71,8 @@ Then write the `## Verdict` section:
 - Merge commit hash (backfilled in a follow-up commit if not known at write time).
 - What's NOT yet proven, named explicitly. If hardware validation or manual smoke is deferred, say so by name.
 - Any follow-up task ids opened (e.g., "tracked as CODEX-AD").
+
+A reviewer who can't fill in one of the nine sections honestly is the reviewer most likely to miss the issue that section would have surfaced. Write `not proven` or `not investigated` explicitly when applicable — don't skip a section silently.
 
 ## Three-place status update
 

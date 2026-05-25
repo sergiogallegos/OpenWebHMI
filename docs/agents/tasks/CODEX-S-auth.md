@@ -3,9 +3,10 @@ id: CODEX-S
 title: crates/auth — local users + roles + JWT sessions + per-view ACLs
 owner: codex
 phase: 3
-status: submitted
+status: merged
 created: 2026-04-27
-last-update: 2026-04-27 19:52 codex
+last-update: 2026-04-27 20:06 claude
+merge-commit: 7eff30a
 ---
 
 # CODEX-S — `crates/auth`
