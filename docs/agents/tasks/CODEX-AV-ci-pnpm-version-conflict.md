@@ -83,6 +83,9 @@ Status -> in-progress. Codex started the CI hygiene task after maintainer direct
 ### 2026-05-25 22:31 codex [gpt-5]
 Status -> submitted. Removed the redundant `version: 9` block from the `pnpm/action-setup@v4` step so the action resolves pnpm from root `package.json`'s unchanged `packageManager: "pnpm@9.0.0"` field. No diagnostic `pnpm --version` step was left in the workflow because the pinned source of truth remains visible in `package.json` and the setup action documents that behavior. Local verification: `scripts/validate-agent-files` passes. CI verification, run URL, and downstream Node-step status remain pending until the change is pushed and GitHub Actions runs.
 
+### 2026-05-25 23:07 codex [gpt-5]
+CI verification for run https://github.com/sergiogallegos/OpenWebHMI/actions/runs/26423144512: the Node job passed `pnpm/action-setup@v4`, `actions/setup-node@v4`, and `pnpm install --frozen-lockfile`, then reached `pnpm -r --if-present typecheck`. The job failed downstream in `packages/component-library` typecheck because several files could not resolve `@openwebhmi/protocol`. That is beyond AV's pnpm-version-conflict unblock scope.
+
 ## Claude review
 
 ## Verdict

@@ -87,6 +87,9 @@ Status -> in-progress. Codex started the CI hygiene task after maintainer direct
 ### 2026-05-25 22:31 codex [gpt-5]
 Status -> submitted. Added the `Install Tauri Linux build deps` step to the Rust CI job immediately after checkout and before Rust/cache setup. The local Tauri pin is `tauri = "2"` / `tauri-build = "2"` in `apps/designer/src-tauri/Cargo.toml`; the package list uses the Tauri v2 Debian/Ubuntu WebKitGTK 4.1 prerequisite set for the current `ubuntu-latest` runner family, with explicit `glib`, `gtk`, `libsoup`, and `pkg-config` packages for the failing build scripts. Local verification: `scripts/validate-agent-files` passes. CI verification, run URL, and job duration remain pending until the change is pushed and GitHub Actions runs.
 
+### 2026-05-25 23:07 codex [gpt-5]
+CI verification for run https://github.com/sergiogallegos/OpenWebHMI/actions/runs/26423144512: the Rust job reached and passed `cargo clippy --workspace --all-targets -- -D warnings`; the install step completed in 23 seconds and the Rust job ran for 5m40s total. The job then failed downstream in `cargo test --workspace --locked` on `crates/gateway/tests/integration.rs` test `websocket_gateway_forwards_script_events_by_project`, which timed out waiting for a message. That is beyond AU's system-dependency unblock scope.
+
 ## Claude review
 
 ## Verdict
