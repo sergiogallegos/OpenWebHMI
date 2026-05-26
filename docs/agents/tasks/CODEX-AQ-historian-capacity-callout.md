@@ -3,9 +3,10 @@ id: CODEX-AQ
 title: Historian capacity + retention callout — docs only, plus optional retention policy MVP
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: 411f449
 ---
 
 # CODEX-AQ — Historian capacity + retention callout
@@ -100,4 +101,66 @@ If retention is **not** currently implemented in `crates/historian` (the audit w
 
 ## Claude review
 
+### 2026-05-26 03:35  claude [Opus 4.7]
+
+**Independent verification**
+- `cargo test -p openwebhmi-historian --locked` — 9/9 passed (existing aggregations/recorder/round-trip tests still green).
+- `cargo test -p openwebhmi-historian --test retention --locked` — 2/2 passed (`prune_older_than_removes_samples_before_cutoff`, `prune_to_max_rows_keeps_newest_samples`).
+- CI run 26430352703 — Rust job ✅ passed (6m12s, first green in 5+ pushes); Node typecheck + lint + test ✅ passed; validate-agent-files ✅ passed. Downstream Node `build` step fails at `tauri build` due to the same `glib-sys` deps gap CODEX-AU fixed for the Rust job — separate follow-up (CODEX-AY), not an AQ regression.
+- Read `docs/historian.md` (58 lines), `crates/historian/src/store.rs` diff (the two `prune_*` methods), `crates/historian/tests/retention.rs` (the two tests), README.md + architecture.md diffs.
+
+**What's being fixed**
+- Historian had no capacity, write-rate, or retention story in the docs. Retention was not implemented in the engine. Both gaps addressed.
+
+**Root cause confirmation**
+- Confirmed: pre-AQ `crates/historian/src/store.rs` had no `prune_*` methods (inspected the diff). Phase 2 audit-then-implement path the brief described — Codex correctly took it.
+- Confirmed: `docs/historian.md` didn't exist before AQ.
+
+**Fix appropriateness**
+- Right layer: pruning is `HistorianStore` engine primitives (opt-in, per-tag); no auto-pruning wired into the recorder, which preserves the "default behavior unchanged" promise.
+- `prune_older_than` and `prune_to_max_rows` match the brief's interface spec.
+- SQL uses parameterized queries (no injection risk); `prune_to_max_rows` clamps `max_rows.min(i64::MAX as u64) as i64` cleanly.
+- Docs cite source (sqlite.org limits page) for the 281 TB ceiling rather than asserting it.
+
+**Test proof**
+- 2 new tests in `tests/retention.rs`:
+  - `prune_to_max_rows_keeps_newest_samples` — inserts 1000, prunes to 500, asserts the newest 500 remain (ts_ms 500..999). Validates ordering invariant, not just count.
+  - `prune_older_than_removes_samples_before_cutoff` — inserts 10 daily samples, prunes before day-5, asserts 5 remain starting at ts_ms = 5 days. Validates half-open cutoff semantics.
+- Retention tests are deterministic (in-memory SQLite); single run is sufficient per CLAUDE.md (three-runs rule is for known-flaky integration tests, not deterministic unit-shape tests).
+
+**Residual risk**
+- **Write-rate benchmark not produced** — Codex's environment blocked machine-spec introspection; `docs/historian.md` L39 honestly says so. Future work to land a measured number on representative hardware.
+- **Recorder doesn't call `prune_*`** — engine-only primitives by design. Operational pruning needs a future brief to wire the recorder to call `prune_*` on a cadence.
+- **No Designer UI for retention config** — explicit out-of-scope per the brief; future work.
+- The brief's "test must fail without the fix" discipline wasn't explicitly documented in the Codex log, but the test shape (asserts ordering, not just count) implicitly satisfies it.
+
+**Strong points (✅)**
+- Capacity table cites both the formula AND the planning bytes/sample value — auditable, not magic numbers.
+- "Treat write-rate numbers as deployment-specific until a dedicated benchmark lands" — honest framing, not overpromising.
+- Backup-before-prune guidance in `docs/historian.md` L54 directly addresses the CFR21-adjacent operational concern.
+- README.md + architecture.md updates link to `docs/historian.md` consistently; no orphaned doc.
+- `prune_*` returns `usize` (rows deleted), not `()` — gives the caller verification ammo for free.
+
+**Findings**
+- 🟢 `usize` return type on `prune_*` is the right call; future recorder wiring can log/audit the count.
+- 🟡 Doc says "retention age at least twice the backup interval" without naming a typical interval. Add a one-sentence default recommendation in v1.1 polish ("typical retention 30-90 days; typical backup interval 1-7 days").
+- 🟠 Real concerns — none.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `docs/historian.md` exists with sections: Capacity, Schema, Sizing table, Write rate, Retention, Backup, File location.
+- ✅ `README.md` features list cites the historian with a capacity number ("281 TB SQLite file-format ceiling").
+- ✅ Codex log states retention was NOT pre-existing (Phase 2 path correctly taken).
+- ✅ Retention policy lands as per-tag opt-in with prune tests passing.
+- ✅ Capacity table numbers cite their formula.
+- (deferred) Write-rate number cites the test machine spec — sandbox-blocked; documented honestly.
+
 ## Verdict
+
+**Merged** at `411f449` (commit bundles AQ + AR per the chunking suggestion).
+
+What's NOT yet proven by this merge:
+- Recorder-level retention wiring (engine primitives only ship here).
+- Write-rate benchmark on representative hardware (sandbox-blocked).
+
+No follow-ups opened from AQ specifically — both deferrals are future enhancement, not blockers.

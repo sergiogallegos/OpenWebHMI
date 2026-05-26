@@ -3,9 +3,10 @@ id: CODEX-AR
 title: Raspberry Pi deployment guide — hardware spec, build, systemd, known limits
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: 411f449
 ---
 
 # CODEX-AR — Raspberry Pi deployment guide
@@ -91,4 +92,66 @@ If a real deployment isn't feasible in Codex's environment, the doc says so in a
 
 ## Claude review
 
+### 2026-05-26 03:38  claude [Opus 4.7]
+
+**Independent verification**
+- Read `docs/deployment/raspberry-pi.md` (145 lines), `docs/deployment/openwebhmi-gateway.service` (24 lines), `scripts/cross-compile-pi.sh` (14 lines), README.md + architecture.md diffs.
+- CI run 26430352703 Rust job ✅ — confirms `cargo build -p openwebhmi-gateway --release --locked` builds on Linux x86 (the gateway binary the doc deploys is verified buildable).
+- Cross-compile attempt: not re-run locally; trusting Codex's honest disclosure in `docs/deployment/raspberry-pi.md` L7-9 about why the aarch64 cross-compile path was blocked in their sandbox.
+- No Raspberry Pi hardware available locally either; the doc's own "Verification Status" section is the only signal on Pi hardware behavior.
+
+**What's being fixed**
+- OpenWebHMI gateway has no Pi-specific deployment guidance; integrators targeting cheap edge ARM hardware have to reverse-engineer the deps + systemd unit.
+
+**Root cause confirmation**
+- Confirmed via `find docs/deployment -type f` (empty before AR): no prior Pi documentation, no sample systemd unit, no cross-compile wrapper.
+
+**Fix appropriateness**
+- Right layer: docs-only with an optional cross-compile wrapper. No code changes outside `scripts/`. Doesn't try to ship a `.deb` package or Pi OS image (out of scope per brief).
+- Two-path coverage (native + cross-compile) matches the brief's structure.
+- The systemd unit's hardening (`NoNewPrivileges=true`, `PrivateTmp=true`, `ProtectSystem=full`, `ProtectHome=true`, `ReadWritePaths=/var/lib/openwebhmi`) is good defaults for a service running with file-system isolation.
+- `cross-compile-pi.sh` checks for `cross` and tells the user how to install it; doesn't silently fail.
+
+**Test proof**
+- N/A for docs — verification IS the deployment path. The Pi-side build path is documented but not executed in this environment.
+- The brief said "(Optional, only if a Pi is available) Smoke test"; sandbox couldn't satisfy this. Codex's disclosure of the limitation is the strong point, not a defect.
+
+**Residual risk**
+- **Real Pi hardware smoke was not performed.** Doc says so at L9. Maintainer should run the native-build path on a Pi 4 or Pi 5 before quoting Pi performance numbers.
+- **Cross-compile path is not validated end-to-end.** The wrapper uses `cross` which itself was not run on this host. Doc honestly admits this at L7-8.
+- **`docs/deployment/openwebhmi-gateway.service` ExecStart uses CLI flags** (`--bind`, `--project-root`, `--historian`, `--audit-log`) that I haven't verified are accepted by the current `openwebhmi-gateway` binary. If those flag names changed, the unit fails at service start. Future Pi smoke catches this.
+- **Air-gap NTP note** is present (good), but no concrete `systemd-timesyncd` config example.
+- Linux runtime web build path is documented (`pnpm --filter @openwebhmi/runtime-web build`) but the resulting `dist/` static-deploy story is a one-liner; integrators may want more reverse-proxy guidance beyond "use Caddy or nginx."
+
+**Strong points (✅)**
+- **"Verification Status" section is gold-standard Honesty.** Codex named exactly what was tested and what wasn't, including the specific failure mode of the sandbox cross-compile attempt (`aarch64-linux-gnu-gcc` missing; zig cc workaround failed because cc-rs passes an incompatible `--target` flag). Per CLAUDE.md "Honesty" rule, this is the bar.
+- systemd unit hardening goes beyond the minimum — `NoNewPrivileges + ProtectSystem + ProtectHome + ReadWritePaths` is a defense-in-depth shape that survives a compromised binary better than a naive unit.
+- "Known Limits" section explicitly calls out designer-is-desktop-only, 32-bit Pi OS unsupported, openssl-vs-rustls, SD-card wear, no GPIO. These are exactly the friction points integrators hit; surfacing them up front saves support time.
+- README.md adds Pi to the gateway platforms line and the v1.0 features list — links to the doc; not an orphan page.
+- `architecture.md` table also updated; cross-referenced.
+
+**Findings**
+- 🟢 The doc cites Rust 1.95.0 from `rust-toolchain.toml` correctly — toolchain-drift discipline.
+- 🟡 systemd unit `ExecStart` flag verification (`--bind`, `--project-root`, etc.) would benefit from a CI smoke that just does `openwebhmi-gateway --help` and asserts the flag names. v1.1 polish.
+- 🟡 The doc doesn't show what `OPENWEBHMI_PYTHON` defaults to in the systemd unit context (it's set to `/usr/bin/python3` in the unit file, which assumes apt-installed Python; document this default).
+- 🟠 Real concerns — none. (Pi-hardware unverified is a known limitation, not a defect.)
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `docs/deployment/raspberry-pi.md` exists and covers all sections (hardware, OS, build paths, install, systemd, networking, smoke, known limits).
+- ✅ `docs/deployment/openwebhmi-gateway.service` sample unit ships.
+- ✅ README.md links to the new doc.
+- ✅ Codex log states whether the doc was verified on real Pi or only via cross-compile (neither, honestly disclosed).
+- ✅ Designer-on-Pi limitation called out explicitly (multiple places).
+- ✅ Cross-compile invocation respects the pinned `rust-toolchain.toml`.
+
 ## Verdict
+
+**Merged with explicit validation gate** at `411f449` (commit bundles AQ + AR).
+
+What's NOT yet proven by this merge:
+- Real Pi 4 / Pi 5 hardware smoke (the doc says so; maintainer to run before quoting Pi performance to customers).
+- Cross-compile end-to-end (blocked by sandbox; integrators with a working `cross` install can confirm).
+- systemd `ExecStart` flag names match the current `openwebhmi-gateway` binary signature.
+
+No follow-ups opened from AR specifically — deferrals are integrator-facing future validation, not code work. Maintainer manual-smoke gate on real Pi before promoting Pi support beyond "documented."
