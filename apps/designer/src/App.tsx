@@ -280,6 +280,13 @@ export function App() {
               saving={saveState === "saving"}
               onSave={saveAlarms}
             />
+          ) : selectedModule === "theme" ? (
+            <ThemeEditor
+              theme={project.theme}
+              saving={saveState === "saving"}
+              onSave={saveTheme}
+              onCancel={() => setPreviewReload((current) => current + 1)}
+            />
           ) : selectedModule === "scripts" ? (
             <>
               <ScriptList
@@ -307,7 +314,9 @@ export function App() {
               <ViewEditor
                 view={selectedView}
                 selectedComponentId={selectedComponentId}
+                tagPaths={tagPaths}
                 onSelectComponent={setSelectedComponentId}
+                onWarning={setWarning}
                 onChange={(view) => {
                   setSaveState("unsaved");
                   void saveView(view);

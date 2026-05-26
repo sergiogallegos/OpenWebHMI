@@ -7,21 +7,26 @@ import {
   moveComponent,
   removeComponent,
 } from "../lib/viewMutations";
+import { downloadExportedWidget, importWidget } from "./widget-io";
 
 /** Props for the form-based view tree editor. */
 export type ViewEditorProps = {
   view: View;
   selectedComponentId: string | null;
+  tagPaths: string[];
   onSelectComponent: (id: string) => void;
   onChange: (view: View) => void;
+  onWarning: (message: string) => void;
 };
 
 /** Nested card editor for the view component tree. */
 export function ViewEditor({
   view,
   selectedComponentId,
+  tagPaths,
   onSelectComponent,
   onChange,
+  onWarning,
 }: ViewEditorProps) {
   return (
     <section style={styles.panel} aria-label="View editor">
@@ -30,6 +35,33 @@ export function ViewEditor({
           <h2 style={styles.heading}>{view.title}</h2>
           <div style={styles.meta}>{view.id}</div>
         </div>
+        <label style={styles.importAction}>
+          Import widget...
+          <input
+            aria-label="Import widget"
+            type="file"
+            accept=".owhmi-widget,application/json"
+            style={styles.hiddenInput}
+            onChange={async (event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (!file) {
+                return;
+              }
+              try {
+                const result = importWidget(await file.text(), { tagPaths });
+                const nextView = addChild(view, view.root.id, result.widget);
+                onChange(nextView);
+                onSelectComponent(result.widget.id);
+                if (result.warnings.length > 0) {
+                  onWarning(`Imported with warnings: ${result.warnings.join(" ")}`);
+                }
+              } catch (error) {
+                onWarning(error instanceof Error ? error.message : String(error));
+              }
+            }}
+          />
+        </label>
       </div>
       <ComponentCard
         node={view.root}
@@ -37,6 +69,7 @@ export function ViewEditor({
         selectedComponentId={selectedComponentId}
         onSelectComponent={onSelectComponent}
         onChange={onChange}
+        onWarning={onWarning}
         view={view}
       />
     </section>
@@ -49,6 +82,7 @@ function ComponentCard({
   selectedComponentId,
   onSelectComponent,
   onChange,
+  onWarning,
   view,
 }: {
   node: ComponentNode;
@@ -56,6 +90,7 @@ function ComponentCard({
   selectedComponentId: string | null;
   onSelectComponent: (id: string) => void;
   onChange: (view: View) => void;
+  onWarning: (message: string) => void;
   view: View;
 }) {
   const canHaveChildren = node.kind === "Container";
@@ -114,6 +149,19 @@ function ComponentCard({
           >
             Duplicate
           </button>
+          <button
+            type="button"
+            style={styles.action}
+            onClick={() => {
+              try {
+                downloadExportedWidget(node, view.title);
+              } catch (error) {
+                onWarning(error instanceof Error ? error.message : String(error));
+              }
+            }}
+          >
+            Export
+          </button>
         </div>
       </div>
 
@@ -152,6 +200,7 @@ function ComponentCard({
             selectedComponentId={selectedComponentId}
             onSelectComponent={onSelectComponent}
             onChange={onChange}
+            onWarning={onWarning}
             view={view}
           />
         ))}
@@ -167,6 +216,10 @@ const styles = {
     overflow: "auto",
   },
   header: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "start",
     marginBottom: 12,
   },
   heading: {
@@ -226,6 +279,24 @@ const styles = {
     borderRadius: 6,
     background: "#ffffff",
     fontSize: 12,
+  },
+  importAction: {
+    minHeight: 30,
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "4px 8px",
+    border: "1px solid #9aa5b1",
+    borderRadius: 6,
+    background: "#ffffff",
+    fontSize: 12,
+    cursor: "pointer",
+  },
+  hiddenInput: {
+    position: "absolute" as const,
+    width: 1,
+    height: 1,
+    opacity: 0,
+    pointerEvents: "none" as const,
   },
   addLabel: {
     display: "grid",

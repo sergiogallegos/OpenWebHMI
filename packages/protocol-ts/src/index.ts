@@ -40,6 +40,23 @@ export type ComponentNode = {
   children: ComponentNode[];
 };
 
+export type ExportedWidgetChild = {
+  widget_type: string;
+  props: unknown;
+  bindings: Binding[];
+  children: ExportedWidgetChild[];
+};
+
+export type ExportedWidget = {
+  schema_version: number;
+  widget_type: string;
+  props: unknown;
+  bindings: Binding[];
+  children: ExportedWidgetChild[];
+  exported_at: number;
+  openwebhmi_version: string;
+};
+
 export type View = {
   id: string;
   title: string;

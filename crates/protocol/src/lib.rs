@@ -11,7 +11,10 @@
 
 use serde::{Deserialize, Serialize};
 
+pub mod widget_io;
+
 pub use openwebhmi_project_store::{ArtifactKind, ChangeAction, View};
+pub use widget_io::{ExportedWidget, ExportedWidgetChild};
 
 macro_rules! string_newtype {
     ($(#[$meta:meta])* $name:ident) => {
