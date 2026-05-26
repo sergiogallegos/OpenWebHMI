@@ -78,7 +78,9 @@ Document the run url in the Codex log.
 
 ## Codex log
 
-2026-05-26 codex [gpt-5]: Mirrored the byte-identical Tauri v2 Linux prereq apt-install block from the Rust job into the Node job before `pnpm install`. Local verification was workflow inspection only; the required verification is the pushed CI run.
+2026-05-26 codex [gpt-5]: Mirrored the byte-identical Tauri v2 Linux prereq apt-install block from the Rust job into the Node job before `pnpm install`. Local verification: `git diff --check` and `scripts/validate-agent-files` passed.
+
+2026-05-26 codex [gpt-5]: Pushed `7505a62`; CI run https://github.com/sergiogallegos/OpenWebHMI/actions/runs/26431030607 verified the Node job now installs Tauri deps, passes install/typecheck/lint/test, and reaches `pnpm -r --if-present build`. The previous `glib-sys` / pkg-config blocker is gone. Downstream failure remains in `apps/designer` Linux AppImage bundling after the Tauri release binary, deb, and rpm are built: `failed to bundle project \`failed to run linuxdeploy\``. That is outside AY's scope and should be a separate follow-up if AppImage bundling stays in CI.
 
 ## Claude review
 
