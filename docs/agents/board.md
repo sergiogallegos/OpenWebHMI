@@ -11,7 +11,7 @@
 | CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | submitted | 2026-05-05 codex | [`CODEX-AM-stdlib-deps-modernization.md`](tasks/CODEX-AM-stdlib-deps-modernization.md) |
 | CODEX-AN | audit-log CFR21 Part 11 framing + tamper-evident hash chain | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AN-audit-log-cfr21-hash-chain.md`](tasks/CODEX-AN-audit-log-cfr21-hash-chain.md) |
 | CODEX-AO | Designer Theme Editor UI — pulled deferred v0.2 Stretch item forward | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AO-theme-editor-ui.md`](tasks/CODEX-AO-theme-editor-ui.md) |
-| CODEX-AY | ci: install Tauri Linux build deps in the Node job too (pnpm build step runs tauri build) | codex | open | 2026-05-26 claude [Opus 4.7] | [`CODEX-AY-ci-node-job-tauri-deps.md`](tasks/CODEX-AY-ci-node-job-tauri-deps.md) |
+| CODEX-AY | ci: install Tauri Linux build deps in the Node job too (pnpm build step runs tauri build) | codex | submitted | 2026-05-26 codex [gpt-5] | [`CODEX-AY-ci-node-job-tauri-deps.md`](tasks/CODEX-AY-ci-node-job-tauri-deps.md) |
 | CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AS-widget-export-import.md`](tasks/CODEX-AS-widget-export-import.md) |
 | CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
 | CODEX-AW | tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout) | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AW-gateway-ws-test-timeout.md`](tasks/CODEX-AW-gateway-ws-test-timeout.md) |
@@ -44,7 +44,7 @@
         └── CI hygiene follow-ups (downstream failures exposed as earlier blockers cleared)
                 ├── CODEX-AW  gateway WS script-event integration test timeout  ← submitted at cc2e1f7
                 ├── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← submitted at 47da4ea
-                └── CODEX-AY  ci: install Tauri Linux build deps in Node job too  ← open (exposed by AQ+AR run; AU fix needs mirroring to Node)
+                └── CODEX-AY  ci: install Tauri Linux build deps in Node job too  ← submitted (exposed by AQ+AR run; AU fix needs mirroring to Node)
 ```
 
 Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.

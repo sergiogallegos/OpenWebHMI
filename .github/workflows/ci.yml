@@ -38,6 +38,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Tauri v2 Linux prereqs - update when src-tauri Cargo.toml's tauri pin changes.
+      - name: Install Tauri Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libglib2.0-dev \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            pkg-config
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

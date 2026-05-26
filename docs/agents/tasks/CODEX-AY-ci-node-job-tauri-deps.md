@@ -3,9 +3,9 @@ id: CODEX-AY
 title: ci: install Tauri Linux build deps in the Node job too (pnpm build step runs tauri build)
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-26
-last-update: 2026-05-26 claude [Opus 4.7]
+last-update: 2026-05-26 codex [gpt-5]
 ---
 
 # CODEX-AY — ci: install Tauri Linux build deps in the Node job too
@@ -77,6 +77,8 @@ Document the run url in the Codex log.
 - **The `vite build` part of `pnpm --filter @openwebhmi/designer build` already works** (typecheck + test passed); only the `tauri build` part needs the system deps.
 
 ## Codex log
+
+2026-05-26 codex [gpt-5]: Mirrored the byte-identical Tauri v2 Linux prereq apt-install block from the Rust job into the Node job before `pnpm install`. Local verification was workflow inspection only; the required verification is the pushed CI run.
 
 ## Claude review
 
