@@ -9,15 +9,14 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | submitted | 2026-05-05 codex | [`CODEX-AM-stdlib-deps-modernization.md`](tasks/CODEX-AM-stdlib-deps-modernization.md) |
-| CODEX-AN | audit-log CFR21 Part 11 framing + tamper-evident hash chain | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AN-audit-log-cfr21-hash-chain.md`](tasks/CODEX-AN-audit-log-cfr21-hash-chain.md) |
-| CODEX-AO | Designer Theme Editor UI — pulled deferred v0.2 Stretch item forward | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AO-theme-editor-ui.md`](tasks/CODEX-AO-theme-editor-ui.md) |
-| CODEX-AP | Recipes — process-control recipe management (load/save/apply named tag-value sets) | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AP-recipes.md`](tasks/CODEX-AP-recipes.md) |
-| CODEX-AQ | Historian capacity + retention callout — docs, plus optional retention-policy MVP | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AQ-historian-capacity-callout.md`](tasks/CODEX-AQ-historian-capacity-callout.md) |
-| CODEX-AR | Raspberry Pi deployment guide — hardware spec, build, systemd, known limits | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AR-raspberry-pi-deployment.md`](tasks/CODEX-AR-raspberry-pi-deployment.md) |
-| CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AS-widget-export-import.md`](tasks/CODEX-AS-widget-export-import.md) |
-| CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
-| CODEX-AW | tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout) | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AW-gateway-ws-test-timeout.md`](tasks/CODEX-AW-gateway-ws-test-timeout.md) |
-| CODEX-AX | packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol | codex | open | 2026-05-25 claude [Opus 4.7] | [`CODEX-AX-component-library-protocol-resolution.md`](tasks/CODEX-AX-component-library-protocol-resolution.md) |
+| CODEX-AN | audit-log CFR21 Part 11 framing + tamper-evident hash chain | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AN-audit-log-cfr21-hash-chain.md`](tasks/CODEX-AN-audit-log-cfr21-hash-chain.md) |
+| CODEX-AO | Designer Theme Editor UI — pulled deferred v0.2 Stretch item forward | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AO-theme-editor-ui.md`](tasks/CODEX-AO-theme-editor-ui.md) |
+| CODEX-AQ | Historian capacity + retention callout — docs, plus optional retention-policy MVP | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AQ-historian-capacity-callout.md`](tasks/CODEX-AQ-historian-capacity-callout.md) |
+| CODEX-AR | Raspberry Pi deployment guide — hardware spec, build, systemd, known limits | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AR-raspberry-pi-deployment.md`](tasks/CODEX-AR-raspberry-pi-deployment.md) |
+| CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AS-widget-export-import.md`](tasks/CODEX-AS-widget-export-import.md) |
+| CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
+| CODEX-AW | tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout) | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AW-gateway-ws-test-timeout.md`](tasks/CODEX-AW-gateway-ws-test-timeout.md) |
+| CODEX-AX | packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AX-component-library-protocol-resolution.md`](tasks/CODEX-AX-component-library-protocol-resolution.md) |
 
 ### Phase 4 dependency graph
 
@@ -31,21 +30,21 @@
         │       └── CODEX-AM  stdlib + deps modernization        ← submitted (awaiting review)
         │
         ├── v1.x improvements (competitor feature-parity sweep — opened 2026-05-25)
-        │       ├── CODEX-AN  audit-log CFR21 framing + hash chain         ← open (top priority — pharma/medical procurement gate)
-        │       ├── CODEX-AO  Theme Editor UI (v0.2 Stretch pulled forward) ← open
-        │       ├── CODEX-AP  Recipes (process-control management)          ← open (post-1.0; depends on AN for full audit coverage)
-        │       ├── CODEX-AQ  Historian capacity + retention callout        ← open (mostly docs)
-        │       ├── CODEX-AR  Raspberry Pi deployment guide                 ← open (docs + optional cross-compile script)
-        │       ├── CODEX-AS  Widget export/import between projects         ← open
-        │       └── CODEX-AT  Material Design widget pack (demo subset)     ← open (depends on AO for shared CSS-variable contract)
+        │       ├── CODEX-AN  audit-log CFR21 framing + hash chain         ← submitted (top priority — pharma/medical procurement gate)
+        │       ├── CODEX-AO  Theme Editor UI (v0.2 Stretch pulled forward) ← submitted
+        │       ├── CODEX-AP  Recipes (process-control management)          ← REJECTED 2026-05-25 (Claude brief error vs VISION.md L37; planning notes already at roadmap.md L146)
+        │       ├── CODEX-AQ  Historian capacity + retention callout        ← submitted (mostly docs)
+        │       ├── CODEX-AR  Raspberry Pi deployment guide                 ← submitted (docs + optional cross-compile script)
+        │       ├── CODEX-AS  Widget export/import between projects         ← submitted
+        │       └── CODEX-AT  Material Design widget pack (demo subset)     ← submitted (depends on AO for shared CSS-variable contract)
         │
         ├── CI hygiene (unblock main CI — opened 2026-05-25)
         │       ├── CODEX-AU  ci: install Tauri Linux build deps             ← merged 4e9bc9b
         │       └── CODEX-AV  ci: resolve pnpm version conflict              ← merged 4e9bc9b
         │
         └── CI hygiene follow-ups (downstream failures exposed by AU+AV — opened 2026-05-25)
-                ├── CODEX-AW  gateway WS script-event integration test timeout  ← open (exposed by AU; gates Rust job green)
-                └── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← open (exposed by AV; gates Node job green)
+                ├── CODEX-AW  gateway WS script-event integration test timeout  ← submitted (exposed by AU; gates Rust job green)
+                └── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← submitted (exposed by AV; gates Node job green)
 ```
 
 Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.

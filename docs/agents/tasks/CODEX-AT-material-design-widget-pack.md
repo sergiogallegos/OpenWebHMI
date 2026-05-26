@@ -3,9 +3,9 @@ id: CODEX-AT
 title: Material Design widget pack — demo subset proving theme-pack architecture
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AT — Material Design widget pack (demo subset)
@@ -102,6 +102,8 @@ Picks for the demo subset (representative of the 25 v1.0 components):
 - **Designer preview is the demo surface.** Make sure the pack works in the designer's preview pane, not just the runtime. Otherwise the integrator can't see what they're shipping.
 
 ## Codex log
+
+2026-05-25 codex: Implemented additive component pack registry with default fallback warning, Material demo pack for Button/ToggleSwitch/NumericInput/Slider/Card/Dropdown/Gauge/Modal, theme-level pack persistence, runtime pack binding, designer pack selector, example project, docs, and material pack tests. Chose hand-rolled React/CSS using the existing prop contracts and Theme Editor CSS variables instead of `@material/web` to avoid Lit/React interop and new dependency surface. Verified with `pnpm --filter @openwebhmi/component-library test`, `pnpm --filter @openwebhmi/runtime-web test`, `pnpm --filter @openwebhmi/designer test`, `pnpm -r --if-present typecheck`, and build verification.
 
 ## Claude review
 

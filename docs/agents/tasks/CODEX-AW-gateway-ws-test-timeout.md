@@ -3,9 +3,9 @@ id: CODEX-AW
 title: tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout)
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AW — Stabilize gateway WS script-event integration test
@@ -74,6 +74,8 @@ The diagnosis informs the fix. Don't paper over with a longer timeout — that's
 - **Don't expand AW into a gateway test-suite audit.** One test, one fix. Other tests get their own briefs if they're broken.
 
 ## Codex log
+
+2026-05-25 codex: Removed sleep/free-port races from gateway websocket shutdown and integration tests. The shutdown test now binds a real listener before connecting, and script/alarm subscription tests use protocol ping barriers before publishing. Verified with `cargo test -p openwebhmi-gateway --locked`; `shutdown_token_sends_websocket_close_frame` and `websocket_gateway_forwards_script_events_by_project` passed inside that run.
 
 ## Claude review
 

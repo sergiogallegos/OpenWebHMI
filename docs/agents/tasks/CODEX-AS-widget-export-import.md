@@ -3,9 +3,9 @@ id: CODEX-AS
 title: Widget export/import between projects — single-widget JSON round-trip
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AS — Widget export/import between projects
@@ -80,6 +80,8 @@ An integrator builds a polished `AlarmTable` widget configuration in Project A (
 - **Filesystem APIs in browser vs Tauri.** The designer is Tauri-shelled; export goes through Tauri's save dialog. The browser-only mode (if any) needs the standard `<a download>` blob trick. Test both code paths if the designer supports both.
 
 ## Codex log
+
+2026-05-25 codex: Implemented `.owhmi-widget` export/import helpers, designer export/import actions, TS and Rust `ExportedWidget` schema mirrors, import validation for schema/type/binding paths, docs, and format note. Verified with `pnpm --filter @openwebhmi/designer test`, `cargo test -p openwebhmi-protocol --test widget_io --locked`, `pnpm -r --if-present typecheck`, and build verification.
 
 ## Claude review
 

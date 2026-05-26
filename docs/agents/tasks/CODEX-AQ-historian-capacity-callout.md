@@ -3,9 +3,9 @@ id: CODEX-AQ
 title: Historian capacity + retention callout — docs only, plus optional retention policy MVP
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AQ — Historian capacity + retention callout
@@ -95,6 +95,8 @@ If retention is **not** currently implemented in `crates/historian` (the audit w
 - **Pruning under load.** The recorder runs on a tokio task; calling `prune_*` synchronously on the same task blocks subsequent inserts. Use `spawn_blocking` for the prune call (mirror the CODEX-AJ pattern) and document the cancel-safety in `crates/historian` per the AK convention.
 
 ## Codex log
+
+2026-05-25 codex: Added historian capacity docs, README/architecture callouts, and store-level retention primitives `prune_older_than` plus `prune_to_max_rows` with focused retention tests. Local machine-spec introspection for benchmark context was sandbox-blocked, so the doc avoids claiming measured write-rate numbers. Verified with `cargo test -p openwebhmi-historian --locked`.
 
 ## Claude review
 

@@ -3,9 +3,9 @@ id: CODEX-AR
 title: Raspberry Pi deployment guide — hardware spec, build, systemd, known limits
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AR — Raspberry Pi deployment guide
@@ -86,6 +86,8 @@ If a real deployment isn't feasible in Codex's environment, the doc says so in a
 - **Time-sync.** Industrial Pi deployments are often air-gapped; the audit-log and historian timestamps drift without NTP. Note `systemd-timesyncd` or a local NTP server as a deployment-time decision.
 
 ## Codex log
+
+2026-05-25 codex: Added Raspberry Pi deployment guide, sample `openwebhmi-gateway.service`, and `scripts/cross-compile-pi.sh`. Installed `aarch64-unknown-linux-gnu` stdlib and attempted gateway cross-build; plain cargo failed because `aarch64-linux-gnu-gcc` is absent, and a `zig cc` attempt failed because `cc-rs` also passed an incompatible `--target=aarch64-unknown-linux-gnu` flag. No real Pi hardware smoke was performed, and the guide states that verification status explicitly.
 
 ## Claude review
 

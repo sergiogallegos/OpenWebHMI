@@ -3,9 +3,9 @@ id: CODEX-AN
 title: audit-log CFR21 Part 11 framing + tamper-evident hash chain
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AN — audit-log CFR21 Part 11 framing + tamper-evident hash chain
@@ -85,6 +85,8 @@ This is a v1.1 brief — not a v1.0 closeout gate — but lands cleanly on the e
 - **Wire-format expansion.** Confirm via `pnpm -r typecheck` that the TS side's `AuditEntry` regenerates cleanly with the two new fields. The ts-rs annotation must preserve `Option<[u8; 32]>` → `string | null` (hex-encoded) — pick a serde representation that gives a stable string in JSON, not a `[byte, byte, ...]` array.
 
 ## Codex log
+
+2026-05-25 codex: Implemented audit-log SHA-256 hash chain with `prev_hash`/`hash` columns, startup migration/backfill for pre-chain databases, `AuditLog::verify_chain()`, and `audit-verify` CLI. Added tamper/deletion/reorder/migration tests, protocol/TS wire fields, gateway conversion, and CFR Part 11 engineering mapping docs. Verified with `cargo test -p openwebhmi-audit-log --locked`, `cargo check -p openwebhmi-audit-log -p openwebhmi-protocol -p openwebhmi-gateway -p openwebhmi-project-store -p openwebhmi-historian --locked`, and `pnpm -r --if-present typecheck`.
 
 ## Claude review
 

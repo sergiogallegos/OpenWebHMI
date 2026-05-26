@@ -3,9 +3,9 @@ id: CODEX-AX
 title: packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AX — Fix component-library typecheck resolution of @openwebhmi/protocol
@@ -75,6 +75,8 @@ After the fix:
 - **If `@openwebhmi/protocol` isn't the right package name** (it should be — `package.json` declares it), the fix is to align the consumer's import path, not to rename the package. Renaming would break every other consumer.
 
 ## Codex log
+
+2026-05-25 codex: Fixed workspace package source resolution by pointing `@openwebhmi/protocol` and `@openwebhmi/component-library` package exports/types/main at `src/index.ts` for no-dist workspace typechecking. Verified with `pnpm -r --if-present typecheck` and package builds.
 
 ## Claude review
 

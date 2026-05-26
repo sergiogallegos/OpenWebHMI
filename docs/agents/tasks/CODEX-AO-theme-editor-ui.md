@@ -3,9 +3,9 @@ id: CODEX-AO
 title: Designer Theme Editor UI — pull deferred v0.2 Stretch item forward
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-25
-last-update: 2026-05-25 claude [Opus 4.7]
+last-update: 2026-05-25 codex [gpt-5]
 ---
 
 # CODEX-AO — Designer Theme Editor UI
@@ -89,6 +89,8 @@ The integrator opens the designer, opens a Theme Editor panel, picks colors and 
 - **Don't reintroduce hardcoded colors in component CSS.** Audit `packages/component-library/src/components/*.tsx` for `color: #...` literals; convert to `var(--...)` references as a sub-task. If any literal stays, document why in the Codex log.
 
 ## Codex log
+
+2026-05-25 codex: Implemented project theme artifacts, designer Theme module with light/dark variables and pack selector, runtime theme loading/application, CSS-variable consumption in Button, docs, and focused tests. Verified with `cargo test -p openwebhmi-project-store --locked`, `pnpm --filter @openwebhmi/designer test`, `pnpm --filter @openwebhmi/runtime-web test`, `pnpm --filter @openwebhmi/component-library test`, `pnpm -r --if-present typecheck`, and the designer build rerun outside the sandbox.
 
 ## Claude review
 

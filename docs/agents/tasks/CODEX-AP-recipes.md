@@ -3,12 +3,24 @@ id: CODEX-AP
 title: Recipes — process-control recipe management (load/save/apply named tag-value sets)
 owner: codex
 phase: 4
-status: open
+status: rejected
 created: 2026-05-25
 last-update: 2026-05-25 claude [Opus 4.7]
 ---
 
 # CODEX-AP — Recipes (process-control recipe management)
+
+> **REJECTED 2026-05-25 — Claude-authored brief error.**
+>
+> This brief should never have been opened. `VISION.md` L37 (the "Scope discipline" section under "What we won't merge") states:
+>
+> > **No MES (recipes, OEE, batch, traceability) in v1.0 code.** Planning notes are allowed in `docs/roadmap.md` Phase 5+; implementation is not.
+>
+> Recipes are explicitly out of v1.0 scope and explicitly fall on the "won't-merge" side. The Brief below was written without checking VISION.md and called recipes a "v1.1 target," which is wrong — recipes are post-v1 (year-2+), per VISION.md and `README.md`. Planning notes already exist at `docs/roadmap.md` L146 ("MES capabilities: recipe management, batch execution (ISA-88-inspired), OEE calculation, traceability records") under Phase 5+.
+>
+> Codex correctly refused implementation. See `## Codex log` for their reasoning and `## Verdict` for the rejection rationale.
+>
+> The Brief is preserved below as historical record. **Do not implement.** If the scope ever expands to include recipes in some future major version, a new brief gets a new id and a fresh VISION.md amendment lands first.
 
 ## Brief
 
@@ -116,6 +128,53 @@ This brief is **flat scope**: ad-hoc recipes (a fixed set of tag/value pairs wit
 
 ## Codex log
 
+2026-05-25 codex: Left open intentionally. `VISION.md` and `README.md` state no MES code in v1.0, with recipes/OEE/batch/traceability limited to planning notes. I did not land recipe runtime/designer code without a maintainer direction change because it would cross the repo's current won't-merge line.
+
 ## Claude review
 
+### 2026-05-25 23:55  claude [Opus 4.7]
+
+**Independent verification**
+- `grep -n "MES\|recipe\|batch\|OEE" VISION.md` — confirmed L37 "Scope discipline" explicitly lists recipes/OEE/batch/traceability as non-v1.0.
+- `grep -n "recipe\|MES\|Phase 5" docs/roadmap.md` — confirmed L142 "Phase 5+ — Year 2 horizons (sketched, not committed)" exists and L146 already lists "MES capabilities: recipe management, batch execution (ISA-88-inspired), OEE calculation, traceability records."
+- `grep -n "recipe\|MES" README.md` — confirmed README echoes the same scope position.
+
+**What's being fixed**
+- This task should never have been opened. The brief contradicted the repo's stated v1.0 scope policy.
+
+**Root cause confirmation**
+- Confirmed: brief was authored without checking `VISION.md`. The "post-v1.0 brief — v1.1 target" framing in the brief's leading paragraph is wrong; recipes are explicitly post-v1 (year-2+), not v1.1. Planning notes already live where VISION.md says they should (`docs/roadmap.md` L146).
+
+**Fix appropriateness**
+- Right move: rejection with brief preserved as historical record + frontmatter `status: rejected`. Implementation would have violated `VISION.md`'s "won't merge" contract regardless of test status — per VISION.md L33 "These are *contracts*, not preferences. A PR that lands code violating one of them is a regression even if the test suite is green."
+
+**Test proof**
+- N/A — no implementation landed. The "test" is the refusal itself: did the brief-error get caught before code shipped? Yes (by Codex).
+
+**Residual risk**
+- None for the rejection. The remaining risk is *process*: future Claude-authored briefs must check VISION.md before opening. The CLAUDE.md "Why this and not the alternative?" rule applies — I should have asked "why isn't there already a recipes feature?" and the answer would have led to VISION.md. The miss is mine.
+
+**Strong points (✅)**
+- Codex correctly identified the VISION.md scope violation and refused implementation — exactly the discipline VISION.md asks for. Per CLAUDE.md "Honesty" + "Why this and not the alternative?" rules, this is the gold-standard pattern.
+- Codex's Codex-log entry is precise: cites the two source docs (VISION.md + README.md), names the won't-merge line, doesn't editorialize.
+- Codex did not partially implement to "save the effort" — full refusal, returning the decision to the maintainer/Claude. Right call.
+
+**Findings**
+- 🟢 The brief preservation pattern (rejected status with brief kept as historical record) follows the merge skill's rejection rationale shape from the openwebhmi-merge SKILL — same shape as CODEX-Z's v1 rejection.
+- 🟡 Future-proofing: a brief-authoring checklist should include "grep VISION.md for won't-merge violations" before opening. Tracked as a v1.1 polish on the openwebhmi-merge skill (or wherever brief-authoring conventions live).
+- 🟠 Real concerns — none.
+- 🔴 Defects — the brief itself is the defect. Owned and rejected.
+
+**Acceptance criteria tally**
+- (N/A) All acceptance criteria are voided by the rejection. The brief's own acceptance bar (recipes ship) is contraindicated by VISION.md L37.
+
 ## Verdict
+
+**Rejected** — brief error owned by Claude.
+
+- `VISION.md` L37 explicitly puts recipes in the "won't merge" set for v1.0; planning notes are allowed in `docs/roadmap.md` Phase 5+ but implementation is not.
+- The recipes planning note already exists at `docs/roadmap.md` L146 (Phase 5+ section). Nothing new needs to land elsewhere.
+- The brief is preserved above as historical record. Status set to `rejected`. The board.md row is removed from the open table; no Done-table entry (no implementation merged).
+- Codex's refusal pattern is the strong point of this turn — they applied the VISION.md scope discipline I missed when authoring.
+
+No follow-up tasks. The recipes topic returns only if a future major-version scope expansion lands a VISION.md amendment first.
