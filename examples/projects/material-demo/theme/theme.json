@@ -1,0 +1,34 @@
+{
+  "mode": "light",
+  "pack": "material",
+  "light": {
+    "primary_color": "#6750a4",
+    "secondary_color": "#625b71",
+    "background": "#f7f2fa",
+    "surface": "#fffbfe",
+    "text_primary": "#1d1b20",
+    "text_secondary": "#625b71",
+    "accent": "#7d5260",
+    "error": "#b3261e",
+    "warning": "#b86e00",
+    "font_family": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "font_size_base": 14,
+    "spacing_unit": 8,
+    "border_radius": 12
+  },
+  "dark": {
+    "primary_color": "#d0bcff",
+    "secondary_color": "#ccc2dc",
+    "background": "#141218",
+    "surface": "#211f26",
+    "text_primary": "#e6e0e9",
+    "text_secondary": "#cac4d0",
+    "accent": "#efb8c8",
+    "error": "#f2b8b5",
+    "warning": "#ffddb1",
+    "font_family": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "font_size_base": 14,
+    "spacing_unit": 8,
+    "border_radius": 12
+  }
+}

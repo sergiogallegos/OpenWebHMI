@@ -12,6 +12,7 @@ describe("ProjectExplorer", () => {
     const onOpenView = vi.fn();
     const onOpenAlarms = vi.fn();
     const onOpenScripts = vi.fn();
+    const onOpenTheme = vi.fn();
     const onAddView = vi.fn();
     const onRenameView = vi.fn();
 
@@ -23,6 +24,7 @@ describe("ProjectExplorer", () => {
         onOpenView={onOpenView}
         onOpenAlarms={onOpenAlarms}
         onOpenScripts={onOpenScripts}
+        onOpenTheme={onOpenTheme}
         onAddView={onAddView}
         onRenameView={onRenameView}
       />,
@@ -35,12 +37,14 @@ describe("ProjectExplorer", () => {
     await user.click(screen.getByRole("button", { name: "home" }));
     await user.click(screen.getByRole("button", { name: "Alarms" }));
     await user.click(screen.getByRole("button", { name: "Scripts" }));
+    await user.click(screen.getByRole("button", { name: "Theme" }));
     await user.click(screen.getByRole("button", { name: "Add View" }));
     await user.click(screen.getByRole("button", { name: "Rename home" }));
 
     expect(onOpenView).toHaveBeenCalledWith("home");
     expect(onOpenAlarms).toHaveBeenCalledOnce();
     expect(onOpenScripts).toHaveBeenCalledOnce();
+    expect(onOpenTheme).toHaveBeenCalledOnce();
     expect(onAddView).toHaveBeenCalledOnce();
     expect(onRenameView).toHaveBeenCalledWith("home");
   });

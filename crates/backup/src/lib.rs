@@ -277,6 +277,9 @@ fn artifact_kinds(project: &openwebhmi_project_store::Project) -> Vec<ArtifactKi
     kinds.extend(project.views.iter().map(|view| ArtifactKind::View {
         id: view.id.clone(),
     }));
+    if project.theme.is_some() {
+        kinds.push(ArtifactKind::Theme);
+    }
     kinds.extend(project.scripts.iter().flat_map(|script| {
         [
             ArtifactKind::Script {
@@ -295,6 +298,7 @@ fn artifact_archive_path(kind: &ArtifactKind) -> String {
         ArtifactKind::ProjectMeta => format!("{ARTIFACT_PREFIX}project_meta.json"),
         ArtifactKind::Tags => format!("{ARTIFACT_PREFIX}tags.json"),
         ArtifactKind::Alarms => format!("{ARTIFACT_PREFIX}alarms.json"),
+        ArtifactKind::Theme => format!("{ARTIFACT_PREFIX}theme/theme.json"),
         ArtifactKind::View { id } => format!("{ARTIFACT_PREFIX}views/{id}.json"),
         ArtifactKind::Script { id } => format!("{ARTIFACT_PREFIX}scripts/{id}.json"),
         ArtifactKind::ScriptSource { id } => format!("{ARTIFACT_PREFIX}scripts/{id}.source.json"),

@@ -1,0 +1,128 @@
+{
+  "id": "home",
+  "title": "Material Demo",
+  "schema_version": 1,
+  "root": {
+    "id": "root",
+    "kind": "Container",
+    "props": {
+      "direction": "column",
+      "gap": 16,
+      "padding": 20,
+      "background": "#f7f2fa"
+    },
+    "bindings": [],
+    "children": [
+      {
+        "id": "card",
+        "kind": "Card",
+        "props": {
+          "title": "Material controls",
+          "subtitle": "Demo subset",
+          "headerStyle": "plain"
+        },
+        "bindings": [],
+        "children": [
+          {
+            "id": "button",
+            "kind": "Button",
+            "props": {
+              "target": "demo/Run",
+              "label": "Start",
+              "writeValue": { "type": "bool", "value": true },
+              "style": "primary"
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "toggle",
+            "kind": "ToggleSwitch",
+            "props": {
+              "value": true,
+              "tagPath": "demo/Run",
+              "onLabel": "Run",
+              "offLabel": "Stop",
+              "onColor": "#6750a4",
+              "offColor": "#79747e"
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "numeric",
+            "kind": "NumericInput",
+            "props": {
+              "value": 42,
+              "tagPath": "demo/Pressure",
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "disabled": false
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "slider",
+            "kind": "Slider",
+            "props": {
+              "value": 42,
+              "tagPath": "demo/Pressure",
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "commitMode": "release",
+              "units": "psi"
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "dropdown",
+            "kind": "Dropdown",
+            "props": {
+              "value": "auto",
+              "tagPath": "demo/Mode",
+              "placeholder": "Mode",
+              "options": [
+                { "value": "auto", "label": "Auto" },
+                { "value": "manual", "label": "Manual" }
+              ]
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "gauge",
+            "kind": "Gauge",
+            "props": {
+              "value": 64,
+              "min": 0,
+              "max": 100,
+              "units": "psi",
+              "highWarn": 80,
+              "highAlarm": 95
+            },
+            "bindings": [],
+            "children": []
+          },
+          {
+            "id": "modal",
+            "kind": "Modal",
+            "props": {
+              "title": "Confirm start",
+              "open": true,
+              "confirmLabel": "Confirm",
+              "cancelLabel": "Cancel",
+              "confirmTagPath": "demo/Run",
+              "confirmStyle": "primary"
+            },
+            "bindings": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

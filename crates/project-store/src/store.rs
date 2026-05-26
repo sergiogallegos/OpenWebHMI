@@ -13,7 +13,7 @@ use tokio::sync::broadcast;
 
 use crate::types::{
     AlarmConfig, Project, ProjectMetaFile, ProjectSummary, ScriptConfig, ScriptTriggerConfig,
-    TagConfig, View,
+    TagConfig, Theme, View,
 };
 use crate::version::{ChangeAction, ProjectChange};
 
@@ -34,6 +34,8 @@ pub enum ArtifactKind {
     Tags,
     /// Alarm definition set.
     Alarms,
+    /// Project-level theme singleton.
+    Theme,
     /// Script by id.
     Script {
         /// Script id.
@@ -117,6 +119,7 @@ impl ProjectStore {
         let mut tags = read_tags_file(project_dir.join("tags/tags.json"))?;
         tags.extend(meta.tags);
         let alarms = read_alarms_file(project_dir.join("alarms/alarms.json"))?;
+        let theme = read_theme_file(project_dir.join("theme/theme.json"))?;
         let scripts = read_scripts_file(project_dir.join("scripts/scripts.json"), &project_dir)?;
 
         let mut views = Vec::new();
@@ -141,6 +144,7 @@ impl ProjectStore {
             drivers,
             tags,
             alarms,
+            theme,
             scripts,
             views,
         };
@@ -251,6 +255,7 @@ impl ProjectStore {
             ArtifactKind::View { id } => dir.join("views").join(format!("{id}.json")),
             ArtifactKind::Tags => dir.join("tags/tags.json"),
             ArtifactKind::Alarms => dir.join("alarms/alarms.json"),
+            ArtifactKind::Theme => dir.join("theme/theme.json"),
             ArtifactKind::Script { id } => dir.join("scripts").join(format!("{id}.json")),
             ArtifactKind::ScriptSource { id } => self.script_source_path(project_id, id)?,
         })
@@ -433,6 +438,13 @@ fn read_alarms_file(path: PathBuf) -> anyhow::Result<Vec<AlarmConfig>> {
             .cloned()
             .unwrap_or_else(|| serde_json::json!([])),
     )?)
+}
+
+fn read_theme_file(path: PathBuf) -> anyhow::Result<Option<Theme>> {
+    if !path.exists() {
+        return Ok(None);
+    }
+    Ok(Some(serde_json::from_str(&fs::read_to_string(path)?)?))
 }
 
 fn read_scripts_file(path: PathBuf, project_dir: &Path) -> anyhow::Result<Vec<ScriptConfig>> {

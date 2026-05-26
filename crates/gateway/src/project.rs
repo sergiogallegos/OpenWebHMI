@@ -324,6 +324,7 @@ mod tests {
                 history: None,
             }],
             alarms: Vec::new(),
+            theme: None,
             scripts: Vec::new(),
             views: Vec::new(),
         };

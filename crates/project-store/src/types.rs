@@ -20,6 +20,9 @@ pub struct Project {
     /// Alarm definitions.
     #[serde(default)]
     pub alarms: Vec<AlarmConfig>,
+    /// Project-level theme.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<Theme>,
     /// Python script definitions.
     #[serde(default)]
     pub scripts: Vec<ScriptConfig>,
@@ -36,6 +39,63 @@ pub struct ProjectSummary {
     pub version: u64,
     /// Last modification timestamp as Unix epoch seconds.
     pub last_modified: i64,
+}
+
+/// Project-level CSS variable theme.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Theme {
+    /// Light mode variables.
+    pub light: ThemeVariables,
+    /// Dark mode variables.
+    pub dark: ThemeVariables,
+    /// Default active mode.
+    #[serde(default)]
+    pub mode: ThemeMode,
+    /// Optional project-level component pack id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pack: Option<String>,
+}
+
+/// Theme mode persisted with a project theme.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ThemeMode {
+    /// Light theme.
+    #[default]
+    Light,
+    /// Dark theme.
+    Dark,
+}
+
+/// Named CSS variables exposed by the designer theme editor.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ThemeVariables {
+    /// Primary color.
+    pub primary_color: String,
+    /// Secondary color.
+    pub secondary_color: String,
+    /// Page background.
+    pub background: String,
+    /// Surface background.
+    pub surface: String,
+    /// Primary text color.
+    pub text_primary: String,
+    /// Secondary text color.
+    pub text_secondary: String,
+    /// Accent color.
+    pub accent: String,
+    /// Error color.
+    pub error: String,
+    /// Warning color.
+    pub warning: String,
+    /// Font family.
+    pub font_family: String,
+    /// Base font size in pixels.
+    pub font_size_base: u32,
+    /// Spacing unit in pixels.
+    pub spacing_unit: u32,
+    /// Border radius in pixels.
+    pub border_radius: u32,
 }
 
 /// Driver configuration block.

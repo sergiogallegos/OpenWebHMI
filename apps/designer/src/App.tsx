@@ -9,6 +9,7 @@ import { ScriptEditor } from "./modules/ScriptEditor";
 import { ScriptErrorPane } from "./modules/ScriptErrorPane";
 import { ScriptList } from "./modules/ScriptList";
 import { TagBrowser } from "./modules/TagBrowser";
+import { ThemeEditor } from "./modules/ThemeEditor";
 import { UserAdmin } from "./modules/UserAdmin";
 import { ViewEditor } from "./modules/ViewEditor";
 import {
@@ -36,7 +37,7 @@ export function App() {
   const [project, setProject] = useState<DesignerProject | null>(null);
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null);
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
-  const [selectedModule, setSelectedModule] = useState<"views" | "alarms" | "scripts">("views");
+  const [selectedModule, setSelectedModule] = useState<"views" | "alarms" | "scripts" | "theme">("views");
   const [scriptGoToLine, setScriptGoToLine] = useState<number | null>(null);
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export function App() {
   const handleProjectChange = useCallback((change: DesignerProjectChange) => {
     if (
       change.project_id === DEFAULT_PROJECT_ID &&
-      (change.artifact.kind === "view" || change.artifact.kind === "alarms")
+      (change.artifact.kind === "view" || change.artifact.kind === "alarms" || change.artifact.kind === "theme")
     ) {
       setPreviewReload((current) => current + 1);
       setWarning(
@@ -159,6 +160,27 @@ export function App() {
     [project],
   );
 
+  const saveTheme = useCallback(
+    async (theme: NonNullable<DesignerProject["theme"]>) => {
+      const client = clientRef.current;
+      if (!client || !project) {
+        return;
+      }
+      setSaveState("saving");
+      setProject({ ...project, theme });
+      try {
+        const version = await client.saveTheme(project.id, theme);
+        setProject((current) => (current ? { ...current, version, theme } : current));
+        setSaveState("saved");
+        setPreviewReload((current) => current + 1);
+      } catch (error) {
+        setSaveState("error");
+        setWarning(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [project],
+  );
+
   const addView = async () => {
     if (!project) {
       return;
@@ -220,6 +242,7 @@ export function App() {
           setSelectedModule("scripts");
           setSelectedScriptId((current) => current ?? project.scripts[0]?.id ?? null);
         }}
+        onOpenTheme={() => setSelectedModule("theme")}
         onAddView={addView}
         onRenameView={renameView}
       />
@@ -249,7 +272,7 @@ export function App() {
             </button>
           </div>
         ) : null}
-        <div style={selectedModule === "alarms" ? styles.moduleGrid : styles.editorGrid}>
+        <div style={selectedModule === "alarms" || selectedModule === "theme" ? styles.moduleGrid : styles.editorGrid}>
           {selectedModule === "alarms" ? (
             <AlarmConfig
               alarms={project.alarms}

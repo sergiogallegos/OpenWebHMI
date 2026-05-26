@@ -1,0 +1,9 @@
+:root {
+  --md-sys-color-primary: var(--primary-color, #6750a4);
+  --md-sys-color-secondary: var(--secondary-color, #625b71);
+  --md-sys-color-surface: var(--surface, #fffbfe);
+  --md-sys-color-on-surface: var(--text-primary, #1d1b20);
+  --md-sys-color-error: var(--error, #b3261e);
+  --md-sys-shape-corner: max(var(--border-radius, 6px), 12px);
+  --md-sys-motion-standard: 180ms cubic-bezier(0.2, 0, 0, 1);
+}

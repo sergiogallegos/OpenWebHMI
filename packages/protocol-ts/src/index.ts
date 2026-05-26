@@ -1,3 +1,6 @@
+export { DEFAULT_THEME, applyTheme, themeToCss } from "./theme";
+export type { Theme, ThemeMode, ThemeVariables } from "./theme";
+
 /** A tag's current value using the Rust serde adjacent-tag wire form. */
 export type TagValue =
   | { type: "bool"; value: boolean }
@@ -13,6 +16,7 @@ export type ArtifactRef =
   | { kind: "view"; id: string }
   | { kind: "tags" }
   | { kind: "alarms" }
+  | { kind: "theme" }
   | { kind: "script"; id: string }
   | { kind: "script_source"; id: string };
 
@@ -742,6 +746,7 @@ function isArtifactRef(value: unknown): value is ArtifactRef {
     case "project_meta":
     case "tags":
     case "alarms":
+    case "theme":
       return true;
     case "view":
     case "script":

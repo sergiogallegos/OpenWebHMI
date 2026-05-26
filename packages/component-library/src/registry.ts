@@ -24,6 +24,7 @@ import { Tabs } from "./components/Tabs";
 import { ToggleSwitch } from "./components/ToggleSwitch";
 import { Trend } from "./components/Trend";
 import { ValueDisplay } from "./components/ValueDisplay";
+import { materialPack } from "./packs/material";
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
   [Label.kind]: Label,
@@ -80,3 +81,31 @@ export const components = [
   Divider,
   Stepper,
 ] as const;
+
+const packs: Record<string, Record<string, ComponentDefinition>> = {
+  default: componentRegistry,
+  material: materialPack,
+};
+
+const warnedFallbacks = new Set<string>();
+
+export function getComponentDefinition(
+  typeId: string,
+  packId: string | null | undefined = null,
+): ComponentDefinition | undefined {
+  const normalizedPackId = packId || "default";
+  const pack = packs[normalizedPackId] ?? componentRegistry;
+  const definition = pack[typeId];
+  if (definition) {
+    return definition;
+  }
+  const fallback = componentRegistry[typeId];
+  if (fallback && normalizedPackId !== "default") {
+    const warningKey = `${normalizedPackId}:${typeId}`;
+    if (!warnedFallbacks.has(warningKey)) {
+      warnedFallbacks.add(warningKey);
+      console.warn(`${normalizedPackId} pack: ${typeId} rendered with default style; not in pack`);
+    }
+  }
+  return fallback;
+}

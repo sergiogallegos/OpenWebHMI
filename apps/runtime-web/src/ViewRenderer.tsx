@@ -1,4 +1,4 @@
-import { componentRegistry, type BoundValue } from "@openwebhmi/component-library";
+import { getComponentDefinition, type BoundValue } from "@openwebhmi/component-library";
 import type { AlarmEvent, AlarmSubscribeOptions } from "@openwebhmi/component-library";
 import type { HistoryReadOptions } from "@openwebhmi/component-library";
 import type { HistoryPoint } from "@openwebhmi/protocol";
@@ -20,6 +20,7 @@ type ViewRendererProps = {
   ) => () => void;
   onAckAlarm: (alarmId: string, note?: string | null) => void;
   onReadHistory: (options: HistoryReadOptions) => Promise<HistoryPoint[]>;
+  packId?: string | null;
 };
 
 export function ViewRenderer({
@@ -30,11 +31,13 @@ export function ViewRenderer({
   onSubscribeAlarms,
   onAckAlarm,
   onReadHistory,
+  packId,
 }: ViewRendererProps) {
   return (
     <section aria-label={view.title} style={styles.surface}>
       {renderNode(view.root, boundValues, {
         projectId,
+        packId,
         onWriteTag,
         onSubscribeAlarms,
         onAckAlarm,
@@ -66,6 +69,7 @@ function renderNode(
   boundValues: Record<string, BoundValue | undefined>,
   runtime: {
     projectId: string;
+    packId?: string | null;
     onWriteTag: (path: string, value: TagValue) => void;
     onSubscribeAlarms: (
       options: AlarmSubscribeOptions,
@@ -75,7 +79,7 @@ function renderNode(
     onReadHistory: (options: HistoryReadOptions) => Promise<HistoryPoint[]>;
   },
 ) {
-  const definition = componentRegistry[node.kind];
+  const definition = getComponentDefinition(node.kind, runtime.packId);
   if (!definition) {
     return (
       <div key={node.id} role="alert" style={styles.unknown}>

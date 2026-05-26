@@ -79,11 +79,11 @@ function normalizeWriteValue(value: TagValue | TagValue[]): TagValue {
 function buttonStyle(style: ButtonProps["style"]) {
   switch (style) {
     case "danger":
-      return { background: "#dc2626", borderColor: "#b91c1c", color: "#ffffff" };
+      return { background: "var(--error, #dc2626)", borderColor: "var(--error, #b91c1c)", color: "#ffffff" };
     case "secondary":
-      return { background: "#ffffff", borderColor: "#9aa5b1", color: "#1f2933" };
+      return { background: "var(--surface, #ffffff)", borderColor: "var(--secondary-color, #9aa5b1)", color: "var(--text-primary, #1f2933)" };
     default:
-      return { background: "#1f4e79", borderColor: "#163a5a", color: "#ffffff" };
+      return { background: "var(--primary-color, #1f4e79)", borderColor: "var(--primary-color, #163a5a)", color: "#ffffff" };
   }
 }
 

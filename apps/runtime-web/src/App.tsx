@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  DEFAULT_THEME,
+  applyTheme,
+  themeToCss,
+  type Theme,
+} from "@openwebhmi/protocol";
+import {
   collectTagPaths,
   ViewRenderer,
 } from "./ViewRenderer";
@@ -31,6 +37,7 @@ export function App() {
   const client = clientRef.current;
   const [connectionState, setConnectionState] =
     useState<ConnectionState>("connecting");
+  const [packId, setPackId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sessionToken) {
@@ -51,6 +58,30 @@ export function App() {
       client.disconnect();
     };
   }, [client, sessionToken]);
+
+  useEffect(() => {
+    if (!sessionToken || connectionState !== "connected") {
+      return;
+    }
+    let cancelled = false;
+    client
+      .readTheme(PROJECT_ID)
+      .then((theme) => {
+        if (!cancelled) {
+          applyRuntimeTheme(theme);
+          setPackId(theme?.pack ?? null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          removeRuntimeTheme();
+          setPackId(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client, connectionState, sessionToken]);
 
   const { view, version, error } = useViewSubscription(
     client,
@@ -117,6 +148,7 @@ export function App() {
           onSubscribeAlarms={subscribeAlarms}
           onAckAlarm={ackAlarm}
           onReadHistory={readHistory}
+          packId={packId}
         />
       ) : (
         <section role="status" style={styles.loading}>
@@ -125,6 +157,28 @@ export function App() {
       )}
     </main>
   );
+}
+
+export function applyRuntimeTheme(theme: Theme | null) {
+  if (!theme) {
+    removeRuntimeTheme();
+    return;
+  }
+  let style = document.getElementById("openwebhmi-project-theme") as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "openwebhmi-project-theme";
+    document.head.prepend(style);
+  }
+  style.textContent = themeToCss(theme);
+  const storedMode = window.localStorage?.getItem("openwebhmi.themeMode");
+  const mode = storedMode === "dark" || storedMode === "light" ? storedMode : theme.mode;
+  applyTheme({ ...theme, mode });
+}
+
+export function removeRuntimeTheme() {
+  document.getElementById("openwebhmi-project-theme")?.remove();
+  applyTheme(DEFAULT_THEME);
 }
 
 function ConnectionBadge({ state }: { state: ConnectionState }) {

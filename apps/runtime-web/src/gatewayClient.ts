@@ -5,6 +5,7 @@ import {
   type Quality,
   type ServerMessage,
   type TagValue,
+  type Theme,
 } from "@openwebhmi/protocol";
 
 export type TagUpdate = {
@@ -82,6 +83,13 @@ export class GatewayClient {
     string,
     {
       resolve: (points: HistoryPoint[]) => void;
+      reject: (error: Error) => void;
+    }
+  >();
+  private readonly pendingArtifacts = new Map<
+    string,
+    {
+      resolve: (body: unknown | null) => void;
       reject: (error: Error) => void;
     }
   >();
@@ -316,6 +324,20 @@ export class GatewayClient {
     return request;
   }
 
+  readTheme(projectId: string): Promise<Theme | null> {
+    const requestId = `theme-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const request = new Promise<unknown | null>((resolve, reject) => {
+      this.pendingArtifacts.set(requestId, { resolve, reject });
+    });
+    this.send({
+      kind: "project.read_artifact",
+      request_id: requestId,
+      project_id: projectId,
+      artifact: { kind: "theme" },
+    });
+    return request.then((body) => (body && typeof body === "object" ? (body as Theme) : null));
+  }
+
   disconnect() {
     this.manuallyClosed = true;
     this.clearReconnectTimer();
@@ -391,6 +413,9 @@ export class GatewayClient {
         break;
       case "history.result":
         this.dispatchHistoryResult(parsed);
+        break;
+      case "project.artifact":
+        this.dispatchProjectArtifact(parsed);
         break;
       case "alarm.event":
         this.dispatchAlarmEvent(parsed);
@@ -469,13 +494,27 @@ export class GatewayClient {
     pending.resolve(result.points);
   }
 
-  private rejectOldestHistory(error: GatewayError) {
-    const [requestId, pending] = this.pendingHistory.entries().next().value ?? [];
-    if (!requestId || !pending) {
+  private dispatchProjectArtifact(result: Extract<ServerMessage, { kind: "project.artifact" }>) {
+    const requestId = result.request_id ?? "";
+    const pending = this.pendingArtifacts.get(requestId);
+    if (!pending) {
       return;
     }
-    this.pendingHistory.delete(requestId);
-    pending.reject(new Error(`${error.code}: ${error.message}`));
+    this.pendingArtifacts.delete(requestId);
+    pending.resolve(result.body ?? null);
+  }
+
+  private rejectOldestHistory(error: GatewayError) {
+    const [requestId, pending] = this.pendingHistory.entries().next().value ?? [];
+    if (requestId && pending) {
+      this.pendingHistory.delete(requestId);
+      pending.reject(new Error(`${error.code}: ${error.message}`));
+    }
+    const [artifactRequestId, artifactPending] = this.pendingArtifacts.entries().next().value ?? [];
+    if (artifactRequestId && artifactPending) {
+      this.pendingArtifacts.delete(artifactRequestId);
+      artifactPending.reject(new Error(`${error.code}: ${error.message}`));
+    }
   }
 
   private resubscribeAll() {

@@ -5,6 +5,7 @@ import {
   type ClientMessage,
   type ServerMessage,
   type TagValue,
+  type Theme,
   type View,
   type AuthUser,
 } from "@openwebhmi/protocol";
@@ -66,6 +67,7 @@ export type DesignerProject = {
   drivers: DesignerDriver[];
   tags: DesignerTag[];
   alarms: DesignerAlarm[];
+  theme?: Theme | null;
   scripts: DesignerScript[];
   views: View[];
 };
@@ -200,6 +202,11 @@ export class DesignerClient {
   /** Save the project alarm definition artifact. */
   saveAlarms(projectId: string, alarms: DesignerAlarm[]): Promise<number> {
     return this.saveArtifact(projectId, { kind: "alarms" }, { alarms });
+  }
+
+  /** Save the project theme singleton. */
+  saveTheme(projectId: string, theme: Theme): Promise<number> {
+    return this.saveArtifact(projectId, { kind: "theme" }, theme);
   }
 
   private saveArtifact(

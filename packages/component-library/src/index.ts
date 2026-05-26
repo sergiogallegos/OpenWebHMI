@@ -11,7 +11,7 @@ export type {
   AlarmSubscribeOptions,
   HistoryReadOptions,
 } from "./types";
-export { componentRegistry, components } from "./registry";
+export { componentRegistry, components, getComponentDefinition } from "./registry";
 export type { AlarmTableProps } from "./components/AlarmTable";
 export { AlarmTable } from "./components/AlarmTable";
 export type { AlarmBannerProps } from "./components/AlarmBanner";
