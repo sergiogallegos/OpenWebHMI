@@ -3,9 +3,10 @@ id: CODEX-AY
 title: ci: install Tauri Linux build deps in the Node job too (pnpm build step runs tauri build)
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-26
-last-update: 2026-05-26 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: 7505a62
 ---
 
 # CODEX-AY — ci: install Tauri Linux build deps in the Node job too
@@ -84,4 +85,55 @@ Document the run url in the Codex log.
 
 ## Claude review
 
+### 2026-05-26 19:00  claude [Opus 4.7]
+
+**Independent verification**
+- `git show 7505a62 -- .github/workflows/ci.yml` — diff is byte-identical to the install step in the rust job, placed after `actions/checkout@v4` and before `pnpm/action-setup@v4`, with the same `# Tauri v2 Linux prereqs - update when src-tauri Cargo.toml's tauri pin changes.` comment AU established.
+- `gh run view 26431030607` — Node job: ✅ Install Tauri Linux build deps, ✅ pnpm/action-setup@v4, ✅ actions/setup-node@v4, ✅ pnpm install --frozen-lockfile, ✅ pnpm -r --if-present typecheck, ✅ pnpm -r --if-present lint, ✅ pnpm -r --if-present test, ❌ pnpm -r --if-present build (fails at AppImage bundling — see Residual risk).
+- `gh run view --job 77804158796 --log-failed` — confirmed failure is `apps/designer build: failed to bundle project 'failed to run linuxdeploy'`. The Tauri release binary + .deb + .rpm built successfully before the AppImage step failed.
+- Rust job ✅ in 1m43s; validate-agent-files ✅ in 4s.
+
+**What's being fixed**
+- The Node CI job's `pnpm -r --if-present build` step was failing at the `glib-sys` system-library check because `apps/designer`'s `tauri build` needs the same Linux prereqs the Rust job got in CODEX-AU but the Node job never got.
+
+**Root cause confirmation**
+- Confirmed: pre-AY Node job had no apt install step, identical failure shape as the pre-AU Rust job. Sister fix.
+
+**Fix appropriateness**
+- Right layer (workflow only; no Cargo.toml or src-tauri changes). Mirror placement of the AU install step (after checkout, before next setup).
+- Comment preserved verbatim from AU — future maintainers see the same Tauri-pin invariant flagged in both jobs.
+- Codex correctly resisted the urge to DRY into a composite action at this stage (the brief's "Don't DRY prematurely" risk note was honored).
+
+**Test proof**
+- The brief said the verification IS the CI run; run 26431030607 is the proof. The Node job's previously-failing `glib-sys` gate is now passing; the build step proceeds through Tauri release binary + .deb + .rpm.
+- No new local tests; workflow-only change.
+
+**Residual risk**
+- **AppImage bundling fails downstream with `failed to run linuxdeploy`.** This is **not** an AY regression — it was masked by the earlier `glib-sys` block. Tracked as CODEX-AZ. The .deb + .rpm + raw binary all build successfully, so the only artifact missing from a Linux release is AppImage. AZ has two scope options: install linuxdeploy + FUSE on the runner, OR exclude AppImage from the CI bundle targets (keep release-only).
+- **Both install steps now duplicate** in `rust` and `node` jobs. Per the brief's "Wait for a 3rd consumer" rule, don't DRY yet. If a 3rd job needs the deps, refactor to a composite action then.
+
+**Strong points (✅)**
+- Surgical change, exactly the one-line-class fix the brief specified.
+- Codex correctly stopped at the scope boundary when the AppImage failure surfaced. Reported it honestly with the exact error string (`failed to run linuxdeploy`), named what *did* build (.deb + .rpm + release binary), and proposed it as a separate follow-up. Per CLAUDE.md "Honesty" rule, that's the bar — same pattern as AU/AV stopping at their respective downstream boundaries.
+- Inline comment matches the AU pattern verbatim — review can trust both jobs share the same Tauri-pin invariant note.
+
+**Findings**
+- 🟢 The Node job ran in 4m15s post-AY (vs 1m10s pre-AY when it failed fast at install). The extra time is real work the job is now doing — not regression overhead.
+- 🟢 The pattern of "fix the obvious blocker → next layer surfaces → open follow-up" has now repeated 3 times (AU→AW, AV→AX, AY→AZ). The merge skill's flow is working as designed.
+- 🟠 Real concerns — none. (AppImage failure is real but explicitly out of AY's scope, tracked as AZ.)
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `.github/workflows/ci.yml` Node job has the install step in the same shape as the Rust job.
+- ✅ Node CI job reaches the end of `pnpm -r --if-present build` (passes Tauri binary/.deb/.rpm; fails at AppImage downstream).
+- ✅ Codex log notes the downstream failure (`failed to run linuxdeploy`) and flags it as separate follow-up work.
+
 ## Verdict
+
+**Merged** at `7505a62`.
+
+What's NOT yet proven by this merge:
+- AppImage bundle artifact (.AppImage) — fails at `linuxdeploy` invocation; tracked as CODEX-AZ. .deb + .rpm + raw binary all build successfully.
+- Full Node CI job green (still red on the AppImage step).
+
+Follow-ups opened: CODEX-AZ (`ci: AppImage bundling fails with 'failed to run linuxdeploy'`).
