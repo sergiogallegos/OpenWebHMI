@@ -20,7 +20,7 @@ Open-source, web-first **SCADA / HMI** platform for small and mid-size industria
 | Drivers shipped | Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS); others post-1.0 |
 | Runtime surfaces | Web (browser) only; Tauri desktop runtime is post-1.0 |
 | Designer surfaces | Tauri desktop on Windows and macOS; Linux is post-1.0 |
-| Gateway platforms | Linux, macOS, Windows |
+| Gateway platforms | Linux, macOS, Windows; ARM Linux / Raspberry Pi deployment is documented in [`docs/deployment/raspberry-pi.md`](deployment/raspberry-pi.md) |
 | Authentication | Local users + roles + per-view ACLs; SSO/AD/LDAP post-1.0 |
 
 These numbers are the design constraint. Tag-engine, WebSocket fan-out, project store, and historian implementations are sized to comfortably hit these bounds with headroom; they are *not* sized for enterprise-scale.
@@ -207,6 +207,7 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 - Subscribes to a configurable subset of tags ("logged" tags).
 - Writes `(tag_id, ts, value, quality)` rows to SQLite, indexed by `(tag_id, ts)`.
 - Read API: `read_history(tag, start, end, aggregation, max_points)` — aggregations: `raw, avg, min, max, sum, count, first, last`.
+- Capacity planning is documented in [`historian.md`](historian.md). SQLite's file-format ceiling is 281 TB, but operational sizing should use the bytes/sample table, backup interval, and explicit retention policy.
 - Downsampling: query-time only in v1. Continuous downsampling tables in v2.
 - v2 backend: pluggable (Timescale, Influx, DuckDB).
 

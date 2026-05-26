@@ -132,6 +132,49 @@ impl HistorianStore {
         Ok(())
     }
 
+    /// Delete samples for a tag older than `cutoff_ms`.
+    pub fn prune_older_than(
+        &self,
+        tag_path: impl Into<TagPath>,
+        cutoff_ms: u64,
+    ) -> anyhow::Result<usize> {
+        let tag_path = tag_path.into();
+        let conn = self.lock()?;
+        let Some(tag_id) = tag_id(&conn, &tag_path)? else {
+            return Ok(0);
+        };
+        conn.execute(
+            "DELETE FROM tag_history WHERE tag_id = ?1 AND ts_ms < ?2",
+            params![tag_id, millis_to_i64(cutoff_ms)],
+        )
+        .map_err(Into::into)
+    }
+
+    /// Keep only the newest `max_rows` samples for a tag.
+    pub fn prune_to_max_rows(
+        &self,
+        tag_path: impl Into<TagPath>,
+        max_rows: u64,
+    ) -> anyhow::Result<usize> {
+        let tag_path = tag_path.into();
+        let conn = self.lock()?;
+        let Some(tag_id) = tag_id(&conn, &tag_path)? else {
+            return Ok(0);
+        };
+        conn.execute(
+            "DELETE FROM tag_history
+             WHERE tag_id = ?1
+               AND ts_ms NOT IN (
+                   SELECT ts_ms FROM tag_history
+                   WHERE tag_id = ?1
+                   ORDER BY ts_ms DESC
+                   LIMIT ?2
+               )",
+            params![tag_id, max_rows.min(i64::MAX as u64) as i64],
+        )
+        .map_err(Into::into)
+    }
+
     fn read_raw_unbounded(
         &self,
         tag_path: &TagPath,

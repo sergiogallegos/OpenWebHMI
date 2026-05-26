@@ -32,7 +32,7 @@ A single **Rust gateway** owns the project, the tags, the drivers, the historian
 - **≤ 50 concurrent runtime clients** per gateway.
 - **Five drivers shipped**: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser); Tauri desktop runtime is post-1.0.
-- **Linux + macOS + Windows** for the gateway and designer.
+- **Linux + macOS + Windows** for the gateway; Raspberry Pi 4 / 5 edge deployment is documented in [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md). Designer support remains desktop-focused.
 
 These bounds are *the* design constraint. If anything in this repo implies bigger numbers, it's wrong and should be fixed. Larger deployments are a year-2+ conversation, not a v1.0 promise.
 
@@ -102,9 +102,12 @@ What OpenWebHMI 1.0 aims to ship that Ignition users would recognize:
 
 - Tag providers, OPC tags, memory tags, expression tags, UDTs
 - Drag/drop visual designer (Tauri, Win + Mac)
-- Web HMI runtime with live tag binding, themes, navigation
+- Web HMI runtime with live tag binding, project themes, navigation. See [`docs/theme-editor.md`](docs/theme-editor.md).
+- Raspberry Pi 4 / 5 gateway deployment guide with systemd unit and cross-compile notes. See [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md).
+- Single-widget export/import for moving configured components between projects. See [`docs/widget-export-import.md`](docs/widget-export-import.md).
+- Opt-in Material Design demo widget pack. See [`docs/widget-packs.md`](docs/widget-packs.md).
 - Alarm engine with state machine, journal, ack workflow
-- Tag historian with trend rendering and aggregations
+- Tag historian with trend rendering, aggregations, and a 281 TB SQLite file-format ceiling. See [`docs/historian.md`](docs/historian.md).
 - Python scripting with `system.tag`, `system.alarm`, `system.db`, `system.http` libraries
 - Role-based auth, per-view ACLs, TLS
 - Project export / import as a portable archive

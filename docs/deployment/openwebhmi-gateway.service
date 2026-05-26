@@ -1,0 +1,24 @@
+[Unit]
+Description=OpenWebHMI gateway
+Documentation=https://github.com/sergiogallegos/OpenWebHMI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openwebhmi
+Group=openwebhmi
+WorkingDirectory=/var/lib/openwebhmi
+Environment=OPENWEBHMI_PYTHON=/usr/bin/python3
+ExecStart=/opt/openwebhmi/bin/openwebhmi-gateway --bind 0.0.0.0:8080 --project-root /var/lib/openwebhmi/projects --historian /var/lib/openwebhmi/historian.sqlite --audit-log /var/lib/openwebhmi/audit.sqlite
+Restart=on-failure
+RestartSec=2s
+LimitNOFILE=65536
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/openwebhmi
+
+[Install]
+WantedBy=multi-user.target
