@@ -3,9 +3,10 @@ id: CODEX-AW
 title: tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout)
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: cc2e1f7
 ---
 
 # CODEX-AW — Stabilize gateway WS script-event integration test
@@ -79,4 +80,64 @@ The diagnosis informs the fix. Don't paper over with a longer timeout — that's
 
 ## Claude review
 
+### 2026-05-26 19:25  claude [Opus 4.7]
+
+**Independent verification**
+- `cargo test -p openwebhmi-gateway --locked` — all binaries green (4/4 in integration; 2/2 in main.rs).
+- `cargo test --test integration websocket_gateway_forwards_script_events_by_project` — **3 consecutive runs green** (per CLAUDE.md three-runs discipline). 0.05s / 0.05s / 0.04s; no variance.
+- `grep -rn "tokio::time::sleep\|thread::sleep" crates/gateway/tests/integration.rs crates/gateway/src/main.rs` — **zero matches** post-AW. No-sleep discipline fully satisfied in the touched files.
+- `git show cc2e1f7 -- crates/gateway/{src/main.rs,tests/integration.rs}` — read both diffs end-to-end.
+- CI run 26431030607 Rust job ✅ (workspace tests green).
+
+**What's being fixed**
+- `websocket_gateway_forwards_script_events_by_project` timed out waiting for a message. Surfaced when CODEX-AU unblocked `cargo test --workspace --locked`. Root cause was a constellation of timing-based test patterns (sleep-then-assert, free-port-then-rebind, retry-loop connect) inherited from earlier development.
+
+**Root cause confirmation**
+- Confirmed by reading the diff: three timing patterns replaced.
+  1. **Free-port race** at `unused_loopback_addr()` — bound a listener to get an address, dropped it, then the gateway re-bound. Race window between drop and re-bind. Fix: bind the listener once and hand it to the gateway directly.
+  2. **Connect retry loop** at `connect_with_retry()` — polled `connect_async` with `sleep(20ms)` until a 2s deadline. Fix: with the listener already bound, direct `connect_async` works first try.
+  3. **Sleep-then-act** at multiple sites in shutdown + integration tests — `sleep(50ms)` before `cancel.cancel()` or `assert no further message`. Fix: replaced with deterministic `send(Ping)` + `assert ServerMessage::Pong` round-trip barriers; tests then publish to the store directly and assert based on the resulting event.
+
+**Fix appropriateness**
+- Right layer: test-side fix (no gateway logic changed). The bug was in the test's synchronization model, not in WS routing or `GatewayTagWriteSink`. `crates/gateway/src/server.rs` doesn't appear in the diff.
+- The **ping-barrier pattern** is the canonical deterministic-sync primitive for WS-protocol tests — pings round-trip through the subscription handler, so a Pong response proves the prior subscription was registered before the test publishes its trigger event. Strictly stronger than a sleep that hides a race.
+- Removed dead helpers (`unused_loopback_addr`, `connect_with_retry`) — no orphan code left behind.
+- `shutdown_token_sends_websocket_close_frame` was restructured to use `serve_with_project_store_driver_handles_auth_and_shutdown` directly with an externally-bound `TcpListener`, then `gateway.abort()` after the close-frame assertion. This shifts the test's contract from "gateway shuts down cleanly within `SHUTDOWN_GRACE + 1s`" to "close frame is sent on shutdown signal." Clean-shutdown coverage stays in sibling `shutdown_token_drains_*` tests at lines 645 and 660 — coverage isn't lost, just split into single-responsibility tests.
+
+**Test proof**
+- 3 consecutive green runs of the named test (per CLAUDE.md three-runs discipline).
+- The new ping-barrier pattern is testable in isolation: a test where the WS subscription handler doesn't dispatch `Ping → Pong` would fail at the barrier, before reaching the publish assertion. Stronger discipline than a sleep that hides a race.
+
+**Residual risk**
+- The `shutdown_token_sends_websocket_close_frame` test ends with `gateway.abort()` + `.expect_err()`. If the gateway's `serve_with_*` ever changes shutdown semantics (e.g. returns Ok after a cancel), this test's `expect_err` would fail. Trade-off accepted because the test's purpose is the close-frame assertion; clean-shutdown is the sibling tests' job.
+- The `Duration::from_millis(100)` Pong-await values are *timeout upper bounds*, not delays. They're acceptable per CLAUDE.md — the prohibition is on artificial delays in the test flow, not on bounded waits for events.
+
+**Strong points (✅)**
+- **Zero `tokio::time::sleep` or `thread::sleep` calls survived** in the touched files (grep verified). CLAUDE.md no-flaky-tests rule fully satisfied.
+- **Ping-barrier pattern is the right primitive** — tests subscription delivery via the real handler path, not an artificial wait.
+- **Listener-bound-up-front** eliminates the free-port race window architecturally.
+- **Dead helper removal** — no orphan code from the old pattern.
+- **Single test fixed, not a suite-wide audit** — per CLAUDE.md "One test, one fix"; the brief explicitly said "Don't expand AW into a gateway test-suite audit." Other tests in `integration.rs` were touched only with the consistent ping-barrier pattern.
+
+**Findings**
+- 🟢 `sim_provider::run` spawn was removed from `websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscribe` — the test now publishes its own events deterministically. Same anti-flake fix shape.
+- 🟢 The shutdown-test split (close-frame here; clean-shutdown in sibling tests) is a cleaner separation of concerns than the prior bundled test.
+- 🟡 The `Duration::from_millis(100)` Pong-await timeouts could benefit from an inline comment ("upper bound for round-trip; not a delay") to avoid "why not less?" questions. v1.1 polish.
+- 🟠 Real concerns — none.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `cargo test --workspace --locked` green three consecutive runs (verified on gateway subset; CI run confirms workspace-level).
+- ✅ CI Rust job's `cargo test` step passes (proof via run 26431030607).
+- ✅ Codex log names the root cause: sleep/free-port races replaced with bound listeners and protocol ping barriers.
+- ✅ Test file no longer contains `sleep`, `setTimeout`, `thread::sleep`, or `tokio::time::sleep` calls — grep verified.
+
 ## Verdict
+
+**Merged** at `cc2e1f7`.
+
+What's NOT yet proven by this merge:
+- Long-running stability under load (the test is short-lived; flakiness might re-emerge if the gateway is slower under contention). Worth watching during the v1.0 hardware-soak gate.
+- Other tests in `crates/gateway/tests/integration.rs` weren't audited for sleep usage beyond the diff — outside AW's scope per the brief.
+
+No follow-ups opened from AW specifically.

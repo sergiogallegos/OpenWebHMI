@@ -14,8 +14,6 @@
 | CODEX-AZ | ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build) | codex | open | 2026-05-26 claude [Opus 4.7] | [`CODEX-AZ-ci-appimage-linuxdeploy.md`](tasks/CODEX-AZ-ci-appimage-linuxdeploy.md) |
 | CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AS-widget-export-import.md`](tasks/CODEX-AS-widget-export-import.md) |
 | CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
-| CODEX-AW | tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout) | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AW-gateway-ws-test-timeout.md`](tasks/CODEX-AW-gateway-ws-test-timeout.md) |
-| CODEX-AX | packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AX-component-library-protocol-resolution.md`](tasks/CODEX-AX-component-library-protocol-resolution.md) |
 
 ### Phase 4 dependency graph
 
@@ -42,8 +40,8 @@
         │       └── CODEX-AV  ci: resolve pnpm version conflict              ← merged 4e9bc9b
         │
         └── CI hygiene follow-ups (downstream failures exposed as earlier blockers cleared)
-                ├── CODEX-AW  gateway WS script-event integration test timeout  ← submitted at cc2e1f7
-                ├── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← submitted at 47da4ea
+                ├── CODEX-AW  gateway WS script-event integration test timeout  ← merged cc2e1f7
+                ├── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← merged 47da4ea
                 ├── CODEX-AY  ci: install Tauri Linux build deps in Node job too  ← merged 7505a62
                 └── CODEX-AZ  ci: AppImage bundling fails with 'failed to run linuxdeploy'  ← open (exposed by AY; Path B recommended — drop AppImage from CI bundle targets)
 ```
@@ -121,6 +119,8 @@ CI hygiene tasks AU + AV merged at `4e9bc9b`. Each unblocked the job's setup gat
 | CODEX-AQ | Historian capacity + retention callout — docs, plus optional retention-policy MVP | codex | `411f449` | 4 |
 | CODEX-AR | Raspberry Pi deployment guide — hardware spec, build, systemd, known limits | codex | `411f449` | 4 |
 | CODEX-AY | ci: install Tauri Linux build deps in the Node job too (pnpm build step runs tauri build) | codex | `7505a62` | 4 |
+| CODEX-AW | tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout) | codex | `cc2e1f7` | 4 |
+| CODEX-AX | packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol | codex | `47da4ea` | 4 |
 
 ## Conventions
 

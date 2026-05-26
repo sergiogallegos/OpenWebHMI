@@ -3,9 +3,10 @@ id: CODEX-AX
 title: packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: 47da4ea
 ---
 
 # CODEX-AX — Fix component-library typecheck resolution of @openwebhmi/protocol
@@ -80,4 +81,57 @@ After the fix:
 
 ## Claude review
 
+### 2026-05-26 19:30  claude [Opus 4.7]
+
+**Independent verification**
+- `git show 47da4ea` — 8 insertions / 8 deletions across 2 `package.json` files; minimal change.
+- `grep "\"private\"" packages/{protocol-ts,component-library}/package.json` — both packages are `"private": true`. Not published to npm; the workspace-source-export pattern is safe for this consumption shape.
+- CI runs 26430352703 + 26431030607 — Node job `pnpm -r --if-present typecheck` ✅ green both times post-AX. Was failing on `Cannot find module '@openwebhmi/protocol'` pre-AX.
+
+**What's being fixed**
+- `packages/component-library` typecheck failed with `Cannot find module '@openwebhmi/protocol'` because both `protocol-ts` and `component-library` declared `package.json` `exports`/`main`/`types` pointing at `./dist/` paths that don't exist until `pnpm build` runs. Workspace consumers under pnpm strict-resolution couldn't find the module without a pre-built `dist/`.
+
+**Root cause confirmation**
+- Confirmed via diff: `exports[".]`, `main`, and `types` all pointed at `./dist/index.d.ts` and `./dist/index.js` pre-AX. Post-AX they point at `./src/index.ts`. Workspace consumers now resolve to the TypeScript source directly — no pre-build needed.
+
+**Fix appropriateness**
+- Right layer: minimal `package.json` change in both producer packages. No tsconfig changes, no TS project references introduced, no build-script changes.
+- The brief listed 4 candidate fix paths in order of probability; Codex picked the most direct: producer-side `exports`/`main`/`types` rewrite (combining brief candidates #1 and #4 — `exports` change + eliminate build-order dependency entirely).
+- The packages are `"private": true` — never published to npm. The workspace-source-export pattern is the established idiom for in-monorepo TS consumption; consumers get hot type updates without rebuilding producers. This trade-off would NOT be safe for a published package (npm consumers need `dist/`), but the privacy flag makes it safe here.
+- No regression to other consumers: any code doing `import { … } from '@openwebhmi/protocol'` now resolves via the workspace symlink → producer's `package.json` → `./src/index.ts`. TypeScript handles `.ts` source as well as `.d.ts` declarations.
+
+**Test proof**
+- Verification IS the CI run; `pnpm -r --if-present typecheck` passes on runs 26430352703 and 26431030607 — both green post-AX. Pre-AX runs (26423144512 and earlier) had this exact failure.
+- Test-must-fail-without-fix: trivially satisfied — reverting the diff restores `dist/` paths, and any clean `pnpm install && pnpm typecheck` without a prior `pnpm build` reproduces the original error.
+
+**Residual risk**
+- **If either package is ever published to npm**, the `exports` field must be flipped back to a conditional shape: `"types": "./dist/index.d.ts"` + `"default": "./dist/index.js"` for the published path. The `"private": true` flag is the only thing preventing this from being a footgun.
+- **Build script still exists** (`tsc -p tsconfig.json`) — `dist/` will be built by anyone who runs `pnpm --filter @openwebhmi/protocol build`, but nothing depends on the output now. Dead-output risk is low but worth knowing.
+- **IDE behavior**: most TS-aware IDEs honor `package.json` `types`; pointing at `./src/index.ts` means "Go to Definition" navigates to source. Feature, not bug, but contributors accustomed to `dist/index.d.ts` navigation may notice the change.
+
+**Strong points (✅)**
+- **Minimal, focused change** — 8 lines across 2 files. Matches the brief's "minimally fix the configuration" instruction.
+- **Codex correctly chose the simplest viable fix** from the 4 brief candidates. The TS-project-references option would have been correct but more invasive; the workspace-source-export trick achieves the same outcome with less ceremony.
+- **`"private": true` invariant honored** — Codex's Codex-log entry explicitly states "package exports/types/main at `src/index.ts` for no-dist workspace typechecking" — documents the intent precisely.
+
+**Findings**
+- 🟢 The two `package.json` files now share an identical export shape. Future consumers see a consistent pattern.
+- 🟡 The workspace-private convention deserves a short agent note (`docs/agents/notes/workspace-package-resolution.md`) so future contributors know why `exports` points at `src/` and what would change if a package goes public. v1.1 polish.
+- 🟠 Real concerns — none.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `pnpm -r --if-present typecheck` green (CI runs 26430352703 + 26431030607 confirm).
+- ✅ CI Node job's typecheck step passes (proof above).
+- ✅ Codex log names the root cause: producer-side `exports` pointing at non-existent `dist/`; fix points exports at `src/`.
+- ✅ No other workspace package's typecheck regresses (workspace-wide green).
+
 ## Verdict
+
+**Merged** at `47da4ea`.
+
+What's NOT yet proven by this merge:
+- npm-published-shape compatibility (intentional; the packages are private).
+- TS IDE "Go to Definition" navigation in Tauri/VSCode/JetBrains (very likely works; not exhaustively tested).
+
+No follow-ups opened from AX specifically. The v1.1 polish (agent note documenting the workspace-only convention) is light enough to roll into a future touchup without its own brief.
