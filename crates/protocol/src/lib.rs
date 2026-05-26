@@ -171,6 +171,10 @@ pub struct AuditEntry {
     pub session_id: Option<String>,
     /// Source peer address.
     pub source_ip: Option<String>,
+    /// Previous audit-entry hash as lowercase hex.
+    pub prev_hash: Option<String>,
+    /// This audit-entry hash as lowercase hex.
+    pub hash: String,
     /// Event kind name.
     pub kind: String,
     /// Event payload.
@@ -850,6 +854,8 @@ mod tests {
                 user: Some("admin".into()),
                 session_id: None,
                 source_ip: Some("127.0.0.1:8080".into()),
+                prev_hash: None,
+                hash: "0000000000000000000000000000000000000000000000000000000000000000".into(),
                 kind: "AuthLogin".into(),
                 payload: serde_json::json!({
                     "type": "AuthLogin",

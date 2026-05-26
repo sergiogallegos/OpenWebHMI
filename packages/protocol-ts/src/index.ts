@@ -75,6 +75,8 @@ export type AuditEntry = {
   user?: string | null;
   session_id?: string | null;
   source_ip?: string | null;
+  prev_hash?: string | null;
+  hash: string;
   kind: string;
   payload: unknown;
 };

@@ -1523,6 +1523,11 @@ fn audit_entry_to_wire(entry: StoredAuditEntry) -> openwebhmi_protocol::AuditEnt
         user: entry.user,
         session_id: entry.session_id,
         source_ip: entry.source_ip,
+        prev_hash: entry
+            .prev_hash
+            .as_ref()
+            .map(openwebhmi_audit_log::encode_hash),
+        hash: openwebhmi_audit_log::encode_hash(&entry.hash),
         kind: entry.kind.kind_name().to_string(),
         payload: serde_json::to_value(entry.kind).unwrap_or(serde_json::Value::Null),
     }

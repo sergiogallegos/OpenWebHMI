@@ -6,6 +6,6 @@ mod event;
 mod query;
 mod store;
 
-pub use event::{AuditEntry, AuditEvent, UserAdminAction, WriteSource};
+pub use event::{AuditEntry, AuditEvent, UserAdminAction, WriteSource, encode_hash};
 pub use query::AuditQuery;
-pub use store::AuditLog;
+pub use store::{AuditLog, ChainBroken};
