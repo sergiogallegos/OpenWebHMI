@@ -3,9 +3,10 @@ id: CODEX-AS
 title: Widget export/import between projects — single-widget JSON round-trip
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: a225aa7
 ---
 
 # CODEX-AS — Widget export/import between projects
@@ -85,4 +86,74 @@ An integrator builds a polished `AlarmTable` widget configuration in Project A (
 
 ## Claude review
 
+### 2026-05-26 19:50  claude [Opus 4.7]
+
+**Independent verification**
+- `cargo test -p openwebhmi-protocol --test widget_io --locked` — 1/1 passed (`exported_widget_round_trips_json`).
+- `pnpm --filter @openwebhmi/designer test` — 10 test files, 21 tests passed; `widget-io.test.ts` contributes 5 (round-trip, warnings, unknown widget type, unsupported schema version, snapshot pin).
+- CI run 26431030607 Node + Rust jobs ✅ — both green; AS is among the merged work that brought CI to green.
+- Read every diff in commit a225aa7 end-to-end: `crates/protocol/src/widget_io.rs` (42 lines), `crates/protocol/tests/widget_io.rs` (25 lines), `apps/designer/src/modules/widget-io.ts` (168 lines), `apps/designer/src/modules/ViewEditor.tsx` (71 lines added), `apps/designer/src/__tests__/widget-io.test.ts` (117 lines), `apps/designer/src/App.tsx` (9 lines), `packages/protocol-ts/src/index.ts` (17 lines added), `docs/agents/notes/widget-export-format.md` (14 lines), `docs/widget-export-import.md` (23 lines).
+
+**What's being fixed**
+- Designer had no integrator-facing surface to extract a single widget configuration and import it into another project. The view schema round-trips as JSON via project-store already, but no end-user mechanism existed to lift one widget out.
+
+**Root cause confirmation**
+- Confirmed: pre-AS `apps/designer/src/modules/` had no `widget-io.ts`; `ViewEditor.tsx` had no Import action; `crates/protocol/src/lib.rs` had no `widget_io` module re-export. AS adds exactly what the brief specified.
+
+**Fix appropriateness**
+- Right layers: TS `widget-io.ts` owns validation + UI dispatch (designer-only concern); Rust `widget_io.rs` owns the wire shape so Python scripts or future external tools can produce/consume the format without re-deriving it.
+- `ExportedWidget` and `ExportedWidgetChild` are intentionally non-unified — top-level metadata (`schema_version`, `exported_at`, `openwebhmi_version`) lives only on `ExportedWidget`; children carry just `widget_type`/`props`/`bindings`/`children`. Correct shape — child metadata would be redundant noise.
+- Both Rust structs are `#[non_exhaustive]` per CODEX-AL convention; both use `#[serde(default)]` on `bindings` and `children` so future Rust readers can tolerate older exports that omit those fields.
+- `componentToExportedChild` + `exportedToComponent` recursion correctly preserves the widget tree depth. `id` regeneration on import (via `idFactory`) prevents collisions when the same template is imported multiple times — matches the brief's "Imported widgets receive new component ids to avoid collisions."
+- `bindingWarnings` correctly walks the tree (own bindings + recursive `children`); uses `Set` for dedup of warnings.
+- `validateKnownWidget` is called both at top-level `importWidget` and recursively inside `exportedToComponent` — defense in depth; a nested unknown widget aborts before any partial state is created.
+
+**Test proof**
+- 5 vitest cases cover the full contract: round-trip (props + bindings preserved), warnings path (missing tag paths), unknown widget type (hard error with helpful message), unsupported schema version (hard error naming the version), and a **snapshot pin of the exported JSON format**. The snapshot is the brief's "Snapshot-test the exported JSON of a representative widget. The snapshot pins the export format; future changes update the snapshot and bump `schema_version`" — exactly the right discipline.
+- Rust round-trip test pins a representative `ExportedWidget` JSON (with nested child) and asserts byte-identical re-encode after decode. Catches serde key-ordering drift if it ever happens.
+- Single-run vitest is sufficient — no real file I/O, no async timing, no port binding (everything is in-memory string operations). The three-runs discipline applies to known-flaky tests; these are deterministic.
+
+**Residual risk**
+- **`exportWidget` hardcodes `openwebhmi_version: "0.0.1"`** in the default — should ideally read from a build-time constant or a workspace package version. Cosmetic for now (the field is informational per the brief's "informational only"), but a future polish.
+- **`cloneValue` uses `JSON.parse(JSON.stringify(value))`** — drops non-JSON values (functions, undefined, symbols, BigInt, Date). Safe for OpenWebHMI's JSON-only widget config invariant, but a contributor adding a non-JSON prop type would silently lose data on export/import. Low likelihood; no guard added.
+- **`bindingWarnings` warns for every binding when `tagPaths.size === 0`** — correct per the brief, but noisy for first-import-into-fresh-project. Acceptable UX; documented in test.
+- **Rust `exported_widget_round_trips_json` test is the only Rust coverage** — doesn't test the warnings or unknown-widget paths (those are TS-side responsibilities). Correct split, but worth noting that any future Python-script consumer of the format will hit the validation logic only in TS, not in Rust.
+- **`downloadExportedWidget` uses browser DOM** (`document.createElement("a")`, `Blob`, `URL.createObjectURL`) — works in the Tauri webview which supports Web APIs, but would not work in a hypothetical Node-side export path. Tauri 2 webview compatibility is good; v1.0 only ships the Tauri designer, so this is fine.
+- **Schema version 1 is now frozen** — the docs commit to "v1.x widget exports import into v1.y where y ≥ x." Any future shape change ratchets `schema_version` and adds a migration. This is the right contract; just flagging the irreversibility.
+
+**Strong points (✅)**
+- **Both languages share the wire shape** — `ExportedWidget` is defined in both `crates/protocol/src/widget_io.rs` and `packages/protocol-ts/src/index.ts` with identical field shapes. Future external tooling has Rust + TS implementations of the same contract.
+- **Snapshot-test pin of the exported JSON** is the gold-standard discipline for format-stability tests. Any future field reordering or default-value change visibly bumps the snapshot, forcing a deliberate decision.
+- **Defense-in-depth validation**: `validateKnownWidget` is called both at top-level and recursively. `parseExport` validates JSON shape before unwrap. `schema_version` check happens before any widget construction.
+- **No partial state on import errors** — every error is thrown before `addChild()` runs in `ViewEditor.tsx`. The integrator never sees a half-imported view.
+- **`id` regeneration prevents collisions** — same template can be imported N times without colliding ids. `idFactory` is injectable for tests (used in the round-trip vitest case).
+- **`#[serde(default)]` on `bindings` and `children`** gives Rust future-forward compatibility — older exports lacking those fields still deserialize cleanly.
+- **`#[non_exhaustive]` on both structs** per AL convention — new fields can be added without breaking Rust consumers.
+
+**Findings**
+- 🟢 The `ThemeEditor` JSX render block in `apps/designer/src/App.tsx` lands in this commit (a225aa7) even though it's CODEX-AO scope. Chunking observation: AO commit (`428a9cf`, 2 min earlier) added the `ThemeEditor` import + `saveTheme` callback + `onOpenTheme` prop; this AS commit added the JSX block that consumes them. Code compiles in commit order; not a defect. Worth flagging for the AO review so the reviewer knows some "AO content" lives here.
+- 🟢 The format docs (`docs/widget-export-import.md` + `docs/agents/notes/widget-export-format.md`) are concise and honest. The notes file says "Version 1 is frozen once v1.0 ships" — exactly the schema-version contract.
+- 🟡 `openwebhmi_version: "0.0.1"` hardcoded default — wire to a workspace-version constant in a future polish.
+- 🟡 The Rust round-trip test could be extended with a `to_canonical_bytes()`-style pinned-byte test (mirror of the CODEX-AN audit-log discipline) to guard against serde-json key-ordering drift. v1.1 polish.
+- 🟠 Real concerns — none.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ Export action present in designer; produces `.owhmi-widget` JSON via `downloadExportedWidget`.
+- ✅ Import action present in designer (`<label>Import widget...<input type="file" accept=".owhmi-widget,application/json">`); validates and places.
+- ✅ Unknown widget type → hard error with helpful message naming the type.
+- ✅ Unknown binding paths → warnings surfaced via `onWarning(message)` toast; widget still places.
+- ✅ Schema version 1 documented (both docs); mismatch is hard error naming the version.
+- ✅ `docs/widget-export-import.md` exists; `README.md` features list links to it (per AQ+AR commit).
+- ✅ `docs/agents/notes/widget-export-format.md` exists.
+- ✅ Vitest tests pass.
+
 ## Verdict
+
+**Merged** at `a225aa7`.
+
+What's NOT yet proven by this merge:
+- Manual smoke of the export/import flow in the running designer (defer to the designer manual-smoke checklist).
+- Cross-language wire-format compatibility (Rust struct + TS type ARE identical-by-construction, but no integration test asserts they share a byte-identical representation; the canonical-bytes pinned test would add this guard).
+
+No follow-ups opened from AS specifically. The two yellow polish items (hardcoded version string + pinned-byte test) are light enough to roll into a future touchup without their own briefs.
