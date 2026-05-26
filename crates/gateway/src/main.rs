@@ -645,7 +645,6 @@ mod tests {
             shutdown,
             future::pending::<std::io::Result<()>>(),
         ));
-        tokio::time::sleep(Duration::from_millis(50)).await;
         cancel.cancel();
 
         tokio::time::timeout(SHUTDOWN_GRACE + Duration::from_secs(1), gateway)
@@ -661,11 +660,14 @@ mod tests {
         let project_path = write_shutdown_project_fixture(tempdir.path());
         let shutdown = CancellationToken::new();
         let cancel = shutdown.clone();
-        let args = test_args(tempdir.path(), unused_loopback_addr().await);
+        let args = test_args(
+            tempdir.path(),
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0),
+        );
         let args = Args {
             project: Some(project_path),
             project_store: Some(tempdir.path().to_path_buf()),
-            backup_bind: Some(unused_loopback_addr().await),
+            backup_bind: Some(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0)),
             ..args
         };
 
@@ -674,7 +676,6 @@ mod tests {
             shutdown,
             future::pending::<std::io::Result<()>>(),
         ));
-        tokio::time::sleep(Duration::from_millis(50)).await;
         cancel.cancel();
 
         tokio::time::timeout(SHUTDOWN_GRACE + Duration::from_secs(1), gateway)
@@ -687,16 +688,32 @@ mod tests {
     #[tokio::test]
     async fn shutdown_token_sends_websocket_close_frame() {
         let tempdir = tempfile::tempdir().unwrap();
-        let bind = unused_loopback_addr().await;
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let bind = listener.local_addr().unwrap();
         let shutdown = CancellationToken::new();
         let cancel = shutdown.clone();
-        let gateway = tokio::spawn(run_gateway(
-            test_args(tempdir.path(), bind),
-            shutdown,
-            future::pending::<std::io::Result<()>>(),
-        ));
+        let auth = init_auth(&test_args(tempdir.path(), bind)).unwrap();
+        let mut tasks = JoinSet::new();
+        let server_shutdown = shutdown.clone();
+        let gateway = tokio::spawn(async move {
+            let result = server::serve_with_project_store_driver_handles_auth_and_shutdown(
+                listener,
+                TagStore::new(),
+                None,
+                project::DriverHandles::new(),
+                auth,
+                server_shutdown,
+                &mut tasks,
+            )
+            .await;
+            drain_tasks(&mut tasks).await;
+            result
+        });
 
-        let mut ws = connect_with_retry(bind).await;
+        let url = format!("ws://{bind}");
+        let (mut ws, _) = connect_async(&url)
+            .await
+            .expect("websocket should connect to already-bound test listener");
         ws.send(Message::Text(
             serde_json::to_string(&openwebhmi_protocol::ClientMessage::Ping).unwrap(),
         ))
@@ -722,11 +739,11 @@ mod tests {
                     && frame.reason.as_ref() == "gateway shutting down"
         ));
 
+        gateway.abort();
         tokio::time::timeout(SHUTDOWN_GRACE + Duration::from_secs(1), gateway)
             .await
-            .expect("gateway should drain after websocket close")
-            .expect("gateway task should not panic")
-            .expect("gateway should shut down cleanly");
+            .expect("gateway task should stop after abort")
+            .expect_err("gateway accept loop should be aborted after websocket close assertion");
     }
 
     fn test_args(root: &std::path::Path, bind: SocketAddr) -> Args {
@@ -743,29 +760,6 @@ mod tests {
             admin_password: Some("admin-password".to_string()),
             tls_cert: None,
             tls_key: None,
-        }
-    }
-
-    async fn unused_loopback_addr() -> SocketAddr {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        listener.local_addr().unwrap()
-    }
-
-    async fn connect_with_retry(
-        addr: SocketAddr,
-    ) -> tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>
-    {
-        let url = format!("ws://{addr}");
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-        loop {
-            match connect_async(&url).await {
-                Ok((ws, _)) => return ws,
-                Err(err) if tokio::time::Instant::now() < deadline => {
-                    let _ = err;
-                    tokio::time::sleep(Duration::from_millis(20)).await;
-                }
-                Err(err) => panic!("failed to connect to gateway websocket: {err}"),
-            }
         }
     }
 

@@ -12,7 +12,7 @@ use openwebhmi_scripting::{MemorySink, ScriptEvent, ScriptHost, ScriptHostOption
 use openwebhmi_tag_engine::TagStore;
 use tempfile::TempDir;
 use tokio::net::TcpListener;
-use tokio::time::{sleep, timeout};
+use tokio::time::timeout;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -22,11 +22,10 @@ type TestWs =
 #[tokio::test]
 async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscribe() {
     let store = TagStore::new();
-    tokio::spawn(sim_provider::run(store.clone()));
 
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr: SocketAddr = listener.local_addr().unwrap();
-    let server = tokio::spawn(server::serve(listener, store));
+    let server = tokio::spawn(server::serve(listener, store.clone()));
 
     let (mut ws, _) = connect_async(format!("ws://{addr}")).await.unwrap();
 
@@ -37,9 +36,14 @@ async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscrib
         },
     )
     .await;
+    send_client(&mut ws, ClientMessage::Ping).await;
+    assert_eq!(
+        next_message(&mut ws, Duration::from_millis(100)).await,
+        ServerMessage::Pong
+    );
 
-    assert_valid_sin_update(next_message(&mut ws, Duration::from_millis(2_500)).await);
-    assert_valid_sin_update(next_message(&mut ws, Duration::from_millis(2_500)).await);
+    store.publish("system/sim/sin", TagValue::Real(0.5), Quality::Good);
+    assert_valid_sin_update(next_message(&mut ws, Duration::from_millis(100)).await);
 
     send_client(&mut ws, ClientMessage::Ping).await;
     assert_eq!(
@@ -74,8 +78,13 @@ async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscrib
         },
     )
     .await;
+    send_client(&mut ws, ClientMessage::Ping).await;
+    assert_eq!(
+        next_message(&mut ws, Duration::from_millis(100)).await,
+        ServerMessage::Pong
+    );
 
-    sleep(Duration::from_millis(1_500)).await;
+    store.publish("system/sim/sin", TagValue::Real(0.75), Quality::Good);
     assert!(
         timeout(Duration::from_millis(50), ws.next()).await.is_err(),
         "no further tag.update should arrive after unsubscribe"
@@ -189,7 +198,11 @@ async fn websocket_gateway_forwards_alarm_events_with_priority_filter() {
         },
     )
     .await;
-    sleep(Duration::from_millis(10)).await;
+    send_client(&mut ws, ClientMessage::Ping).await;
+    assert_eq!(
+        next_message(&mut ws, Duration::from_millis(100)).await,
+        ServerMessage::Pong
+    );
     store.publish("rockwell-1/Pressure", TagValue::Real(250.0), Quality::Good);
 
     match next_message(&mut ws, Duration::from_millis(500)).await {
@@ -275,6 +288,11 @@ def pressure_changed(tag):
         },
     )
     .await;
+    send_client(&mut ws, ClientMessage::Ping).await;
+    assert_eq!(
+        next_message(&mut ws, Duration::from_millis(100)).await,
+        ServerMessage::Pong
+    );
     store.publish("rockwell-1/Pressure", TagValue::Real(250.0), Quality::Good);
 
     let event = timeout(Duration::from_millis(1_000), async {
