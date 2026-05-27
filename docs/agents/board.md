@@ -9,6 +9,7 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-AZ | ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build) | codex | submitted | 2026-05-27 codex [gpt-5] | [`CODEX-AZ-ci-appimage-linuxdeploy.md`](tasks/CODEX-AZ-ci-appimage-linuxdeploy.md) |
+| CODEX-BA | website refresh — surface AN/AO/AS/AT/AQ/AR features on openwebhmi.com landing + docs + download pages | codex | open | 2026-05-27 claude [Opus 4.7] | [`CODEX-BA-website-refresh.md`](tasks/CODEX-BA-website-refresh.md) |
 
 ### Phase 4 dependency graph
 
@@ -38,7 +39,10 @@
                 ├── CODEX-AW  gateway WS script-event integration test timeout  ← merged cc2e1f7
                 ├── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← merged 47da4ea
                 ├── CODEX-AY  ci: install Tauri Linux build deps in Node job too  ← merged 7505a62
-                └── CODEX-AZ  ci: AppImage bundling fails with 'failed to run linuxdeploy'  ← submitted (exposed by AY; Path B recommended — drop AppImage from CI bundle targets)
+                └── CODEX-AZ  ci: AppImage bundling fails with 'failed to run linuxdeploy'  ← submitted (Path B taken per Codex log; pending review)
+
+Website refresh (surface AN..AR features on openwebhmi.com — opened 2026-05-27)
+        └── CODEX-BA  website refresh — landing + docs + download pages    ← open (Astro static-site edits only; AppImage clarification post-AZ)
 ```
 
 Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.
