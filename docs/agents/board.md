@@ -10,9 +10,7 @@
 |---|---|---|---|---|---|
 | CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | submitted | 2026-05-05 codex | [`CODEX-AM-stdlib-deps-modernization.md`](tasks/CODEX-AM-stdlib-deps-modernization.md) |
 | CODEX-AN | audit-log CFR21 Part 11 framing + tamper-evident hash chain | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AN-audit-log-cfr21-hash-chain.md`](tasks/CODEX-AN-audit-log-cfr21-hash-chain.md) |
-| CODEX-AO | Designer Theme Editor UI — pulled deferred v0.2 Stretch item forward | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AO-theme-editor-ui.md`](tasks/CODEX-AO-theme-editor-ui.md) |
 | CODEX-AZ | ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build) | codex | open | 2026-05-26 claude [Opus 4.7] | [`CODEX-AZ-ci-appimage-linuxdeploy.md`](tasks/CODEX-AZ-ci-appimage-linuxdeploy.md) |
-| CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | submitted | 2026-05-25 codex [gpt-5] | [`CODEX-AT-material-design-widget-pack.md`](tasks/CODEX-AT-material-design-widget-pack.md) |
 
 ### Phase 4 dependency graph
 
@@ -27,12 +25,12 @@
         │
         ├── v1.x improvements (competitor feature-parity sweep — opened 2026-05-25)
         │       ├── CODEX-AN  audit-log CFR21 framing + hash chain         ← submitted (top priority — pharma/medical procurement gate)
-        │       ├── CODEX-AO  Theme Editor UI (v0.2 Stretch pulled forward) ← submitted
+        │       ├── CODEX-AO  Theme Editor UI (v0.2 Stretch pulled forward) ← merged 428a9cf
         │       ├── CODEX-AP  Recipes (process-control management)          ← REJECTED 2026-05-25 (Claude brief error vs VISION.md L37; planning notes already at roadmap.md L146)
         │       ├── CODEX-AQ  Historian capacity + retention callout        ← merged 411f449
         │       ├── CODEX-AR  Raspberry Pi deployment guide                 ← merged 411f449
         │       ├── CODEX-AS  Widget export/import between projects         ← merged a225aa7
-        │       └── CODEX-AT  Material Design widget pack (demo subset)     ← submitted (depends on AO for shared CSS-variable contract)
+        │       └── CODEX-AT  Material Design widget pack (demo subset)     ← merged 428a9cf (Option C / hand-rolled per Codex log; depends on AO for shared CSS-variable contract)
         │
         ├── CI hygiene (unblock main CI — opened 2026-05-25)
         │       ├── CODEX-AU  ci: install Tauri Linux build deps             ← merged 4e9bc9b
@@ -121,6 +119,8 @@ CI hygiene tasks AU + AV merged at `4e9bc9b`. Each unblocked the job's setup gat
 | CODEX-AW | tests: stabilize gateway WS script-event integration test (websocket_gateway_forwards_script_events_by_project timeout) | codex | `cc2e1f7` | 4 |
 | CODEX-AX | packages: fix component-library typecheck — cannot resolve @openwebhmi/protocol | codex | `47da4ea` | 4 |
 | CODEX-AS | Widget export/import between projects — single-widget JSON round-trip | codex | `a225aa7` | 4 |
+| CODEX-AO | Designer Theme Editor UI — pulled deferred v0.2 Stretch item forward | codex | `428a9cf` | 4 |
+| CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | `428a9cf` | 4 |
 
 ## Conventions
 

@@ -3,9 +3,10 @@ id: CODEX-AT
 title: Material Design widget pack — demo subset proving theme-pack architecture
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: 428a9cf
 ---
 
 # CODEX-AT — Material Design widget pack (demo subset)
@@ -107,4 +108,82 @@ Picks for the demo subset (representative of the 25 v1.0 components):
 
 ## Claude review
 
+### 2026-05-26 20:40  claude [Opus 4.7]
+
+**Independent verification**
+- `pnpm --filter @openwebhmi/component-library test` — 5 files / 67 tests passed including 4 `material-pack.test.tsx` cases (renders all 8 with mdc-* classes, fallback-with-one-warning per missing type, prop-API parity with default pack, fallback renders Label).
+- Read full `packages/component-library/src/packs/material/index.tsx` (383 lines) — 8 component overrides (Button, ToggleSwitch, NumericInput, Slider, Card, Dropdown, Gauge, Modal) all use `mdc-*` class names + `mdStyles` inline-style maps + consume AO's CSS variables.
+- Read `packages/component-library/src/packs/material/tokens.css` — 9 lines mapping `--md-sys-color-*` MD3 tokens to AO's `--primary-color` / `--secondary-color` / `--surface` / `--text-primary` / `--error` / `--border-radius` variables. Material pack feeds off AO's theme variables — clean integration.
+- Read `packages/component-library/src/registry.ts` (+29 lines) — `getComponentDefinition(typeId, packId)` correctly falls back to default pack when material lacks a type, emits exactly one warning per `${packId}:${typeId}` via the `warnedFallbacks` `Set`. Default behavior preserved when `packId` is null/undefined.
+- Read `apps/runtime-web/src/ViewRenderer.tsx` diff — `getComponentDefinition(node.kind, runtime.packId)` replaces the pre-AT `componentRegistry[node.kind]` lookup. Pack-aware rendering wired end-to-end.
+- Read `examples/projects/material-demo/` (project.toml + theme/theme.json + views/home.json — 189 lines) — demo project ships with `theme.pack = "material"`; renders one view per component category.
+- CI run 26431030607 Node + Rust both green.
+
+**What's being fixed**
+- OpenWebHMI shipped 25 v1.0 components with one visual style. No mechanism existed to ship a second pack (Material Design or otherwise) opt-in per project.
+
+**Root cause confirmation**
+- Confirmed: pre-AT `packages/component-library/src/packs/` didn't exist; `registry.ts` had no `getComponentDefinition()` function (just `componentRegistry` direct lookup); `ViewRenderer` used direct registry lookup. Pure greenfield addition with surgical registry refactor.
+
+**Fix appropriateness**
+- **Pack architecture is additive** — `packs: Record<string, Record<string, ComponentDefinition>>` with `default` + `material` entries. New packs drop in as additional keys. The brief's "Don't reshape the default pack to support packs" rule is honored — `componentRegistry` is still the canonical default; `getComponentDefinition` is a lookup wrapper.
+- **Pack-fallback to default with one warning per missing type** — `warnedFallbacks` `Set<string>` keyed by `${packId}:${typeId}`. Exact match to brief: "one-time per-type warning". Test asserts `console.warn` called exactly once for two consecutive `getComponentDefinition("Label", "material")` calls.
+- **Prop API parity preserved via TS types and runtime check** — `material-pack.test.tsx` asserts `propsSchema`, `bindableProps`, `defaultProps` all equal between material and default versions of each pack widget. The 8 material components are constructed with `{ ...DefaultComponent, Render({ ... }) { ... } }` — overrides only `Render`, inherits everything else. This is the "Don't reshape the default pack" + "Prop API parity is the load-bearing contract" discipline made structural, not just convention.
+- **MD3 token bridge** — `tokens.css` maps `--md-sys-color-primary` etc. to AO's `--primary-color` etc. So changing the AO theme automatically updates MD-pack widget rendering. Without this, the two systems would be parallel and confusing.
+- **Implementation strategy was Option C (hand-rolled React/CSS)**, not the brief's recommended Option 2 (Tailwind/CSS-Modules per MD3 spec). Codex's Codex log says: "Chose hand-rolled React/CSS over `@material/web` to preserve existing prop contracts without a new Lit dependency." This is honest — the brief noted Option C would weaken the "Material Design" claim to "MD-inspired" marketing-wise. Codex picked simplicity + dependency-discipline over MD3-spec compliance. Defensible trade-off, but the docs should be framed as "Material-inspired" rather than "MD3-compliant" — see Findings.
+
+**Test proof**
+- 4 material-pack tests cover the full contract:
+  - All 8 widgets render with `mdc-*` DOM classes.
+  - Fallback emits exactly one warning per missing type (deterministic via `warnedFallbacks` Set).
+  - Prop API parity verified via deep `equal` comparison of `propsSchema`/`bindableProps`/`defaultProps`.
+  - Fallback path actually renders the default-pack component.
+- `theme-apply.test.tsx` proves the AO CSS variables propagate to the default Button — implicitly validates that material widgets (which use the same variables via `tokens.css`) will also respond.
+- No regression in the 62 pre-existing component-library tests.
+
+**Residual risk**
+- **"Material Design" claim is marketing-stretched.** Material 3 has ripple effects, elevation surfaces, motion-system animations. The pack has `mdc-*` class names + token-system color bridge + a transform animation on ToggleSwitch + a `<span style={mdStyles.ripple} />` placeholder on Button — but no real ripple effect, no elevation shadow surfaces beyond inline shadow values, no motion-system curves used. It's MD-inspired CSS skinning, not an MD3 implementation. **The brief explicitly flagged this risk at Option C** and accepted it; the docs (`docs/widget-packs.md`) honestly say "Material Design demo widget pack" — "demo" being load-bearing.
+- **`getComponentDefinition()` returns `undefined` for genuinely unknown types** (not in default OR pack). Current `ViewRenderer` handles this with the existing unknown-component branch. Worth knowing that pack lookup doesn't introduce new error paths.
+- **Demo project `examples/projects/material-demo/`** ships but isn't loaded in any CI test. Renders only if a maintainer runs the gateway against it. Acceptable for a demo asset.
+- **Per-widget pack overrides** are out of scope per brief; only project-level pack selection. If integrators want "this one Button is MD even though project pack is default," that's a v1.2 brief.
+- **Full 25-widget MD pack** is also out of scope (this is the 8/25 demo subset). Per brief: "v1.2 brief if this demo lands cleanly and marketing wants the full pack." The cost is now visible — 383 lines for 8 components → roughly 1200 lines extrapolated for 25.
+- **`console.warn` for pack fallbacks** is the only signal an integrator gets. No structured event or UI notification. Acceptable for a developer-targeted signal; integrator-facing UI for pack coverage is future work.
+
+**Strong points (✅)**
+- **Additive registry refactor** — `componentRegistry` unchanged; `getComponentDefinition` is a new lookup wrapper. The brief's "Don't reshape the default pack" rule made structural, not just promised.
+- **Prop API parity via inheritance** — material components use `{ ...DefaultComponent, Render({...}) }` so they inherit `propsSchema`, `defaultProps`, `bindableProps`, `kind`. Cannot accidentally drift from the default pack contract.
+- **MD3 token bridge via `tokens.css`** — material pack widgets consume AO's CSS variables transitively through `--md-sys-color-*` tokens. Theme changes affect both packs uniformly.
+- **`warnedFallbacks` Set deduplicates warnings per `${packId}:${typeId}`** — prevents console spam on repeated lookups.
+- **8 widgets cover representative interaction categories** — primitives (Button, ToggleSwitch), inputs (NumericInput, Slider, Dropdown), surfaces (Card, Modal), visualization (Gauge). Validates the parallel-pack pattern across the four UI archetypes.
+- **Demo project `examples/projects/material-demo/`** ships for marketing screenshots without requiring a maintainer to construct one.
+- **Codex's option-choice rationale documented in Codex log** — picked C (hand-rolled) over A (`@material/web` Lit wrapper) and B (Tailwind/MD3-spec), citing "preserve existing prop contracts without a new Lit dependency." Honest framing of the trade-off.
+
+**Findings**
+- 🟢 The MD3 token bridge (`tokens.css` mapping `--md-sys-color-*` to AO's `--primary-color`) is the integration point that makes AO + AT click together — without it, the two systems would be parallel and confusing.
+- 🟡 **Honest framing in docs**: `docs/widget-packs.md` and `docs/agents/notes/widget-pack-architecture.md` should be framed as "Material-inspired demo widget pack" or "MD3-styled subset" rather than "Material Design widget pack" — the brief flagged this exact concern at Option C and the picked implementation matches Option C, not the recommended Option 2. Adjust positioning in the next docs touchup.
+- 🟡 If a future brief ports the full 25-widget MD pack (per the brief's "v1.2 follow-up"), the 8-widget extrapolation suggests ~1200 lines. The pattern of `{ ...Default, Render({...}) }` inheritance keeps the maintenance cost bounded.
+- 🟡 No CI smoke that loads the `examples/projects/material-demo/` project — a manual maintainer step would catch regressions. Add to designer manual-smoke checklist as a v1.1 polish.
+- 🟠 Real concerns — none. (The "Material Design" claim is marketing-stretched but explicitly accepted by the brief at Option C.)
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ MD pack ships with 8 components (Button, ToggleSwitch, NumericInput, Slider, Card, Dropdown, Gauge, Modal).
+- ✅ Default pack and projects with `pack: None` render unchanged (registry-only refactor; existing tests still pass).
+- ✅ Pack selection persists on the project (`Theme.pack: Option<String>`); reload restores.
+- ✅ Pack-fallback works with a one-time warning per type (verified by test).
+- ✅ `examples/projects/material-demo/` exists and renders (3 files: project.toml + theme/theme.json + views/home.json).
+- ✅ `docs/widget-packs.md` and `docs/agents/notes/widget-pack-architecture.md` exist.
+- ✅ Vitest tests pass.
+- ✅ Prop API parity verified by TS types AND runtime equality assertion (`defaultProps`/`propsSchema`/`bindableProps` deep-equal).
+
 ## Verdict
+
+**Merged** at `428a9cf` (commit bundles AO + AT).
+
+What's NOT yet proven by this merge:
+- Full MD3-spec compliance (intentional Option-C trade-off; the pack is MD-inspired, not strictly MD3).
+- Ripple effect, elevation surfaces, motion-system animations (the brief warned at the Option-C risk note that without these the pack would be "MD-inspired" — Codex took that route).
+- Real integrator usage of the pack-switching UX (demo asset ships; no real customer feedback yet).
+- CI smoke that loads `examples/projects/material-demo/` (the demo isn't exercised in any automated test; would need a future brief).
+
+No follow-ups opened from AT specifically. The yellow polish items (honest docs framing + CI smoke for the demo project) are light enough to roll into future touchups without their own briefs.

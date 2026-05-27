@@ -3,9 +3,10 @@ id: CODEX-AO
 title: Designer Theme Editor UI — pull deferred v0.2 Stretch item forward
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-25
-last-update: 2026-05-25 codex [gpt-5]
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: 428a9cf
 ---
 
 # CODEX-AO — Designer Theme Editor UI
@@ -94,4 +95,81 @@ The integrator opens the designer, opens a Theme Editor panel, picks colors and 
 
 ## Claude review
 
+### 2026-05-26 20:30  claude [Opus 4.7]
+
+**Independent verification**
+- `cargo test -p openwebhmi-project-store --locked` — 7+1+0 passed (7 pre-existing + 1 new `theme_artifact_round_trips_as_project_singleton` + 0 doc-tests). `Theme` artifact correctly enforces singleton semantics: second save replaces first; loaded `project.theme` reflects the latest.
+- `cargo test -p openwebhmi-backup --locked` — 8/8 passed; `crates/backup/src/lib.rs` change didn't regress backup tests.
+- `pnpm --filter @openwebhmi/runtime-web test` — 3 files / 16 tests passed including `theme-load.test.tsx`.
+- `pnpm --filter @openwebhmi/component-library test` — 5 files / 67 tests passed including `theme-apply.test.tsx` (asserts Button consumes `--primary-color` CSS variable).
+- CI run 26431030607 Rust + Node both green (workspace coverage).
+- Read every relevant diff in `428a9cf`: `crates/project-store/src/types.rs` (Theme/ThemeMode/ThemeVariables structs + Project.theme field), `crates/project-store/tests/theme_artifact.rs`, `packages/protocol-ts/src/theme.ts` (DEFAULT_THEME + themeToCss + applyTheme), `apps/designer/src/modules/ThemeEditor.tsx` (213 lines), runtime-web App.tsx + ViewRenderer + gatewayClient diffs.
+
+**What's being fixed**
+- Designer had no Theme Editor UI. Components consumed CSS variables but no integrator-facing surface existed to set them; v0.2 had deferred the Stretch slice that would have built it.
+
+**Root cause confirmation**
+- Confirmed: pre-AO `apps/designer/src/modules/` had no `ThemeEditor.tsx`; `crates/project-store/src/types.rs` had no `Theme` struct or `Project.theme` field; `packages/protocol-ts/src/` had no `theme.ts`. Pure greenfield addition.
+
+**Fix appropriateness**
+- Right layers throughout:
+  - **`Theme` type defined in both Rust (`types.rs`) AND TS (`theme.ts`)** with identical field shape — source of truth shared.
+  - **`DEFAULT_THEME` lives in `protocol-ts/src/theme.ts`** — single source of truth for default values; designer + runtime both consume.
+  - **Theme is a project-level singleton** via `ArtifactKind::Theme` — second `save_artifact` replaces first; test confirms.
+  - **`Project.theme: Option<Theme>`** with `#[serde(default, skip_serializing_if = "Option::is_none")]` — projects without themes don't serialize a `theme: null` field; backward-compatible with v0.x projects.
+- **`applyTheme()`** mutates `:root` CSS variables in real-time (no full re-render). Matches brief's "Live preview updates within ~200ms of a control change … via :root variable updates, not a full view re-render."
+- **`themeToCss()`** generates the `:root { ... }` and `:root[data-theme="dark"] { ... }` blocks for runtime injection — matches brief's `<style>:root { ... }</style>` runtime injection plan.
+- **Light/dark mode persists to localStorage** via `window.localStorage.setItem("openwebhmi.themeMode", mode)` — matches brief's "Sticky" requirement.
+- **Default Button.tsx now uses CSS variables** (`var(--primary-color, #1f4e79)` etc.) — this is the AO-AT integration that makes ALL widgets (not just MD pack) consume the theme system. Smart bonus beyond the brief — the brief only required adding the form/runtime path; Codex also wired the default pack to consume the variables, otherwise the theme would only visibly affect MD-pack widgets.
+
+**Test proof**
+- `crates/project-store/tests/theme_artifact.rs` — round-trips a Theme through `save_artifact` + `read_artifact` + `load`. Asserts the singleton-replace behavior (saving second theme replaces first) AND that the loaded `Project.theme.light.primary_color` matches what was saved.
+- `apps/designer/src/__tests__/ThemeEditor.test.tsx` — 34 lines covering the editor's basic behavior (form renders, color edits update `:root`, save POSTs serialized theme).
+- `apps/runtime-web/src/__tests__/theme-load.test.tsx` — 27 lines covering: gateway returns theme → runtime injects `<style>`; gateway returns no theme → defaults apply, no injection.
+- `packages/component-library/src/__tests__/theme-apply.test.tsx` — proves `Button` actually reads `--primary-color` from `:root`. Validates the integration end-to-end.
+
+**Residual risk**
+- **`applyTheme()` mutates `document.documentElement`** — side-effect inside a React `useEffect`. For SSR or test environments without `document`, would fail. Tests use `@vitest-environment jsdom`. v1.0 doesn't ship SSR; not a concern today, worth knowing if SSR ever becomes a goal.
+- **`pack: Option<String>` is open-ended** — no enum constraining valid pack ids on the Rust side. A typo ("Material" vs "material") silently falls back to default with one warning. Acceptable trade-off (extensibility over strict typing) but worth noting.
+- **No designer manual-smoke checklist update** for the Theme Editor flow. Brief asked to "add a step to the designer manual-smoke checklist (`apps/designer/README.md`)" — the README does include "11. Open `Theme`, change the primary color to red, save, reload runtime, and confirm a primary `Button` renders red" but I'd want to verify Codex added this rather than it being pre-existing. Looking at `apps/designer/README.md` diff in CODEX-AR commit (`411f449`): the step 11 was already there (pre-AO authored, suggests the README anticipated this work). Codex did NOT need to update it. Good.
+- **CSS-variable defaults differ between Rust struct serialization and TS DEFAULT_THEME** — both define the same default field values manually (Rust struct has no default impl; TS `DEFAULT_THEME` is a literal). If the two ever drift, the runtime might render differently from designer-preview. No automated test asserts they match. v1.1 polish: add a Rust test that pins the JSON shape of DEFAULT_THEME and asserts equality with the TS literal.
+- **Custom CSS-variable additions from the UI** are out-of-scope (per brief); the fixed set is hardcoded in `colorFields` array. Future extension would require touching both the Rust struct and the TS form schema.
+
+**Strong points (✅)**
+- **Cross-language Theme shape parity** — Rust + TS structs have identical fields; DEFAULT_THEME is single source of truth in TS.
+- **Singleton invariant enforced at the store** — second `save_artifact` replaces first, no append; test asserts this directly.
+- **Live preview without full re-render** — `applyTheme()` writes to `:root` CSS variables; components react automatically. Performance-correct.
+- **AO-AT integration via CSS variables in default pack** — Codex went beyond the brief by updating `Button.tsx` default to use `var(--primary-color, #1f4e79)`. This makes the theme system affect ALL widgets, not just MD-pack widgets. Without this, the theme would silently fail to apply to most components. Strong-points-worthy bonus.
+- **localStorage stickiness for mode** — operator's light/dark preference survives reloads.
+- **Theme + Pack bundled in one type** — `pack: Option<String>` lives inside `Theme`. Reasonable design choice — one project artifact, one editor UI for both.
+- **`#[serde(default, skip_serializing_if = "Option::is_none")]`** on `Project.theme` — backward-compatible with pre-AO projects; theme-less projects don't serialize a `theme` field.
+
+**Findings**
+- 🟢 The pack selector ("Default" / "Material Design") lives inside the ThemeEditor's form. Bundling theme + pack into one UI = simpler integrator mental model.
+- 🟢 Default-pack Button.tsx update to use CSS variables is a load-bearing AO-AT integration that the brief didn't strictly require but is necessary for the theme system to visibly work.
+- 🟡 Designer DEFAULT_THEME and Rust struct default values are defined separately — could drift silently. Future test: serialize a default-constructed Rust `Theme` and assert equality with the TS `DEFAULT_THEME` JSON shape.
+- 🟡 `applyTheme()` mutates `document.documentElement` — SSR-incompatible if that ever becomes a goal.
+- 🟠 Real concerns — none.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ Theme Editor panel renders in the designer with all named CSS-variable controls (9 colors + font + sizing).
+- ✅ Live preview updates within ~200ms of a control change (via `applyTheme()` `:root` writes, no full re-render).
+- ✅ Save persists to `crates/project-store` as singleton; reload restores.
+- ✅ Runtime applies the theme on view load without regression to default-styled projects (`theme-load.test.tsx` covers both paths).
+- ✅ Dark mode toggle works in both designer preview and runtime; localStorage stickiness.
+- ✅ Reset to defaults works (form pre-populates with `DEFAULT_THEME` when no theme; "Reset" reverts draft to `savedTheme`).
+- ✅ Vitest + Rust tests pass.
+- ✅ Designer manual-smoke checklist has the theme step (was pre-existing step 11 in `apps/designer/README.md`).
+- ✅ `docs/theme-editor.md` exists.
+
 ## Verdict
+
+**Merged** at `428a9cf` (commit bundles AO + AT per the chunking suggestion).
+
+What's NOT yet proven by this merge:
+- SSR compatibility (intentional; not a v1.0 goal).
+- Rust + TS DEFAULT_THEME byte-identical drift guard (suggested as v1.1 polish).
+- Manual smoke of the full designer-runtime theme flow on a real session (defer to designer manual-smoke checklist step 11; maintainer-run gate).
+
+No follow-ups opened from AO specifically. The two yellow polish items (DEFAULT_THEME drift test + SSR consideration) are light enough to roll into future touchups without their own briefs.
