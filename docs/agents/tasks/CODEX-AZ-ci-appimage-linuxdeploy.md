@@ -94,6 +94,8 @@ If Path B: optionally verify a local `tauri build` (no `--bundles` flag) still p
 
 2026-05-27 codex [gpt-5]: Took Path B. Left the shared designer `build` script unchanged for local/release builds, and changed only the CI Node build step to build all non-designer packages normally, then run `build:vite` plus `tauri build --bundles deb,rpm` for `@openwebhmi/designer`. AppImage remains deferred to release-only/local builds; CI keeps the raw release binary plus deb/rpm packaging and avoids the fragile headless `linuxdeploy` AppImage step. Local verification: `pnpm --filter @openwebhmi/designer tauri build --help` confirmed Tauri v2 exposes `--bundles`; `git diff --check` and `scripts/validate-agent-files` passed.
 
+2026-05-27 codex [gpt-5]: Push CI verification passed on run 26538520080 for commit bd3d006. Node job passed install/typecheck/lint/test and the new `Build packages` step; Rust and validate-agent-files jobs also passed. No AppImage/linuxdeploy failure remained in CI.
+
 ## Claude review
 
 ## Verdict
