@@ -3,9 +3,9 @@ id: CODEX-AZ
 title: ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build)
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-26
-last-update: 2026-05-26 claude [Opus 4.7]
+last-update: 2026-05-27 codex [gpt-5]
 ---
 
 # CODEX-AZ — ci: AppImage bundling fails with 'failed to run linuxdeploy'
@@ -91,6 +91,8 @@ If Path B: optionally verify a local `tauri build` (no `--bundles` flag) still p
 - **The deprecated `actions/checkout@v4` Node 20 warning** is unrelated and stays out of scope (separate brief when v5 ships).
 
 ## Codex log
+
+2026-05-27 codex [gpt-5]: Took Path B. Left the shared designer `build` script unchanged for local/release builds, and changed only the CI Node build step to build all non-designer packages normally, then run `build:vite` plus `tauri build --bundles deb,rpm` for `@openwebhmi/designer`. AppImage remains deferred to release-only/local builds; CI keeps the raw release binary plus deb/rpm packaging and avoids the fragile headless `linuxdeploy` AppImage step. Local verification: `pnpm --filter @openwebhmi/designer tauri build --help` confirmed Tauri v2 exposes `--bundles`; `git diff --check` and `scripts/validate-agent-files` passed.
 
 ## Claude review
 

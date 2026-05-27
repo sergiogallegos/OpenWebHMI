@@ -57,7 +57,12 @@ jobs:
       - run: pnpm -r --if-present typecheck
       - run: pnpm -r --if-present lint
       - run: pnpm -r --if-present test
-      - run: pnpm -r --if-present build
+      # CI packages deb/rpm only; AppImage remains a release/local-build target.
+      - name: Build packages
+        run: |
+          pnpm -r --filter '!@openwebhmi/designer' --if-present build
+          pnpm --filter @openwebhmi/designer build:vite
+          pnpm --filter @openwebhmi/designer tauri build --bundles deb,rpm
 
   validate-agent-files:
     name: validate-agent-files
