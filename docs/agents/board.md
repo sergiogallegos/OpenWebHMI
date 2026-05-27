@@ -8,7 +8,6 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-AZ | ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build) | codex | submitted | 2026-05-27 codex [gpt-5] | [`CODEX-AZ-ci-appimage-linuxdeploy.md`](tasks/CODEX-AZ-ci-appimage-linuxdeploy.md) |
 | CODEX-BA | website refresh — surface AN/AO/AS/AT/AQ/AR features on openwebhmi.com landing + docs + download pages | codex | open | 2026-05-27 claude [Opus 4.7] | [`CODEX-BA-website-refresh.md`](tasks/CODEX-BA-website-refresh.md) |
 
 ### Phase 4 dependency graph
@@ -39,7 +38,7 @@
                 ├── CODEX-AW  gateway WS script-event integration test timeout  ← merged cc2e1f7
                 ├── CODEX-AX  component-library cannot resolve @openwebhmi/protocol  ← merged 47da4ea
                 ├── CODEX-AY  ci: install Tauri Linux build deps in Node job too  ← merged 7505a62
-                └── CODEX-AZ  ci: AppImage bundling fails with 'failed to run linuxdeploy'  ← submitted (Path B taken per Codex log; pending review)
+                └── CODEX-AZ  ci: AppImage bundling fails with 'failed to run linuxdeploy'  ← merged bd3d006 (Path B; 🎉 CI fully green for the first time across AU+AV+AW+AX+AY+AZ)
 
 Website refresh (surface AN..AR features on openwebhmi.com — opened 2026-05-27)
         └── CODEX-BA  website refresh — landing + docs + download pages    ← open (Astro static-site edits only; AppImage clarification post-AZ)
@@ -125,6 +124,7 @@ CI hygiene tasks AU + AV merged at `4e9bc9b`. Each unblocked the job's setup gat
 | CODEX-AT | Material Design widget pack — demo subset proving theme-pack architecture | codex | `428a9cf` | 4 |
 | CODEX-AN | audit-log CFR21 Part 11 framing + tamper-evident hash chain | codex | `66d9e76` | 4 |
 | CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | `823d7a1` | 4 |
+| CODEX-AZ | ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build) | codex | `bd3d006` | 4 |
 
 ## Conventions
 
