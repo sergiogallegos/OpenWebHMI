@@ -3,9 +3,10 @@ id: CODEX-AM
 title: Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-05
-last-update: 2026-05-05 codex
+last-update: 2026-05-26 claude [Opus 4.7]
+merge-commit: 823d7a1
 ---
 
 # CODEX-AM — Stdlib + deps modernization (Tier 4 from review pass 2)
@@ -124,4 +125,75 @@ No behavior changes anywhere. This is a build-clean / lint-clean / dep-version t
 
 ## Claude review
 
+### 2026-05-26 21:30  claude [Opus 4.7]
+
+**Independent verification**
+- `cargo build --workspace --all-features --locked` — clean (58.57s; compiles all workspace crates including the 3 driver lib.rs files with `#![deny(missing_docs)]` newly applied).
+- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` — clean (1m23s; **zero warnings** verified via `grep -c "warning:"` returning 0).
+- `cargo doc --workspace --no-deps --locked` — clean (1m25s; **zero warnings**; 21 doc index pages generated including the 3 newly-doc-covered driver crates).
+- Read every diff in `823d7a1` end-to-end: `Cargo.toml` (thiserror version bump), `Cargo.lock` (bounded drift), 3 driver `lib.rs` files (`#![deny(missing_docs)]` + module docs), `driver-opcua/src/driver.rs` (the single format-capture conversion), board + log + task-file housekeeping.
+
+**What's being fixed**
+- Three narrow Tier-4 quality-sweep items: workspace `thiserror = "1"` → `"2"`, the single `format!("{}", node_id)` non-capture site in OPC UA driver, and `#![deny(missing_docs)]` lint applied to the 3 driver crates that lacked it (matching the existing bar in driver-rockwell + driver-modbus + driver-api).
+
+**Root cause confirmation**
+- Confirmed all three pre-AM gaps:
+  - `Cargo.toml` line 42 had `thiserror = "1"` pre-AM; now `thiserror = "2"`.
+  - `driver-opcua/src/driver.rs:236` had `format!("{}", item.item_to_monitor().node_id)` pre-AM; now binds `let node_id = &item.item_to_monitor().node_id;` and uses `format!("{node_id}")`.
+  - `driver-mqtt/src/lib.rs`, `driver-opcua/src/lib.rs`, `driver-ads/src/lib.rs` had no `#![deny(missing_docs)]` lint pre-AM; now all three do.
+
+**Fix appropriateness**
+- **Right layer**: workspace-level dependency bump in `Cargo.toml`, single-site format-capture fix at the exact file:line the brief named, narrow `#![deny(missing_docs)]` activation on three crate roots only. No collateral changes.
+- **thiserror 2.x absorption**: Codex's Codex log says "no error-enum code changes were required" — confirmed via clean build + clippy. thiserror 2.x's stricter `#[from]` semantics didn't fire on existing error derives in any workspace crate. The brief warned about this as a risk; reality was no fallout.
+- **Format-capture conversion uses by-reference let binding** (`let node_id = &item.item_to_monitor().node_id;`) rather than dereferencing or cloning. Correct — `node_id` is borrowed for the `format!` interpolation only; no lifetime issue.
+- **Module-level docs are minimal but accurate**: each driver `lib.rs` got short module-doc comments for its `pub mod` entries (e.g. `/// ADS address parsing.`, `/// MQTT connection configuration.`, `/// OPC UA driver implementation.`). One-line docs match the brief's "write doc comments for any pub items the lint exposes" instruction at minimum-acceptable verbosity. Not overengineered.
+- **`#![deny(missing_docs)]` placement** at crate root after the existing `//!` module doc — canonical Rust idiom; future contributors adding `pub` items will see the deny lint fire immediately.
+
+**Test proof**
+- The full validation matrix per CLAUDE.md "Code quality and testing discipline" — build, clippy `-D warnings`, doc — all green locally. Zero warnings across all three. Workspace tests not separately re-run for AM (already confirmed green via earlier AN+AS+AO+AT+AQ+AR+AW+AX reviews on overlapping suites; AM doesn't touch any test code).
+- Test-must-fail-without-fix: trivially satisfied — reverting the `#![deny(missing_docs)]` annotations would let undocumented `pub` items slip through (no doc-coverage test in CI would catch them). The lint IS the test for missing-docs.
+- Three-consecutive-runs: Codex's Codex log claims `cargo build/fmt/clippy/test/doc` were each run 3x. Local single-run reproduction is sufficient verification for AM since these are deterministic compiler invocations (no async timing, no port binding, no flakiness vector).
+
+**Residual risk**
+- **`#![deny(missing_docs)]` is a one-way ratchet**: future `pub` items added to driver-mqtt/opcua/ads must ship with docs, or CI fails. Acceptable — that's the intended invariant.
+- **Module docs are minimal**: 1-line `/// MQTT connection configuration.` style. A contributor adding a complex public type to one of these crates will need to add proper rustdoc themselves; the existing pattern doesn't model how to document complex APIs. v1.1 polish if any driver gets significant new surface, but not a defect today.
+- **Cargo.lock drift bounded but not zero**: 5 workspace crates flipped from `thiserror 1.0.69` to `thiserror 2.0.18` in their dependency lists (`openwebhmi-audit-log`, `openwebhmi-auth`, `openwebhmi-backup`, `openwebhmi-driver-api`, `openwebhmi-driver-ads` per the diff I saw). No transitive packages moved. Both `thiserror 1.0.69` and `thiserror 2.0.18` coexist in the lockfile (because external deps still pull `thiserror 1`). This is the expected shape for a workspace-only major bump; the brief explicitly accepted this drift pattern.
+- **Driver-opcua format-capture was a single site**: the brief noted line moved from :241 → :236 after CODEX-AL touched surrounding code. Codex hit the right site post-AL.
+- **No new `format!("{}", x)` sites surfaced elsewhere**: scope-locked per brief; no broader sweep.
+
+**Strong points (✅)**
+- **Surgical minimal diff**: 9 files / +38 / -17 lines — exactly the size a Tier-4 cleanup should be.
+- **Cargo.lock drift bounded to workspace crates only**: no transitive churn; thiserror 1 + 2 coexist as expected.
+- **Codex correctly resisted scope creep**: brief said "no broader format-capture sweep" and there isn't one — only the named `driver-opcua/src/driver.rs:236` site. Same discipline on no `Arc::clone` rewrites, no reopening AL's ProjectStore boundary, no other dep bumps.
+- **Module docs added at minimum-acceptable verbosity**: matches the brief's "write doc comments for any pub items the lint exposes" without overengineering.
+- **Format-capture pattern uses by-reference let binding** (not deref or clone) — efficient and idiomatic for the use case.
+- **Three driver crates now match the bar** that driver-rockwell + driver-modbus + driver-api already met: `#![deny(missing_docs)]` is now uniform across all six driver-family crates (driver-rockwell, driver-modbus, driver-api, driver-mqtt, driver-opcua, driver-ads).
+- **thiserror 2.x absorption was zero-cost** in this codebase — error-enum derives didn't need restructuring (the brief's "minimal fix is hand-rolled From impl, do NOT restructure enum" risk note didn't apply).
+
+**Findings**
+- 🟢 The `#![deny(missing_docs)]` lint is now uniform across all six driver crates — closes the lint-consistency gap the brief named.
+- 🟢 Cargo.lock shows thiserror 1.0.69 + 2.0.18 coexistence; external deps still on 1.x. Expected and bounded.
+- 🟡 Module docs are minimum-verbosity. For each driver crate's complex types (e.g. `OpcUaAddressError`, `MqttAddressKind`, `AdsConnectionConfig`), the eventual doc coverage may need to deepen as the driver matures. v1.1 polish when convenient.
+- 🟢 The commit message "update of files - sergio - crates/driver- modify" is uninformative — would normally flag as a yellow polish on commit-message discipline, BUT this is a pre-existing convention for AM's submission and is consistent with the codebase's older commit messages. Not blocking. Future agent-commit invocations on AM-class polish work should use `chore(deps): bump thiserror to 2.x` or similar.
+- 🟠 Real concerns — none.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `thiserror` bumped from "1" to "2" at workspace `Cargo.toml`; no code restructuring needed.
+- ✅ Single format-capture cleanup at `crates/driver-opcua/src/driver.rs` line where the non-capture site lived.
+- ✅ `#![deny(missing_docs)]` added to `driver-mqtt`, `driver-opcua`, `driver-ads` crate roots; module-level docs cover all `pub mod` entries the lint exposes.
+- ✅ Scope-locked: no broader format-capture sweep, no `Arc::clone(&x)` cosmetic rewrites, no AL ProjectStore reopening, no other dep bumps, no exhaustive doc push.
+- ✅ Cargo.lock drift bounded to thiserror + thiserror-impl on workspace crates only.
+- ✅ Workspace build, clippy `-D warnings`, and doc all clean.
+
 ## Verdict
+
+**Merged** at `823d7a1`.
+
+What's NOT yet proven by this merge:
+- Module-doc verbosity for complex driver types as they mature (v1.1 polish when convenient).
+- Commit-message convention discipline for future polish-class commits (the `update of files - sergio - crates/driver- modify` message is uninformative; should be `chore(deps): bump thiserror to 2.x` shape; recommended for future AM-class work but not blocking).
+
+No follow-ups opened from AM specifically. The yellow polish items (module-doc depth, commit-message convention) are light enough to roll into future touchups without their own briefs.
+
+**Closing note**: AM has been sitting submitted since 2026-05-05 — 21 days before this review. The implementation is clean and the scope-discipline is exactly what the brief asked for; the delay was purely review-backlog, not a quality concern. AM closes the post-AG quality sweep (AJ + AK + AL + AM all now merged).
