@@ -1,6 +1,9 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Logo from "../components/Logo.astro";
+
+const REPO = "https://github.com/sergiogallegos/OpenWebHMI";
+const BLOB = `${REPO}/blob/main`;
 ---
 
 <BaseLayout title="OpenWebHMI">
@@ -124,6 +127,67 @@ import Logo from "../components/Logo.astro";
   </section>
 
   <section class="container section">
+    <h2>v1.x feature highlights</h2>
+    <ul class="scope-list">
+      <li>
+        <strong>Audit-log 21 CFR Part 11 framing:</strong>
+        tamper-evident SHA-256 hash chain, verify CLI, and an engineering
+        coverage map with every clause marked partial or out-of-scope.
+        <a
+          href={`${BLOB}/docs/audit-log-cfr21-mapping.md`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >Read the mapping ↗</a>
+      </li>
+      <li>
+        <strong>Project themes and Material-inspired demo widgets:</strong>
+        light/dark CSS-variable themes plus an opt-in demo pack covering
+        representative controls without changing widget prop contracts.
+        <a
+          href={`${BLOB}/docs/theme-editor.md`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >Theme editor ↗</a>
+        <a
+          href={`${BLOB}/docs/widget-packs.md`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >Widget packs ↗</a>
+      </li>
+      <li>
+        <strong>Historian capacity and retention planning:</strong>
+        SQLite-backed storage with sizing formulas, online backup/restore, and
+        explicit opt-in pruning primitives.
+        <a
+          href={`${BLOB}/docs/historian.md`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >Historian guide ↗</a>
+      </li>
+      <li>
+        <strong>Raspberry Pi 4/5 edge deployment guide:</strong>
+        native Pi build path, systemd unit, reverse-proxy guidance, and honest
+        hardware-smoke boundaries for operator validation.
+        <a
+          href={`${BLOB}/docs/deployment/raspberry-pi.md`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >Pi deployment ↗</a>
+      </li>
+      <li>
+        <strong>Widget export/import between projects:</strong>
+        human-readable <code>.owhmi-widget</code> files, schema-version checks,
+        tag-binding warnings, and regenerated component ids on import.
+        <a
+          href={`${BLOB}/docs/widget-export-import.md`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >Widget transfer ↗</a>
+      </li>
+    </ul>
+  </section>
+
+  <section class="container section">
     <h2>Where we are</h2>
     <ol class="phase-list">
       <li>
@@ -145,7 +209,11 @@ import Logo from "../components/Logo.astro";
       </li>
       <li>
         <span class="badge">In progress</span>
-        Phase 4 — five drivers (Rockwell, OPC UA, Modbus, MQTT/Sparkplug B, Beckhoff ADS), plugin SDK, real-hardware validation gate before 1.0.
+        Phase 4 — five drivers are in place for the v1.0 envelope; the current
+        closeout work is CI hygiene, release packaging, website/docs refresh,
+        and the real-hardware validation gate before 1.0. Recent v1.x
+        additions include audit-log Part 11 framing, themes, widget transfer,
+        historian retention planning, and Raspberry Pi deployment notes.
       </li>
     </ol>
     <p>

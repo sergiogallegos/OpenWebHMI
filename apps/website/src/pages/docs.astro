@@ -55,6 +55,48 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
     ],
   },
   {
+    name: "Features & how-tos",
+    description: "User-facing guides for the v1.x feature sweep and edge deployment notes.",
+    docs: [
+      {
+        title: "Audit log CFR21 mapping",
+        description: "Engineering coverage map for 21 CFR Part 11; every clause is marked partial or out-of-scope, not a legal approval.",
+        href: `${BLOB}/docs/audit-log-cfr21-mapping.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Theme editor",
+        description: "Project-level light/dark theme variables, runtime CSS injection, and component consumption rules.",
+        href: `${BLOB}/docs/theme-editor.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Widget export/import",
+        description: "Move widgets between projects with .owhmi-widget JSON files and deterministic import validation.",
+        href: `${BLOB}/docs/widget-export-import.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Widget packs (Material Design demo)",
+        description: "Opt-in Material-inspired demo pack, fallback behavior, and shared prop-contract rules.",
+        href: `${BLOB}/docs/widget-packs.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Historian capacity + retention",
+        description: "SQLite sizing formulas, backup/restore notes, and opt-in retention pruning primitives.",
+        href: `${BLOB}/docs/historian.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Raspberry Pi deployment",
+        description: "Manual gateway deployment on Pi 4/5 with systemd, storage, networking, and smoke-test guidance.",
+        href: `${BLOB}/docs/deployment/raspberry-pi.md`,
+        audience: "everyone",
+      },
+    ],
+  },
+  {
     name: "For contributors",
     description: "How to add drivers, components, scripts, and how the PR / review workflow runs.",
     docs: [

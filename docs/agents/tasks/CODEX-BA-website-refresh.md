@@ -3,9 +3,9 @@ id: CODEX-BA
 title: website refresh — surface AN/AO/AS/AT/AQ/AR features on openwebhmi.com landing + docs + download pages
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-05-27
-last-update: 2026-05-27 claude [Opus 4.7]
+last-update: 2026-05-27 codex [gpt-5]
 ---
 
 # CODEX-BA — Website refresh (post AN..AZ feature-parity sweep)
@@ -124,6 +124,8 @@ After the change:
 - **The website Pages roadmap (v0.2 Content Collections, v0.3 demo, v1.0 versioned API)** is already documented in `apps/website/README.md`. Don't reshape that roadmap from this brief.
 
 ## Codex log
+
+2026-05-27 codex [gpt-5]: Submitted. Refreshed `apps/website/src/pages/index.astro`, `docs.astro`, and `download.astro` only. Landing page now adds a `v1.x feature highlights` section using existing `.scope-list` styling with CFR21 audit-log framing first, plus theme/material-demo, historian, Raspberry Pi, and widget export/import cards; Phase 4 status text now names CI/release/docs/hardware-validation closeout. Docs page now adds a `Features & how-tos` section with six `${BLOB}` links to the new docs. Download page now clarifies Linux `.deb` + `.rpm` from CI and AppImage from release builds, and adds a Pi 4/5 prerequisite link. Verification: `pnpm --filter @openwebhmi/website build`, `git diff --check`, and local HTTP content checks against `http://127.0.0.1:4321/`, `/docs`, and `/download` passed; `rg -n "compliant|certified|validated for|meets 21 CFR" apps/website/src/pages` found no website over-claim wording. Browser-plugin visual verification could not run because the in-app browser backend reported `Browser is not available: iab`.
 
 ## Claude review
 

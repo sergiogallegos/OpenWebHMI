@@ -1,5 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const REPO = "https://github.com/sergiogallegos/OpenWebHMI";
+const BLOB = `${REPO}/blob/main`;
 ---
 
 <BaseLayout
@@ -35,6 +38,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <li>
           <strong>Tauri prerequisites</strong> for the desktop designer.
           <a href="https://tauri.app/start/prerequisites/" target="_blank" rel="noopener noreferrer">Tauri docs ↗</a>
+        </li>
+        <li>
+          <strong>Raspberry Pi 4 / 5</strong> with 64-bit Raspberry Pi OS
+          Bookworm for edge gateway deployments.
+          <a
+            href={`${BLOB}/docs/deployment/raspberry-pi.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >Pi deployment guide ↗</a>
         </li>
       </ul>
     </section>
@@ -73,8 +85,8 @@ cargo build --workspace</code></pre>
       <ul class="future">
         <li>
           <strong>Gateway installers</strong>: macOS <code>.pkg</code>,
-          Linux <code>.deb</code>/<code>.rpm</code>, Windows MSI, and a
-          Docker image.
+          Linux <code>.deb</code> + <code>.rpm</code> from CI builds,
+          AppImage from release builds, Windows MSI, and a Docker image.
         </li>
         <li>
           <strong>Designer installers</strong>: Tauri-bundled
