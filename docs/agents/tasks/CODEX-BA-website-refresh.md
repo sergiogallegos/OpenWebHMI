@@ -3,9 +3,10 @@ id: CODEX-BA
 title: website refresh — surface AN/AO/AS/AT/AQ/AR features on openwebhmi.com landing + docs + download pages
 owner: codex
 phase: 4
-status: submitted
+status: merged
 created: 2026-05-27
-last-update: 2026-05-27 codex [gpt-5]
+last-update: 2026-05-29 claude [Opus 4.7]
+merge-commit: a7ba50a
 ---
 
 # CODEX-BA — Website refresh (post AN..AZ feature-parity sweep)
@@ -129,4 +130,77 @@ After the change:
 
 ## Claude review
 
+### 2026-05-29 18:00  claude [Opus 4.7]
+
+**Independent verification**
+- `pnpm --filter @openwebhmi/website build` — clean (Astro + `astro check` exit 0; 5 pages built in 617ms).
+- `git show a7ba50a` — read all three modified page files end-to-end (`index.astro` +70 lines, `docs.astro` +42 lines, `download.astro` +16 lines).
+- `rg -n "compliant|certified|validated for|meets 21 CFR" apps/website/src/pages` — **zero matches** (independently confirmed Codex's claim — no website over-claim wording made it through).
+- `rg -n "Material-inspired|Material Design demo" apps/website/src/pages` — both phrasings present, no "MD3-compliant" claim.
+- `rg -n "hardware smoke|operator validation" apps/website/src/pages` — Pi disclaimer honored.
+
+**What's being fixed**
+- The public-facing Astro site at `openwebhmi.com` was last touched 2026-05-25 (commit `1f36e6b`), before the v1.x feature-parity sweep landed. Six new features and their canonical docs had no surface on the marketing site.
+
+**Root cause confirmation**
+- Confirmed: pre-BA `index.astro` had no "v1.x feature highlights" section; `docs.astro` `sections` array had only "Project overview", "For contributors", "For AI agents"; `download.astro` Linux installer line said only ".deb/.rpm" with no AppImage clarification post-AZ.
+
+**Fix appropriateness**
+- **Right pages, right scope**: index + docs + download modified; about + 404 unchanged per brief. No README or repo-side doc changes.
+- **No new dependencies, no new components, no new CSS classes** — reuses `.scope-list` for the new feature-highlights section (the brief explicitly named this pattern as acceptable). Honors "Static-first, no JS framework runtime" rationale documented in the site's own README.
+- **`${BLOB}` template consistently used** for all 6 + 1 new GitHub links (matches the existing `docs.astro` convention).
+- **Phase 4 status text rewrite** is accurate and tightened: "five drivers are in place for the v1.0 envelope; the current closeout work is CI hygiene, release packaging, website/docs refresh, and the real-hardware validation gate before 1.0. Recent v1.x additions include audit-log Part 11 framing, themes, widget transfer, historian retention planning, and Raspberry Pi deployment notes." Names the actual current state without overpromising.
+- **Card order on the landing page** leads with the CFR21 audit-log — exactly what the brief asked for ("pharma/medical/food-safety procurement starts with audit-log compliance").
+
+**Test proof**
+- Astro build is the verification per the brief; 5/5 pages built clean; no type errors.
+- Codex's HTTP content checks against `127.0.0.1:4321/`, `/docs`, `/download` passed locally.
+- Codex's `rg` honesty audit found no over-claim wording — I re-ran the same audit + an extended one (`Material-inspired` + `hardware smoke|operator validation`) and confirmed.
+- Browser visual verification not run (Codex noted this honestly: "Browser is not available: iab"). Acceptable — Cloudflare Workers will auto-deploy this commit and preview-URL render is the final visual gate.
+
+**Residual risk**
+- **Cloudflare Workers auto-deploys on push to main**, so the live site updates immediately. The Astro build is green, so the deploy should succeed; if the rendered site has visual layout issues with the new section, the maintainer would need to spot them post-deploy. Browser-visual verification deferred per Codex's honest "iab not available" disclosure.
+- **The 5 new landing-page cards each have an external `↗` link.** Search engine crawlers count these as outbound; not a problem for v1.x marketing scope, but if Astro Content Collections lands in v0.2 (per site README's own roadmap), the same content could become internal pages.
+- **No screenshot in the repo** to show what the new layout looks like; the visual will only be verifiable once the Cloudflare preview / production URL renders. Standard for the project's iterate-on-push convention.
+- **No new docs/agents/notes/ file** to capture the honesty conventions (CFR21 framing, Material-inspired framing, Pi disclaimer) as a durable reference for future website touches. Codex flagged the conventions in the Codex log inline; a future v1.1 polish could lift these into `docs/agents/notes/website-honesty-conventions.md`.
+
+**Strong points (✅)**
+- **CFR21 framing is gold-standard honest**: card text says "tamper-evident SHA-256 hash chain, verify CLI, and an engineering coverage map with every clause marked partial or out-of-scope." Matches the doc's own "engineering coverage map, not a legal certification" discipline exactly. NO "compliant" or "certified" anywhere on the website — Codex's rg audit confirms this independently.
+- **"Material-inspired demo widgets"** — matches the AT verdict's reframing recommendation precisely. Brief's risk note ("'Material Design' framing is also load-bearing") fully honored.
+- **Raspberry Pi card says "honest hardware-smoke boundaries for operator validation"** — explicit acknowledgement that the doc itself is honest about not being hardware-verified. Brief's risk note honored.
+- **Three pages, three small focused edits** — no scope creep into about.astro, 404.astro, README.md, or repo-side docs. AS/AT pattern of "minimum diff that satisfies the contract" continues.
+- **Phase 4 description honestly says "real-hardware validation gate before 1.0"** — doesn't claim the gate is passed.
+- **Reuses `.scope-list` styling** — no new CSS, no new components. Site stays static, fast, low-spec-browser-friendly per its own design rationale.
+- **Codex's rg-based honesty self-audit in the Codex log** ("`rg -n "compliant|certified|validated for|meets 21 CFR" apps/website/src/pages` found no website over-claim wording") is exactly the discipline the brief asked for. Documented proactively rather than waiting for review to find it.
+- **Browser-visual not run, honestly disclosed**: "Browser is not available: iab" — names the specific environment limitation rather than claiming visual verification succeeded.
+
+**Findings**
+- 🟢 The card-link styling (text link with `↗` arrow after the bullet content) reuses the existing pattern from the "Want to follow along?" CTA section. Visually consistent.
+- 🟢 The Phase 4 text rewrite names "website/docs refresh" as part of the closeout — meta-acknowledges that BA itself is part of the closeout. Self-referential but accurate.
+- 🟡 No `docs/agents/notes/website-honesty-conventions.md` to capture the CFR21/Material/Pi framing rules for future website touches. v1.1 polish if the website gets significant content edits again.
+- 🟡 Browser visual not verified; deferred to Cloudflare preview render. If layout breaks visually but the Astro build passes, the maintainer would need to catch it post-deploy. Low likelihood given the reused `.scope-list` styling.
+- 🟠 Real concerns — none.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+- ✅ `index.astro`: "Where we are" Phase 4 bullet refreshed; new "v1.x feature highlights" section with **5 cards** (brief said 4-6; Codex picked 5 by bundling themes + Material into one card). CFR21 is the first card.
+- ✅ `docs.astro`: new "Features & how-tos" section with 6 `DocLink` entries pointing at canonical `docs/*.md` files.
+- ✅ `download.astro`: AppImage line clarified ("Linux .deb + .rpm from CI builds, AppImage from release builds"); Pi prerequisite added.
+- ✅ `about.astro` unchanged.
+- ✅ `pnpm --filter @openwebhmi/website build` exits 0.
+- ✅ No new dependencies in `apps/website/package.json`.
+- ✅ No new CSS classes; reuses `.scope-list`.
+- ✅ All new GitHub links use `${BLOB}` template.
+
 ## Verdict
+
+**Merged** at `a7ba50a`. **Phase 4 fully closed** with this merge (Website refresh was the last open task).
+
+What's NOT yet proven by this merge:
+- Visual layout in the deployed Cloudflare preview/production (auto-deploys on push; verifiable post-merge by visiting `openwebhmi.com`).
+- Lighthouse score impact on the landing page from the added 5 cards (low likelihood of regression; the cards are pure HTML/CSS with no JS).
+- Long-term docs.astro maintenance pattern as more features ship — the `sections` array data-driven approach scales naturally, but at v1.x+10 features the page may benefit from grouping or a sub-index.
+
+No follow-ups opened from BA specifically. Two yellow polish items (no `docs/agents/notes/website-honesty-conventions.md`, no browser-visual gate) are light enough to roll into future touchups without their own briefs.
+
+**Closing note**: BA closes the post-AN..AT marketing-surface sync and completes Phase 4 (quality follow-ups AJ/AK/AL/AM + feature-parity AN/AO/AQ/AR/AS/AT + CI hygiene AU/AV/AW/AX/AY/AZ + website BA — all 22 tasks merged, AP rejected for VISION.md scope discipline). The honesty discipline — CFR21 framing without "compliant" claims, Material-inspired without MD3 claims, Pi documented without hardware-claims — held cleanly from brief to docs to website. That's the procurement-grade Honesty rule applied end-to-end across the surface.
