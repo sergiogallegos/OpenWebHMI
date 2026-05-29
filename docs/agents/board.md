@@ -8,6 +8,7 @@
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
+| CODEX-BB | Rust 1.96 toolchain bump — 1.95.0 → 1.96.0 + one assert_matches! example conversion | codex | open | 2026-05-29 claude [Opus 4.7] | [`CODEX-BB-rust-1.96-toolchain-bump.md`](tasks/CODEX-BB-rust-1.96-toolchain-bump.md) |
 
 ### Phase 4 dependency graph
 
@@ -41,6 +42,9 @@
 
 Website refresh (surface AN..AR features on openwebhmi.com — opened 2026-05-27)
         └── CODEX-BA  website refresh — landing + docs + download pages    ← merged a7ba50a (🎉 closes Phase 4 — all 22 in-flight tasks merged + AP rejected for VISION scope)
+
+Tier 5 mechanical cleanups (drift-on-bump — opened 2026-05-29)
+        └── CODEX-BB  Rust 1.96 toolchain bump + one assert_matches! example  ← open (mirrors CODEX-AM shape; scope-locked)
 ```
 
 Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.
