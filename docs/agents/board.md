@@ -9,6 +9,42 @@
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
 | CODEX-BB | Rust 1.96 toolchain bump — 1.95.0 → 1.96.0 + one assert_matches! example conversion | codex | open | 2026-05-29 claude [Opus 4.7] | [`CODEX-BB-rust-1.96-toolchain-bump.md`](tasks/CODEX-BB-rust-1.96-toolchain-bump.md) |
+| CODEX-BC | Identifier sanitization at the ProjectStore boundary — close path-traversal / arbitrary file R/W | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BC-identifier-sanitization.md`](tasks/CODEX-BC-identifier-sanitization.md) |
+| CODEX-BD | Refuse to boot without an explicit JWT signing secret — remove the hardcoded fallback | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BD-jwt-secret-boot-refusal.md`](tasks/CODEX-BD-jwt-secret-boot-refusal.md) |
+| CODEX-BE | Backup HTTP side-channel hardening — pre-auth body cap, header-first auth, TLS parity | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BE-backup-http-hardening.md`](tasks/CODEX-BE-backup-http-hardening.md) |
+| CODEX-BF | Server-authoritative tag-write authorization — replace client-steerable view ACL | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BF-server-authoritative-write-acl.md`](tasks/CODEX-BF-server-authoritative-write-acl.md) |
+| CODEX-BG | Auth + connection hardening — login rate-limit/lockout, connection caps, message/subscription limits | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BG-auth-rate-limit-conn-caps.md`](tasks/CODEX-BG-auth-rate-limit-conn-caps.md) |
+| CODEX-BH | Audit hash-chain tamper-evidence — HMAC keyed digest + external anchor option | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BH-audit-hmac-hash-chain.md`](tasks/CODEX-BH-audit-hmac-hash-chain.md) |
+| CODEX-BI | Gateway driver dispatch — route driver_type to the correct driver and adopt DriverSupervisor | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BI-gateway-driver-dispatch.md`](tasks/CODEX-BI-gateway-driver-dispatch.md) |
+| CODEX-BJ | DriverUpdate connection-state signal — distinguish one bad tag from a lost connection | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BJ-driverupdate-connection-state.md`](tasks/CODEX-BJ-driverupdate-connection-state.md) |
+| CODEX-BK | Rockwell rust-ethernet-ip 0.7 → 1.2 upgrade + target-type-aware writes | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BK-rockwell-ethernet-ip-1.2-typed-writes.md`](tasks/CODEX-BK-rockwell-ethernet-ip-1.2-typed-writes.md) |
+| CODEX-BL | MQTT driver event-loop resilience — survive broker hiccups, propagate Bad on loss | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BL-mqtt-eventloop-resilience.md`](tasks/CODEX-BL-mqtt-eventloop-resilience.md) |
+| CODEX-BM | ADS notification fan-out fix — stop MPMC sample theft across subscriptions | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BM-ads-notification-fanout.md`](tasks/CODEX-BM-ads-notification-fanout.md) |
+| CODEX-BN | ADS write range-checking — reject out-of-range integers instead of silent truncation | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BN-ads-write-range-checking.md`](tasks/CODEX-BN-ads-write-range-checking.md) |
+| CODEX-BO | Modbus robustness — hostname/DNS, per-request timeouts, bounds-checked decode | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BO-modbus-hostname-timeout-bounds.md`](tasks/CODEX-BO-modbus-hostname-timeout-bounds.md) |
+| CODEX-BP | OPC UA driver correctness + security — dead-session detect, subscription cleanup, security config, addressing | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BP-opcua-correctness-security.md`](tasks/CODEX-BP-opcua-correctness-security.md) |
+| CODEX-BQ | Sparkplug B conformance — signed-int datatype decode, DEATH stale-marking, command writes | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BQ-sparkplug-conformance.md`](tasks/CODEX-BQ-sparkplug-conformance.md) |
+| CODEX-BR | Atomic artifact writes — real rename atomicity, fsync, non-colliding temp files | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BR-atomic-artifact-writes.md`](tasks/CODEX-BR-atomic-artifact-writes.md) |
+| CODEX-BS | Explicit memory-tag namespace + honest write results for unknown drivers | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BS-memory-tag-namespace-write-honesty.md`](tasks/CODEX-BS-memory-tag-namespace-write-honesty.md) |
+| CODEX-BT | Reconnect write-queue safety — don't replay stale operator setpoints after reconnect | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BT-reconnect-write-queue-safety.md`](tasks/CODEX-BT-reconnect-write-queue-safety.md) |
+| CODEX-BU | Gateway lifecycle hardening — non-fatal accept, reliable RPC replies, WS keepalive, backup-download TTL sweep | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BU-gateway-lifecycle-hardening.md`](tasks/CODEX-BU-gateway-lifecycle-hardening.md) |
+| CODEX-BV | Config-driven data paths — stop hardcoding sqlite files into the working directory | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BV-config-driven-data-paths.md`](tasks/CODEX-BV-config-driven-data-paths.md) |
+| CODEX-BW | Tag-engine scaling — sharded locking, slot GC, update coalescing for thousands of sub-second tags | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BW-tag-engine-scaling.md`](tasks/CODEX-BW-tag-engine-scaling.md) |
+| CODEX-BX | Gateway service-context refactor — replace process-global OnceLock singletons, split handle_connection | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BX-gateway-service-context-refactor.md`](tasks/CODEX-BX-gateway-service-context-refactor.md) |
+| CODEX-BY | Runtime error boundaries — one throwing widget must not blank the operator HMI | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BY-runtime-error-boundaries.md`](tasks/CODEX-BY-runtime-error-boundaries.md) |
+| CODEX-BZ | Gateway client robustness — socket teardown, write/ack feedback, request timeouts, error correlation | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BZ-gateway-client-robustness.md`](tasks/CODEX-BZ-gateway-client-robustness.md) |
+| CODEX-CA | Alarm subscription lifecycle — add alarm.unsubscribe, stop re-subscribe churn | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CA-alarm-subscription-lifecycle.md`](tasks/CODEX-CA-alarm-subscription-lifecycle.md) |
+| CODEX-CB | Runtime subscription + render architecture — scale to hundreds of sub-second tags | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CB-runtime-subscription-render-scaling.md`](tasks/CODEX-CB-runtime-subscription-render-scaling.md) |
+| CODEX-CC | Designer editing integrity — script-source cross-contamination, uneditable JSON props, input races, reconnect | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CC-designer-editing-integrity.md`](tasks/CODEX-CC-designer-editing-integrity.md) |
+| CODEX-CD | Component theming + accessibility — CSS-variable adoption, configurable labels, keyboard/switch semantics | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CD-component-theming-accessibility.md`](tasks/CODEX-CD-component-theming-accessibility.md) |
+| CODEX-CE | Alarm deadband/hysteresis + on/off delay — stop analog-alarm chattering | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CE-alarm-deadband-delay.md`](tasks/CODEX-CE-alarm-deadband-delay.md) |
+| CODEX-CF | Alarm ack state-machine fix — ack re-evaluates, no stuck-active on a stalled tag, no spurious transitions | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CF-alarm-ack-state-machine.md`](tasks/CODEX-CF-alarm-ack-state-machine.md) |
+| CODEX-CG | Historian read-path SQL downsampling — bucket server-side instead of loading all raw rows | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CG-historian-sql-downsampling.md`](tasks/CODEX-CG-historian-sql-downsampling.md) |
+| CODEX-CH | Audit query SQL pushdown — filter/paginate in SQL using the existing indexes | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CH-audit-query-sql-pushdown.md`](tasks/CODEX-CH-audit-query-sql-pushdown.md) |
+| CODEX-CI | Docs-vs-code reconciliation — make architecture.md / README / feature-matrix match the shipped surface | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CI-docs-code-reconciliation.md`](tasks/CODEX-CI-docs-code-reconciliation.md) |
+| CODEX-CJ | Gateway observability — /health + /metrics endpoints and optional structured logging | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CJ-gateway-observability.md`](tasks/CODEX-CJ-gateway-observability.md) |
+| CODEX-CK | CI hardening — multi-platform matrix, --all-features alignment, supply-chain gate, release workflow | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CK-ci-hardening.md`](tasks/CODEX-CK-ci-hardening.md) |
+| CODEX-CL | Scripting system.* library gap — implement or formally defer the documented RPC surface + triggers | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CL-scripting-system-library-gap.md`](tasks/CODEX-CL-scripting-system-library-gap.md) |
 
 ### Phase 4 dependency graph
 
@@ -46,6 +82,65 @@ Website refresh (surface AN..AR features on openwebhmi.com — opened 2026-05-27
 Tier 5 mechanical cleanups (drift-on-bump — opened 2026-05-29)
         └── CODEX-BB  Rust 1.96 toolchain bump + one assert_matches! example  ← open (mirrors CODEX-AM shape; scope-locked)
 ```
+
+### v1.0 hardening backlog (whole-repo review — opened 2026-07-12)
+
+A whole-repo review (five parallel review passes: core runtime, drivers, services/security, frontend, architecture) opened **36 tasks (BC..CL)**. The full validation matrix was green at review time — every finding below is latent, not caught by the existing suite. Priority tiers (business/risk order, not dependency order):
+
+```
+Tier 1 — Security (v1.0 blockers; small contained fixes; ship first)
+        ├── CODEX-BC  ProjectStore identifier sanitization (path traversal → arbitrary file R/W)   ← CRITICAL
+        ├── CODEX-BD  refuse to boot without an explicit JWT secret (kill hardcoded fallback)       ← CRITICAL
+        ├── CODEX-BE  backup HTTP hardening (pre-auth body cap + header-first auth + TLS parity)     ← CRITICAL
+        ├── CODEX-BF  server-authoritative write ACL (replace client-steerable view ACL)             ← HIGH
+        ├── CODEX-BG  auth + connection hardening (login rate-limit/lockout, conn/message caps)       ← HIGH
+        └── CODEX-BH  audit hash-chain HMAC keyed digest (tamper-evidence vs DB-write attacker)       ← HIGH (CFR21)
+
+Tier 2 — Drivers (unblock the Phase-4 driver investment + the pre-1.0 hardware-soak gate)
+        ├── CODEX-BI  gateway driver dispatch — the gateway currently only speaks Rockwell; the merged
+        │             Modbus/OPC UA/MQTT/ADS drivers are UNREACHABLE and DriverSupervisor is dead code  ← HIGH (headline)
+        ├── CODEX-BJ  DriverUpdate connection-state signal (one bad tag ≠ disconnect) — contract; land before BI wires more drivers
+        ├── CODEX-BK  Rockwell rust-ethernet-ip 0.7 → 1.2 upgrade + typed writes (DINT/INT/SINT/LINT/REAL/LREAL)  ← HIGH (hardware-gate)
+        ├── CODEX-BL  MQTT event-loop resilience (one poll error permanently freezes tags as healthy)   ← CRITICAL
+        ├── CODEX-BM  ADS notification fan-out (MPMC channel steals ~50% of concurrent-sub samples)      ← CRITICAL
+        ├── CODEX-BN  ADS write range-checking (silent integer truncation on write)                     ← HIGH
+        ├── CODEX-BO  Modbus hostname/DNS + per-request timeout + bounds-checked decode                 ← HIGH
+        ├── CODEX-BP  OPC UA correctness + security (dead-session, subscription leak, security off)     ← HIGH
+        └── CODEX-BQ  Sparkplug B conformance (signed-int decode, DEATH stale-marking, command writes)  ← MEDIUM
+
+Tier 3 — Gateway data integrity & robustness
+        ├── CODEX-BR  atomic artifact writes (pre-remove defeats rename atomicity; no fsync)
+        ├── CODEX-BS  memory-tag namespace + honest write results (unknown-driver writes phantom-succeed)
+        ├── CODEX-BT  reconnect write-queue safety (stale operator setpoints replayed to PLC on reconnect — SCADA safety)
+        ├── CODEX-BU  gateway lifecycle hardening (fatal accept, dropped RPC replies, no keepalive, download leak)
+        └── CODEX-BV  config-driven data paths (historian/alarm sqlite hardcoded into cwd)
+
+Tier 4 — Scalability (before the performance-baseline milestone)
+        ├── CODEX-BW  tag-engine scaling (single global lock, immortal slots, task-per-(conn×tag))
+        └── CODEX-BX  gateway service-context refactor (process-global singletons, 900-line dispatch, unordered audit spawn)
+
+Tier 5 — Frontend
+        ├── CODEX-BY  runtime error boundaries (one throwing widget blanks the whole HMI)               ← HIGH
+        ├── CODEX-BZ  gateway client robustness (zombie sockets, silent write drops, dangling requests)  ← HIGH
+        ├── CODEX-CA  alarm subscription lifecycle (no alarm.unsubscribe; re-subscribe churn)            ← HIGH
+        ├── CODEX-CB  runtime subscription + render architecture (whole-tree re-render per tag update)   ← HIGH (refactor)
+        ├── CODEX-CC  designer editing integrity (script-source cross-contamination + uneditable JSON props)  ← HIGH
+        └── CODEX-CD  component theming + accessibility (default pack ignores theme vars; generic aria-labels)
+
+Tier 6 — SCADA feature parity (integrator blockers vs Ignition / FactoryTalk)
+        ├── CODEX-CE  alarm deadband/hysteresis + on/off delay (analog-alarm chattering)
+        ├── CODEX-CF  alarm ack state-machine fix (ack leaves a normalized alarm stuck Active)
+        ├── CODEX-CG  historian read-path SQL downsampling (loads all raw rows before downsampling)
+        └── CODEX-CH  audit query SQL pushdown (full-table load + Rust-side filter, indexes unused)
+
+Tier 7 — Docs / ops / CI (honesty + operability)
+        ├── CODEX-CI  docs-vs-code reconciliation (docs claim PyO3 + system.alarm/db/http + sandbox + UDTs the code lacks)
+        ├── CODEX-CJ  gateway observability (/health + /metrics + optional structured logging)
+        ├── CODEX-CK  CI hardening (single-platform, no --all-features, no cargo-deny, no release workflow)
+        └── CODEX-CL  scripting system.* library gap (implement-or-defer the documented RPC surface + triggers; pairs with CI)
+```
+
+Cross-task coordination flagged in the briefs: **BW + BX** both edit `crates/gateway/src/server.rs`; **BZ + CA** both extend the `crates/protocol` + `packages/protocol-ts` pair (non-overlapping additions, same-commit sync); **BC + BE** both touch the backup restore path (BC owns manifest identifier validation, BE owns transport/resource hardening); **BH** reuses **BD**'s secret-provisioning shape; **CI + CL** are paired (CL decides implement-vs-defer per item, CI keeps the docs honest to that decision). Incidental finding for a future cleanup: `Cargo.toml` declares `pyo3 = "0.22"` as a workspace dep that no crate consumes (scripting is a subprocess, not PyO3).
 
 Feature-parity sweep tasks are **independent** of each other (except for AN→AP audit coverage and AO→AT CSS-variable sharing noted in the briefs); they can run in any order Codex prefers. Priority order in the table reflects business value, not dependency order.
 
