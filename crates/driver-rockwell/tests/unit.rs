@@ -27,8 +27,12 @@ async fn read_maps_real_value() {
 
 #[tokio::test]
 async fn write_maps_each_openwebhmi_value_variant() {
-    let mock = MockEipClient::default();
-    mock.push_read(Ok(PlcValue::String("old".to_string())));
+    let mock = MockEipClient::with_values(HashMap::from([
+        ("BoolTag".to_string(), PlcValue::Bool(false)),
+        ("DintTag".to_string(), PlcValue::Dint(0)),
+        ("RealTag".to_string(), PlcValue::Real(0.0)),
+        ("StringTag".to_string(), PlcValue::String("old".to_string())),
+    ]));
     let driver = RockwellDriver::with_client(Box::new(mock.clone()), RockwellConfig::default());
 
     driver
@@ -54,8 +58,11 @@ async fn write_maps_each_openwebhmi_value_variant() {
     assert_eq!(
         mock.calls(),
         vec![
+            RecordedCall::Read("BoolTag".to_string()),
             RecordedCall::Write("BoolTag".to_string(), PlcValue::Bool(true)),
+            RecordedCall::Read("DintTag".to_string()),
             RecordedCall::Write("DintTag".to_string(), PlcValue::Dint(42)),
+            RecordedCall::Read("RealTag".to_string()),
             RecordedCall::Write("RealTag".to_string(), PlcValue::Real(1.25)),
             RecordedCall::Read("StringTag".to_string()),
             RecordedCall::Write("StringTag".to_string(), PlcValue::String("new".to_string())),
@@ -64,7 +71,27 @@ async fn write_maps_each_openwebhmi_value_variant() {
 }
 
 #[tokio::test]
-async fn string_write_uses_read_before_write_workaround_path() {
+async fn write_uses_the_target_plc_integer_type() {
+    let mock =
+        MockEipClient::with_values(HashMap::from([("SintTag".to_string(), PlcValue::Sint(0))]));
+    let driver = RockwellDriver::with_client(Box::new(mock.clone()), RockwellConfig::default());
+
+    driver
+        .write(&TagAddress::new("SintTag"), TagValue::Int(100))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        mock.calls(),
+        vec![
+            RecordedCall::Read("SintTag".to_string()),
+            RecordedCall::Write("SintTag".to_string(), PlcValue::Sint(100)),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn string_write_discovers_target_type_before_write() {
     let mock = MockEipClient::default();
     mock.push_read(Ok(PlcValue::String("old".to_string())));
     let driver = RockwellDriver::with_client(Box::new(mock.clone()), RockwellConfig::default());

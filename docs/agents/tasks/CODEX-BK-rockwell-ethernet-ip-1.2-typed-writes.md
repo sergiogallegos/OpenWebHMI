@@ -3,9 +3,9 @@ id: CODEX-BK
 title: Rockwell rust-ethernet-ip 0.7 → 1.2 upgrade + target-type-aware writes
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-07-12
-last-update: 2026-07-12 claude [Fable 5]
+last-update: 2026-08-25 codex [gpt-5]
 ---
 
 # CODEX-BK — Rockwell `rust-ethernet-ip` 0.7 → 1.2 upgrade + typed writes
@@ -99,6 +99,16 @@ last-update: 2026-07-12 claude [Fable 5]
 - **Honesty.** State plainly that hardware validation (real CompactLogix INT/SINT/LINT/LREAL writes) is deferred to the maintainer soak — the mock proves encoding, not the on-wire CIP exchange.
 
 ## Codex log
+
+### 2026-08-25 12:32 codex [gpt-5]
+
+Started from the maintainer's request to update the full compatible Cargo dependency set and move `rust-ethernet-ip` to 1.2.1. The broad `cargo update` intentionally supersedes this brief's bounded-lockfile restriction; other workspace `=` pins remain fixed by their manifest constraints. Target-type discovery will use the typed `PlcValue` returned by a pre-write read because 1.2.1 does not expose a cheaper per-tag type query on the maintained client path.
+
+### 2026-08-25 12:44 codex [gpt-5]
+
+Submitted as an uncommitted working-tree diff. Updated `rust-ethernet-ip` 0.7.0 to 1.2.1 and refreshed all Cargo.lock packages allowed by the existing manifest constraints (204 packages changed at the maintainer's direction). Adapted removed/non-exhaustive upstream error and tag-group enums. Writes now read the current PLC value to discover its scalar type, encode signed and unsigned integers with checked conversions, preserve LREAL precision, and reject value/type mismatches before writing. The version migration and typed-write fix were mechanically separable, but the shared 1.2.1 validation exposed a simulator requirement to echo the encapsulation sender context; the simulator now does so.
+
+Regression proof: the new target-type write test failed before the fix with `[Write("SintTag", Dint(100))]` instead of `[Read("SintTag"), Write("SintTag", Sint(100))]`. Verification passed: `cargo build --workspace --all-features --locked`; `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`; `cargo test --workspace --all-features --locked`; `cargo doc --workspace --no-deps --locked`; `cargo fmt --check`; `scripts/validate-agent-files`; dependency metadata license scan; and three consecutive `cargo test -p sim-rockwell --test eip_client --locked` runs. The Rockwell crate tests and clippy were rerun after the final unsigned-range assertions. Real CompactLogix/ControlLogix validation remains deferred to the maintainer's pre-1.0 hardware gate. The pnpm matrix was not run because this checkout has no installed JS workspace dependencies; no TypeScript source or lockfile changed.
 
 ## Claude review
 

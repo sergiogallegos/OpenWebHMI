@@ -11,9 +11,7 @@ use openwebhmi_driver_api::{
     TagNode, make_metadata,
 };
 use openwebhmi_protocol::{Quality, TagValue};
-use rust_ethernet_ip::{
-    EtherNetIpError, PlcValue, TagGroupEvent, TagGroupEventKind, TagGroupValueResult,
-};
+use rust_ethernet_ip::{EtherNetIpError, TagGroupEvent, TagGroupEventKind, TagGroupValueResult};
 use tokio::sync::Mutex;
 
 use crate::config::RockwellConfig;
@@ -93,11 +91,8 @@ impl Driver for RockwellDriver {
     async fn write(&self, address: &TagAddress, value: TagValue) -> DriverResult<()> {
         let client = self.client()?;
         let mut guard = client.lock().await;
-        let plc_value = tag_to_plc_value(value)?;
-
-        if matches!(plc_value, PlcValue::String(_)) {
-            let _current = guard.read_tag(&address.raw).await.map_err(map_eip_error)?;
-        }
+        let current = guard.read_tag(&address.raw).await.map_err(map_eip_error)?;
+        let plc_value = tag_to_plc_value(value, Some(&current))?;
 
         guard
             .write_tag(&address.raw, plc_value)
@@ -180,7 +175,7 @@ pub(crate) fn event_to_updates(
             .into_iter()
             .filter_map(|value| map_value_result(value, event.snapshot.sampled_at))
             .collect(),
-        TagGroupEventKind::ReadFailure => {
+        _ => {
             let ts_ms = system_time_ms(event.snapshot.sampled_at);
             requested
                 .iter()
@@ -259,8 +254,6 @@ pub(crate) fn map_eip_error(error: EtherNetIpError) -> DriverError {
         },
         EtherNetIpError::WriteError { status, message }
         | EtherNetIpError::ReadError { status, message }
-        | EtherNetIpError::StringWriteError { status, message }
-        | EtherNetIpError::StringReadError { status, message }
         | EtherNetIpError::CipError {
             code: status,
             message,
@@ -270,12 +263,13 @@ pub(crate) fn map_eip_error(error: EtherNetIpError) -> DriverError {
         },
         EtherNetIpError::StringTooLong { .. }
         | EtherNetIpError::InvalidString { .. }
-        | EtherNetIpError::InvalidStringResponse { .. }
         | EtherNetIpError::Protocol(_)
         | EtherNetIpError::InvalidResponse { .. }
         | EtherNetIpError::Subscription(_)
         | EtherNetIpError::Utf8(_)
-        | EtherNetIpError::Other(_) => DriverError::Other(anyhow::anyhow!(error)),
+        | EtherNetIpError::Other(_)
+        | EtherNetIpError::Unsupported { .. } => DriverError::Other(anyhow::anyhow!(error)),
+        _ => DriverError::Other(anyhow::anyhow!(error)),
     }
 }
 

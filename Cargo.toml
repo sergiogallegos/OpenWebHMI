@@ -68,4 +68,4 @@ prost = "=0.13.5"
 jsonpath-rust = "=1.0.4"
 ads = "=0.4.4"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
-rust-ethernet-ip = "0.7"
+rust-ethernet-ip = "1.2.1"

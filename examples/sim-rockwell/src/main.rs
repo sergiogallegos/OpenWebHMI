@@ -107,6 +107,8 @@ async fn handle_connection(mut stream: TcpStream, tags: Arc<Mutex<TagMap>>) -> a
         let command = u16::from_le_bytes([header[0], header[1]]);
         let length = u16::from_le_bytes([header[2], header[3]]) as usize;
         let session_handle = u32::from_le_bytes([header[4], header[5], header[6], header[7]]);
+        let mut sender_context = [0_u8; 8];
+        sender_context.copy_from_slice(&header[12..20]);
 
         let mut payload = vec![0_u8; length];
         if length > 0 {
@@ -114,10 +116,15 @@ async fn handle_connection(mut stream: TcpStream, tags: Arc<Mutex<TagMap>>) -> a
         }
 
         match command {
-            CMD_REGISTER_SESSION => stream.write_all(&build_register_session_response()).await?,
+            CMD_REGISTER_SESSION => {
+                stream
+                    .write_all(&build_register_session_response(sender_context))
+                    .await?
+            }
             CMD_SEND_RR_DATA => {
                 let cip_response = build_cip_response(&payload, &tags).await;
-                let response = build_send_rr_response(session_handle, &cip_response);
+                let response =
+                    build_send_rr_response(session_handle, sender_context, &cip_response);
                 stream.write_all(&response).await?;
             }
             _ => anyhow::bail!("unsupported EtherNet/IP command 0x{command:04X}"),
@@ -125,20 +132,24 @@ async fn handle_connection(mut stream: TcpStream, tags: Arc<Mutex<TagMap>>) -> a
     }
 }
 
-fn build_register_session_response() -> Vec<u8> {
+fn build_register_session_response(sender_context: [u8; 8]) -> Vec<u8> {
     let session_handle = 0x1234_5678_u32;
     let mut response = Vec::with_capacity(28);
     response.extend_from_slice(&CMD_REGISTER_SESSION.to_le_bytes());
     response.extend_from_slice(&4_u16.to_le_bytes());
     response.extend_from_slice(&session_handle.to_le_bytes());
     response.extend_from_slice(&0_u32.to_le_bytes());
-    response.extend_from_slice(&[0_u8; 8]);
+    response.extend_from_slice(&sender_context);
     response.extend_from_slice(&0_u32.to_le_bytes());
     response.extend_from_slice(&[0_u8; 4]);
     response
 }
 
-fn build_send_rr_response(session_handle: u32, cip_response: &[u8]) -> Vec<u8> {
+fn build_send_rr_response(
+    session_handle: u32,
+    sender_context: [u8; 8],
+    cip_response: &[u8],
+) -> Vec<u8> {
     let mut data = Vec::new();
     data.extend_from_slice(&0_u32.to_le_bytes());
     data.extend_from_slice(&0_u16.to_le_bytes());
@@ -154,7 +165,7 @@ fn build_send_rr_response(session_handle: u32, cip_response: &[u8]) -> Vec<u8> {
     response.extend_from_slice(&(data.len() as u16).to_le_bytes());
     response.extend_from_slice(&session_handle.to_le_bytes());
     response.extend_from_slice(&0_u32.to_le_bytes());
-    response.extend_from_slice(&[0_u8; 8]);
+    response.extend_from_slice(&sender_context);
     response.extend_from_slice(&0_u32.to_le_bytes());
     response.extend_from_slice(&data);
     response
