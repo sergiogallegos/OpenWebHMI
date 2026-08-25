@@ -11,7 +11,7 @@ An Ignition-class open-source SCADA/HMI/MES platform is — by reference points 
 | Reference platform | Approx LOC | Stack |
 |---|---|---|
 | **Inductive Automation Ignition** | 2–3M (estimated, closed source) | Java + Jython 2.7 + Perspective JS/TS |
-| **FactoryTalk Optix** | similar scale (closed source) | C# / .NET + JavaScript |
+| **FactoryTalk Optix** | similar scale (closed source) | C++/Qt native platform + C#/.NET NetLogic + web technology |
 | **VS Code** | ~2M | TypeScript + supporting |
 | **OpenWebHMI 1.0 floor target** | **≥ 2M** | **Rust + Python (CPython 3.11+) + TypeScript** |
 | OpenWebHMI year-2 stretch (incl. MES, mobile, redundancy) | 3–4M | same |
@@ -28,18 +28,18 @@ LOC is a **flawed metric** — quality, not quantity, ships software. We use it 
 
 | Layer | Ignition | Optix | OpenWebHMI |
 |---|---|---|---|
-| Gateway / runtime backend | Java (JVM) | C# / .NET | Rust |
-| Designer / IDE | Java + Swing | Visual Studio Studio | Tauri (Rust shell) + React/TS |
-| Web HMI runtime | Perspective (React-based JS/TS over Java backend) | Optix WebPresentation | React + TypeScript |
-| Scripting | Jython 2.7 (Python on JVM) | C# (NetLogic) + JS | CPython 3.11+ via PyO3 (worker subprocesses) |
+| Core / runtime | Java 17 / JVM | C++/Qt native platform + C#/.NET NetLogic | Rust |
+| Designer / IDE | Java/Swing | C++/Qt + web technology; C#/.NET authoring | Tauri (Rust shell) + React/TS |
+| Web HMI runtime | Perspective (React/TS over Java backend) | Web Presentation Engine (HTML5/browser) | React + TypeScript |
+| Scripting | Jython 2.7.4 (Python 2.7 language level) | C#/.NET NetLogic | CPython 3.11+ worker subprocesses |
 | Module / extension distribution | proprietary `.modl` | proprietary | crates.io / npm / PyPI |
-| Deployment unit | JVM bundle (~300+ MB) | .NET bundle | single static Rust binary + SQLite (~50 MB target) |
+| Deployment shape | JVM-based gateway and clients | native runtime for Windows/Linux and x86/ARM | Rust gateway + browser clients + CPython workers |
 
 Three implications for our LOC profile:
 
 - **Rust is denser than Java.** Equivalent functionality typically takes 30–50% fewer LOC in idiomatic Rust than in idiomatic Java (no boilerplate `getX()/setX()`, no `Optional<>` ceremony, exhaustive pattern matching). So matching Ignition feature-for-feature should land us in the ~1.5–2.5M LOC range, not 3M.
 - **Tauri designer is much smaller than a Java/Swing designer.** Web tech (React + Monaco) is less verbose than Swing. Designer LOC budget is meaningfully lower.
-- **CPython 3 vs Jython 2.7** — our scripting host is smaller because we don't reimplement Python; we embed CPython.
+- **CPython 3 vs Jython 2.7** — our scripting host manages standard Python worker processes rather than implementing another interpreter.
 
 These are tailwinds, not excuses. The 2M floor still holds.
 
@@ -62,7 +62,7 @@ Ranges are wide because they reflect honest uncertainty, not false precision. **
 | 9 | Historian | `crates/historian` | Rust | 30k | **50k** | 80k |
 | 10 | Project store | `crates/project-store` | Rust | 20k | **35k** | 60k |
 | 11 | Auth + sessions | `crates/auth` | Rust | 15k | **25k** | 40k |
-| 12 | Scripting host | `crates/scripting` (Rust + PyO3 + Python stubs) | Rust + Py | 30k | **50k** | 80k |
+| 12 | Scripting host | `crates/scripting` (Rust host + CPython worker harness) | Rust + Py | 30k | **50k** | 80k |
 | 13 | Designer / IDE | `apps/designer` (Tauri shell + React UI) | Rust + TS | 200k | **350k** | 500k |
 | 14 | HMI runtime — web | `apps/runtime-web` | TS | 80k | **130k** | 200k |
 | 15 | Component library | `packages/component-library` | TS | 50k | **90k** | 150k |

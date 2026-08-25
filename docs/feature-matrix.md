@@ -117,7 +117,7 @@
 
 | Feature | Ignition | Optix | OpenWebHMI |
 |---|:-:|:-:|---|
-| Embedded scripting language | ✅ Jython 2.7 | ✅ C# (NetLogic) + JS | 🟢 v1 — **CPython 3.11+** via PyO3 |
+| Embedded scripting language | ✅ Jython 2.7.4 | ✅ C#/.NET NetLogic | 🟢 v1 — **CPython 3.11+** worker subprocesses |
 | Gateway-scope scripts | ✅ | ✅ | 🟢 v1 |
 | Client / view-scope scripts | ✅ | ✅ | 🟢 v1 |
 | Tag-change event handlers | ✅ | ✅ | 🟢 v1 |

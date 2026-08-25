@@ -50,7 +50,7 @@ OpenWebHMI's goal is a credible open-source platform a small or mid-size plant c
 - **Drivers**: Rust, in-process plugin model. Five v1 drivers: Rockwell EtherNet/IP (via `rust-ethernet-ip`), OPC UA (via `async-opcua`), Modbus TCP/RTU (via `tokio-modbus`), MQTT incl. Sparkplug B (via `rumqttc` + `prost`), and Beckhoff TwinCAT ADS (via `ads`).
 - **Designer / IDE**: Tauri (Rust shell) + React + TypeScript (Win + Mac)
 - **HMI runtime**: React + TypeScript in the browser
-- **Scripting**: Python 3.11+ via PyO3, run in worker subprocesses for crash isolation
+- **Scripting**: CPython 3.11+ worker subprocesses over JSON-RPC for crash isolation
 - **Wire protocol**: JSON over WebSocket (single duplex stream per client)
 - **Persistence**: SQLite for v1 (project store, historian, auth); pluggable backends post-1.0
 
@@ -58,15 +58,17 @@ Three languages total — Rust, TypeScript, Python. Deliberately *not* five.
 
 ### Stack at a glance vs the incumbents
 
-| Layer | Ignition | Optix | **OpenWebHMI** |
+| Layer | Ignition | FactoryTalk Optix | **OpenWebHMI** |
 |---|---|---|---|
-| Gateway | Java (JVM) | C# / .NET | **Rust** (single static binary) |
-| Designer | Java + Swing | Visual Studio (Win-only) | **Tauri + React/TS** (Win + Mac) |
-| Web HMI | Perspective (React/TS over Java) | Optix WebPresentation | **React + TypeScript** |
-| Scripting | Jython 2.7 (frozen 2010) | C# / JS | **CPython 3.11+** in worker subprocesses |
+| Core / runtime | Java 17 / JVM | C++/Qt native platform + C#/.NET NetLogic[^optix-stack] | **Rust** |
+| Designer | Java/Swing | C++/Qt + web technology; C#/.NET authoring[^optix-stack] | **Tauri + React/TypeScript** |
+| Web HMI | Perspective — React/TypeScript over Java | Web Presentation Engine — HTML5/browser | **React + TypeScript** |
+| Scripting | Jython 2.7.4 — Python 2.7 language level | C#/.NET NetLogic | **CPython 3.11+** in worker subprocesses |
 | Open source? | ❌ | ❌ | ✅ MIT |
 
-The CPython 3 scripting layer is the headline differentiator: `numpy`, `pandas`, `scikit-learn`, `torch`, and LLM SDKs all run *natively in scripts* — Ignition's Jython 2.7 cannot. That makes in-platform predictive maintenance, anomaly detection, and AI-assisted authoring a normal feature, not an integration project. Full reasoning: [`docs/stack-rationale.md`](docs/stack-rationale.md).
+[^optix-stack]: Optix is closed source. C++/Qt is supported by [Rockwell's native-runtime documentation](https://www.rockwellautomation.com/en-se/docs/factorytalk-optix/1-4-4/contents-ditamap/creating-projects/object-and-variable-reference/ftoptix-nativeui/datatypes/textrendertypeenum.html) and [current ASEM/Rockwell engineering roles](https://rockwellautomation.wd1.myworkdayjobs.com/en-US/External_Rockwell_Automation/job/Software-Engineer--C----Qt-_R26-1796); [C#/.NET NetLogic](https://www.rockwellautomation.com/en-us/docs/factorytalk-optix/1-5-7/contents-ditamap/extending-projects/netlogic.html) is publicly documented. The exact designer/runtime implementation boundary is not public.
+
+OpenWebHMI assigns one clear responsibility to each language: Rust owns the always-on gateway and protocol boundary, TypeScript owns the shared designer/runtime UI, and isolated CPython workers own plant scripting and the modern data/AI ecosystem. MIT licensing makes the whole system auditable, self-hostable, air-gap friendly, and extensible without a proprietary module or per-server licensing gate. This is not an argument that Java or C# are incapable; it is a deliberate alignment between each subsystem and the ecosystem best suited to it. Full reasoning: [`docs/stack-rationale.md`](docs/stack-rationale.md).
 
 ## Quick reference
 
@@ -75,7 +77,7 @@ The CPython 3 scripting layer is the headline differentiator: `numpy`, `pandas`,
 | [`docs/architecture.md`](docs/architecture.md) | System topology, every component, data flows, failure modes, security boundaries |
 | [`docs/roadmap.md`](docs/roadmap.md) | Phase 0 → 1.0 plan with concrete exit criteria per phase |
 | [`docs/feature-matrix.md`](docs/feature-matrix.md) | Side-by-side feature catalog vs Ignition and Optix; v1 / post-1.0 / not-planned markers |
-| [`docs/stack-rationale.md`](docs/stack-rationale.md) | Why **Rust + Python + TypeScript** vs Ignition's Java/Jython or Optix's C# — and why the Python side unlocks AI/ML and predictive maintenance natively |
+| [`docs/stack-rationale.md`](docs/stack-rationale.md) | Why **Rust + Python + TypeScript** vs Ignition's Java/Jython or Optix's C++/Qt/C# stack — and why the Python side unlocks AI/ML and predictive maintenance natively |
 | [`docs/scale-estimates.md`](docs/scale-estimates.md) | Expected LOC per component for v1.0 (target floor: **2M+**), with the actual count tracked over time |
 | [`docs/contributing.md`](docs/contributing.md) | How to add drivers, components, scripts; PR workflow; local dev setup |
 | [`AGENTS.md`](AGENTS.md) | Codebase-wide code, test, and dependency rules for any agent (Codex, Claude Code) — auto-loaded |

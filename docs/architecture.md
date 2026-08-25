@@ -55,7 +55,7 @@ OpenWebHMI follows the **Ignition gateway-centric** model:
                                         │  │ Historian (SQLite v1)     │  │
                                         │  ├───────────────────────────┤  │
                                         │  │ Scripting Host            │  │
-                                        │  │ (Python via PyO3, in      │  │
+                                        │  │ (CPython subprocesses,    │  │
                                         │  │  worker subprocesses)     │  │
                                         │  ├───────────────────────────┤  │
                                         │  │ Project Store             │  │
@@ -82,7 +82,7 @@ OpenWebHMI follows the **Ignition gateway-centric** model:
 |---|---|---|
 | Gateway runtime | **Rust** + Tokio | Single static binary, predictable latency for tag I/O, zero-GC, FFI-friendly. |
 | Drivers | **Rust** (in-process plugins) | Tightest possible coupling to tag engine; reuse vendor crates (`rust-ethernet-ip`, `tokio-modbus`, etc.). |
-| Scripting | **Python** via PyO3, run in worker subprocesses | Familiar to plant engineers (Ignition uses Jython); subprocess isolation sidesteps GIL contention and survives script crashes. |
+| Scripting | **CPython 3.11+** worker subprocesses over JSON-RPC | Familiar to plant engineers (Ignition uses Jython); subprocess isolation sidesteps GIL contention and survives script crashes. |
 | Wire protocol | **JSON over WebSocket** (v1) | Single duplex stream per client; debuggable; trivial TS interop. MessagePack/CBOR is a future optimization. |
 | Designer / IDE | **Tauri** (Rust shell) + **React + TS** | Native binary, small footprint vs Electron, ships on Win + Mac. React for ecosystem (Monaco, react-konva, etc.). |
 | HMI runtime | **React + TS** in a browser | Single rendering surface for v1; web-only is dramatically simpler than Vision-style desktop client. |
@@ -178,7 +178,7 @@ pub trait Driver: Send + Sync {
 }
 ```
 
-**First driver: `driver-rockwell`** wraps the `rust-ethernet-ip` crate (v0.7+ on crates.io). It exposes the crate's `EipClient`, `RoutePath`, `PlcValue`, and `*_tag_group` subscription API behind the `Driver` trait. Upgrades are a version bump in `Cargo.toml`; integration nuances and known limitations live in `wiki/drivers/rust-ethernet-ip-integration.md`.
+**First driver: `driver-rockwell`** wraps the `rust-ethernet-ip` crate (v1.2.1 on crates.io). It exposes the crate's `EipClient`, `RoutePath`, `PlcValue`, and `*_tag_group` subscription API behind the `Driver` trait. Upgrades are a version bump in `Cargo.toml`; integration nuances and known limitations live in `wiki/drivers/rust-ethernet-ip-integration.md`.
 
 **Driver containment (and what containment cannot give us).** Drivers run as in-process trusted code — they are not sandboxed (they need raw socket access). The supervisor catches **Rust panics in driver tasks** under the default `panic = "unwind"` runtime: each driver instance runs inside a `tokio::spawn` task with `catch_unwind`-style supervision; on panic the driver is marked `Faulted`, all its tags transition to `Bad(driver_faulted)`, and the supervisor attempts restart with exponential backoff.
 
@@ -213,7 +213,7 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 
 ### 4.7 Scripting Host (`crates/scripting`)
 
-- Embeds **CPython** via PyO3 in a pool of **worker subprocesses**.
+- Runs **CPython 3.11+** in a pool of managed **worker subprocesses**; the gateway does not embed the interpreter.
 - Why subprocesses, not in-process: GIL contention would bottleneck many concurrent scripts; a script that segfaults a C extension would otherwise crash the gateway. Subprocess restart is cheap and keeps the gateway alive.
 - IPC: stdin/stdout JSON-RPC between gateway and worker.
 - Triggers: `on_tag_change(tag)`, `on_timer(interval)`, `on_alarm(alarm)`, `on_button_click(button)`, `on_view_open(view)`, `on_view_close(view)`.

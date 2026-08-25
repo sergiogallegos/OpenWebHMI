@@ -1,6 +1,6 @@
 # OpenWebHMI — Stack Rationale
 
-> Why **Rust + Python (CPython 3.11+) + TypeScript** for an Ignition-class open-source SCADA/HMI/MES platform — and what each language is doing here that the others can't.
+> Why **Rust + Python (CPython 3.11+) + TypeScript** for an Ignition-class open-source SCADA/HMI platform — and why the combination matters.
 
 This document is the substantive answer to "why not Java? why not C#? why not all-Rust?". It compares OpenWebHMI's stack against Ignition and Optix, lays out the reasoning per-language, and is honest about tradeoffs.
 
@@ -8,20 +8,33 @@ This document is the substantive answer to "why not Java? why not C#? why not al
 
 | Layer | **Inductive Automation Ignition** | **Rockwell FactoryTalk Optix** | **OpenWebHMI** |
 |---|---|---|---|
-| Gateway / runtime | **Java (JVM)** | **C# / .NET** | **Rust** (single static binary) |
-| Designer / IDE | **Java + Swing** | **Visual Studio Studio** (Windows-only) | **Tauri (Rust shell) + React + TypeScript** (Win + Mac) |
-| Web HMI runtime | **Perspective** — React-based JS/TS over Java backend | **Optix WebPresentation** | **React + TypeScript** |
-| Desktop HMI runtime | **Vision** — Java/Swing | optional | post-1.0 (Tauri reuse) |
-| Scripting | **Jython 2.7** (Python on JVM, frozen at 2015) | **C# (NetLogic)** + JavaScript | **CPython 3.11+** via PyO3, in worker subprocesses |
+| Core / runtime | **Java 17 / JVM** | **C++/Qt native platform + C#/.NET NetLogic**[^optix-stack] | **Rust** |
+| Designer / IDE | **Java/Swing** | **C++/Qt + web technology; C#/.NET authoring**[^optix-stack] | **Tauri (Rust shell) + React + TypeScript** |
+| Web HMI runtime | **Perspective** — React/TypeScript over Java backend | **Web Presentation Engine** — HTML5/browser | **React + TypeScript** |
+| Desktop HMI runtime | **Vision** — Java/Swing | **Native Presentation Engine** — Qt-based | post-1.0 (Tauri reuse) |
+| Scripting | **Jython 2.7.4** — Python 2.7 language level | **C#/.NET NetLogic** | **CPython 3.11+** in worker subprocesses |
 | Module / extension format | proprietary `.modl` | proprietary | **crates.io / npm / PyPI** (no custom registry) |
-| Deployment unit | JVM bundle, ~300+ MB | .NET bundle | **single static Rust binary + SQLite, ~50 MB target** |
+| Deployment shape | JVM-based gateway and clients | native runtime for Windows/Linux and x86/ARM | **Rust gateway + browser clients + CPython workers** |
 | Open source? | ❌ | ❌ | ✅ **MIT** |
+
+[^optix-stack]: FactoryTalk Optix is closed source. Rockwell documents [Qt in its native presentation engine](https://www.rockwellautomation.com/en-se/docs/factorytalk-optix/1-4-4/contents-ditamap/creating-projects/object-and-variable-reference/ftoptix-nativeui/datatypes/textrendertypeenum.html) and [C# NetLogic compiled into .NET assemblies](https://www.rockwellautomation.com/en-us/docs/factorytalk-optix/1-5-7/contents-ditamap/extending-projects/netlogic.html); [current ASEM/Rockwell roles](https://rockwellautomation.wd1.myworkdayjobs.com/en-US/External_Rockwell_Automation/job/Software-Engineer--C----Qt-_R26-1796) seek C++/Qt engineers for native and embedded industrial UI work. That supports the stack characterization, but the exact internal boundary between the designer, framework, and runtime is not public.
 
 The three stacks reflect three different bets:
 
-- **Ignition** bet on Java's ubiquity in the enterprise circa 2003. The choice still works, but Jython 2.7 has aged out of the modern Python ecosystem and the JVM deployment footprint is heavy.
-- **Optix** bet on .NET, on Visual Studio as the IDE, and on Microsoft's developer pipeline. Strong if you live in that world; closes off macOS/Linux for the Studio side.
-- **OpenWebHMI** bets that **modern Rust eliminates the need for a managed runtime in 2026**, that **TypeScript is the universal UI layer**, and that **CPython is the universal data/AI/ML layer** — and combines all three rather than picking one.
+- **Ignition** uses a mature Java/JVM platform, a Swing designer, a React/TypeScript web runtime, and Jython for user scripting. Its integration story is strongest inside the Java ecosystem, while its Python language level remains 2.7.
+- **Optix** combines a native, cross-platform industrial runtime with Qt-based presentation and a C#/.NET customization model. That is a capable embedded-to-edge design, but its implementation and extension boundary remain vendor-controlled.
+- **OpenWebHMI** uses **Rust for the always-on systems boundary**, **TypeScript for the complete UI surface**, and **CPython for plant scripting and data work**. MIT licensing makes those boundaries inspectable and changeable by the operator rather than only by the vendor.
+
+## Why the combination is the vision
+
+The advantage is not that Rust, TypeScript, or Python wins every category individually. The advantage is that each language owns the part of the system where its strengths are operationally relevant:
+
+- **Rust protects the plant-facing core.** Drivers, tag processing, alarms, history, authentication, and client fan-out live in a memory-safe systems language without garbage-collector pauses. This is the smallest trusted core and the part that must remain available when a user script fails.
+- **TypeScript unifies authoring and operation.** The designer, web runtime, component library, and protocol types use the browser ecosystem. Components and interaction models can be shared instead of maintaining separate desktop and web widget families.
+- **CPython meets plant engineers where data work already happens.** Scripts use the current Python language and its packaging ecosystem. Worker subprocesses isolate interpreter and native-extension failures from the Rust gateway.
+- **Open source turns technical choices into operator rights.** MIT licensing permits source review, internal forks, air-gapped operation, independent security audits, and extensions without a vendor-controlled module format or recurring runtime entitlement.
+
+This separation also creates an understandable trust model: Rust is trusted platform code, TypeScript is distributed UI code, and Python is user-authored code behind a process boundary. The stack is therefore more than a list of popular languages; it expresses where failures are allowed, who can extend the system, and who ultimately controls a deployment.
 
 ## Why Rust (gateway, drivers, tag engine, designer shell)
 
@@ -29,18 +42,18 @@ The gateway runs 24/7, talks to PLCs, fans data out to many clients, and must no
 
 - **Predictable latency** — no GC pauses. A 50ms GC stop in the middle of a tag-update fan-out is visible in the HMI.
 - **Memory safety without runtime overhead** — no garbage collector, no JVM, no .NET CLR.
-- **Async I/O at scale** — thousands of WebSocket clients + driver poll loops without thread-per-connection cost.
+- **Async I/O within the v1 envelope** — driver poll loops and up to 50 runtime clients without a thread per connection.
 - **FFI to C/C++ libraries** — most existing PLC protocol libraries (OpenENER, libplctag, open62541) are C; Rust integrates cleanly via `bindgen`.
-- **Single static binary deployment** — no "install JVM 17 first, then…". Production deploys are one binary + one SQLite file + one config file.
+- **Compact gateway deployment** — the gateway is a Rust binary with SQLite-backed state; Python is an explicit worker dependency rather than a managed runtime underneath the gateway.
 - **Compile-time correctness** — data-type mismatches between PLC reads and the tag engine are caught at compile time, not at 2 AM in a plant.
 
 What Rust gives us specifically over Java/C# for this domain:
 
 | Concern | Rust outcome |
 |---|---|
-| Tag fan-out latency to 1000 connected HMIs | Single-digit ms p99 (no GC pauses) |
-| Cold-start time | < 1s vs JVM's 5–15s |
-| Memory footprint | 50–100 MB target vs JVM's 300 MB+ baseline |
+| Tag fan-out latency | No garbage collector in the gateway hot path; performance still requires measurement against the v1 envelope |
+| Cold-start time | Native gateway startup without JVM or CLR initialization |
+| Memory footprint | Explicit allocations and a bounded v1 target; final numbers remain benchmark-dependent |
 | Plugin distribution | crates.io (versioned, semver-checked) vs proprietary `.modl` |
 | Driver crate code reuse | We use upstream `rust-ethernet-ip` directly, no wrapper-of-wrapper |
 
@@ -62,16 +75,16 @@ This is where OpenWebHMI is meaningfully *better*, not just *equivalent*.
 
 ### What Ignition and Optix can do today
 
-- **Ignition** ships **Jython 2.7** — Python implemented on the JVM, frozen at the 2.7 language version (released 2010, EOL'd by upstream Python in 2020). Calls any Java library; cannot meaningfully use modern Python packages.
-- **Optix** uses **C# (NetLogic)** plus JavaScript. Powerful, but C# is not what plant data engineers reach for to do data work.
+- **Ignition** ships **Jython 2.7.4** — Python implemented on the JVM at the Python 2.7 language level (released in 2010 and EOL'd by upstream Python in 2020). It can call Java libraries but cannot use the normal modern CPython native-extension ecosystem.
+- **Optix** uses **C#/.NET NetLogic**. It is powerful and supports NuGet packages, but it is a different ecosystem from the Python tools commonly used for plant data analysis and machine learning.
 
 Neither has access to the modern Python data/AI/ML ecosystem **inside** the platform's scripting layer. Anything beyond basic logic gets pushed to an external service over REST.
 
 ### What OpenWebHMI does
 
-We embed **CPython 3.11+** via [PyO3](https://pyo3.rs), running scripts in **worker subprocesses** (not in-process) for crash isolation. That single decision unlocks:
+We run **CPython 3.11+** in managed **worker subprocesses** and communicate with them over JSON-RPC. The gateway never embeds the interpreter in-process. That decision unlocks:
 
-- **`import numpy`. `import pandas`. `import scikit-learn`. `import torch`. `import tensorflow`. `import xgboost`.** All of them. Native. No JVM bridge, no IPC fence, no "best-effort" port.
+- **The normal CPython package ecosystem.** Packages such as `numpy`, `pandas`, `scikit-learn`, `torch`, and `xgboost` can run in workers when compatible wheels are installed. The JSON-RPC process boundary is deliberate isolation, not a compatibility bridge.
 - **Real predictive maintenance in-platform.** Capture historian data → train a model in a Python script → deploy as a script that consumes live tag updates and writes derived prediction tags. The whole loop fits inside the gateway. With Ignition this is "stand up an external service, call it over REST, hope the latency is OK". With us it's:
   ```python
   # scripts/predictive/motor_health.py
@@ -150,7 +163,7 @@ TypeScript stays where it shines: the UI surface.
 │  │  │  Tag engine · Drivers · Alarm engine · Historian │  │           │
 │  │  │  Project store · Auth · WebSocket server         │  │           │
 │  │  │     ⇅                                            │  │           │
-│  │  │  Scripting host (PyO3) ─→ Python worker procs    │  │           │
+│  │  │  Scripting host ─────────→ Python worker procs    │  │           │
 │  │  │                            (numpy, pandas, sklearn,│ │           │
 │  │  │                             torch, LLM clients)   │  │           │
 │  │  └─────────────────────────────────────────────────┘  │           │

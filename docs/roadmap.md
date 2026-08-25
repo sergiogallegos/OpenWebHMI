@@ -95,7 +95,7 @@ Deliverables:
   - Roles: `Administrator, Designer, Operator, Viewer`.
   - Per-view ACLs.
   - TLS via rustls (cert paths in gateway config).
-- **Scripting (Python via PyO3):**
+- **Scripting (CPython worker subprocesses):**
   - Worker subprocess pool, JSON-RPC IPC.
   - Triggers: `on_tag_change`, `on_timer`, `on_alarm`, `on_button_click`.
   - `system.tag.*`, `system.alarm.*`, `system.db.*`, `system.util.*` libraries.

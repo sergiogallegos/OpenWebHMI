@@ -28,7 +28,7 @@ const BLOB = `${REPO}/blob/main`;
         >GitHub ↗</a>
       </div>
       <p class="hero-meta subtle">
-        MIT-licensed · single static binary · no JVM · no per-server fees
+        MIT-licensed · single Rust gateway binary · no JVM · no per-server fees
       </p>
     </div>
   </section>
@@ -78,27 +78,27 @@ const BLOB = `${REPO}/blob/main`;
         </thead>
         <tbody>
           <tr>
-            <td>Gateway</td>
-            <td>Java (JVM)</td>
-            <td>C# / .NET</td>
-            <td><strong>Rust</strong> (single static binary)</td>
+            <td>Core / runtime</td>
+            <td>Java 17 / JVM</td>
+            <td>C++/Qt native platform + C#/.NET NetLogic*</td>
+            <td><strong>Rust</strong></td>
           </tr>
           <tr>
             <td>Designer</td>
-            <td>Java + Swing</td>
-            <td>Visual Studio (Win-only)</td>
-            <td><strong>Tauri + React/TS</strong> (Win + Mac)</td>
+            <td>Java/Swing</td>
+            <td>C++/Qt + web technology; C#/.NET authoring*</td>
+            <td><strong>Tauri + React/TypeScript</strong></td>
           </tr>
           <tr>
             <td>Web HMI</td>
-            <td>Perspective (React/TS over Java)</td>
-            <td>Optix WebPresentation</td>
+            <td>Perspective — React/TypeScript over Java</td>
+            <td>Web Presentation Engine — HTML5/browser</td>
             <td><strong>React + TypeScript</strong></td>
           </tr>
           <tr>
             <td>Scripting</td>
-            <td>Jython 2.7 (frozen 2010)</td>
-            <td>C# / JS</td>
+            <td>Jython 2.7.4 — Python 2.7 language level</td>
+            <td>C#/.NET NetLogic</td>
             <td><strong>CPython 3.11+</strong> in worker subprocesses</td>
           </tr>
           <tr>
@@ -111,11 +111,39 @@ const BLOB = `${REPO}/blob/main`;
       </table>
     </div>
     <p class="muted">
-      The CPython 3.11+ scripting layer is the headline differentiator:
-      <code>numpy</code>, <code>pandas</code>, <code>scikit-learn</code>,
-      <code>torch</code>, and LLM SDKs all run natively in scripts.
-      In-platform predictive maintenance and AI-assisted authoring become
-      normal features, not external integration projects.
+      *Optix is closed source. C++/Qt is supported by Rockwell's native-runtime
+      documentation and current ASEM/Rockwell engineering roles, while C#/.NET
+      NetLogic is publicly documented. The exact internal boundary between its
+      designer and runtime is not public.
+    </p>
+    <h3>Why this combination matters</h3>
+    <ul class="scope-list">
+      <li>
+        <strong>Rust owns the always-on plant-facing core:</strong> protocol
+        drivers, tags, alarms, history, and client fan-out get memory safety and
+        a predictable footprint without a managed runtime.
+      </li>
+      <li>
+        <strong>TypeScript owns the human interface:</strong> the designer,
+        browser runtime, and component library share web standards and a broad
+        contributor ecosystem instead of maintaining unrelated UI stacks.
+      </li>
+      <li>
+        <strong>CPython owns user automation and data work:</strong> modern
+        packages such as <code>numpy</code>, <code>pandas</code>, and ML or LLM
+        SDKs run in isolated workers, so script failures do not take down the
+        gateway.
+      </li>
+      <li>
+        <strong>MIT licensing makes openness architectural:</strong> plants can
+        audit, self-host, air-gap, extend, and retain the system without a
+        proprietary module gate or per-server license.
+      </li>
+    </ul>
+    <p>
+      The advantage is not that Java or C# are incapable. It is that each
+      OpenWebHMI language has one clear job, and the complete platform remains
+      inspectable and operator-owned.
     </p>
     <p>
       <a
