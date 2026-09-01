@@ -7,16 +7,16 @@ granted by contributors to Sergio Gallegos, acting as the steward of OpenWebHMI
 (the **Project Steward**). It is a legally binding agreement. Read it carefully
 before accepting it. Legal advice may be appropriate if any term is unclear.
 
-This Agreement is adapted from the Harmony Contributor License Agreement 1.0,
+This Agreement is a project-maintainer adaptation of the Harmony Contributor License Agreement 1.0,
 which is published under the Creative Commons Attribution 3.0 Unported License:
 <https://www.harmonyagreements.org/agreements>.
 
 ## 1. Definitions
 
-**You** means the individual accepting this Agreement. If the Contribution is
-submitted on behalf of a company or other legal entity, **You** also means that
-entity and its affiliates whose rights are needed for the grants below, and the
-individual accepting represents that they are authorized to bind it.
+**You** means the individual accepting this Agreement. If a company or other
+legal entity owns or controls rights needed for a Contribution, that entity must
+accept this Agreement in a record that identifies it and the authorized
+representative. An individual's acceptance does not by itself bind an entity.
 
 **Contribution** means an original work of authorship that You intentionally
 submit to an OpenWebHMI repository or another contribution channel designated by
@@ -90,9 +90,9 @@ You represent that:
    clearly disclosed all third-party material and the permissions governing it.
 3. The grants do not violate an agreement or obligation to an employer, client,
    educational institution, or another party.
-4. If an employer or another entity may own the Contribution, You have obtained
-   authorization from that entity or caused an authorized representative to
-   accept this Agreement.
+4. If an employer or another entity may own the Contribution, that entity has
+   accepted this Agreement through an authorized representative or has provided
+   a separate written authorization covering the Contribution.
 5. You will not knowingly submit confidential information, trade secrets,
    credentials, customer material, unlawfully obtained code, or material whose
    license is incompatible with the Project Material.
@@ -117,7 +117,8 @@ fitness for a particular purpose, to the maximum extent permitted by law.
 You accept this Agreement by doing either of the following:
 
 - submitting a pull request through a contribution flow that links this exact
-  Agreement version and requires an affirmative CLA acceptance; or
+  Agreement version and includes an affirmative CLA acceptance identifying the
+  accepting individual and, when applicable, the represented entity; or
 - sending the Project Steward an electronic or written statement that identifies
   You, identifies this Agreement version, and states that You accept it.
 

@@ -1,6 +1,6 @@
 # OpenWebHMI Vision
 
-OpenWebHMI is an open-source, web-first SCADA/HMI platform for small and mid-size industrial systems — a credible alternative to Inductive Automation Ignition and Rockwell FactoryTalk Optix that a plant could actually run. MIT-licensed, gateway-centric, self-hosted. Three languages total (Rust gateway, TypeScript runtime/designer, Python scripting), five v1 drivers (Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT incl. Sparkplug B, Beckhoff ADS).
+OpenWebHMI is an open-source, web-first SCADA/HMI platform for small and mid-size industrial systems — a credible alternative to Inductive Automation Ignition and Rockwell FactoryTalk Optix that a plant could actually run. The product core is AGPL-3.0-only, the Rust and TypeScript wire-protocol packages are MPL-2.0, and the system is gateway-centric and self-hosted. Three languages total (Rust gateway, TypeScript runtime/designer, Python scripting), five v1 drivers (Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT incl. Sparkplug B, Beckhoff ADS).
 
 This document defines what OpenWebHMI **is**, what it explicitly **is not**, and what we **will not merge**. The bullet lists are load-bearing — they describe the project's identity, not a snapshot of current code. Changes here are project-direction decisions, not implementation choices.
 
@@ -33,7 +33,7 @@ These are *contracts*, not preferences. A PR that lands code violating one of th
 
 ### License & dependency hygiene
 
-- **No non-MIT-compatible dependencies.** OpenWebHMI is MIT-licensed; transitively-pulled crates and npm packages must be MIT, Apache-2.0, BSD, or compatible. GPL/AGPL/SSPL dependencies do not land.
+- **Permissive inbound dependency gate.** Product code being AGPL does not authorize adding arbitrary copyleft dependencies. Transitively-pulled crates and npm packages remain limited to MIT, Apache-2.0, BSD, ISC, or specifically reviewed compatible terms. GPL/AGPL/SSPL dependencies do not land.
 - **No commercial vendor SDKs requiring NDAs, license keys, or per-seat fees.** v1 driver protocols are reached via open implementations: `rust-ethernet-ip` for CIP/EtherNet/IP, `async-opcua` for OPC UA, `tokio-modbus` for Modbus, `rumqttc` + `prost` for MQTT/Sparkplug B, `ads` for Beckhoff ADS. New drivers follow the same rule.
 - **Workspace-pinned versions stay pinned.** The current `=`-pinned set (`tokio-modbus`, `async-opcua`, `rumqttc`, `rumqttd`, `prost`, `jsonpath-rust`, `ads`) is load-bearing for driver-side compatibility. Unpinning requires a task brief, not a drive-by.
 - **`Cargo.lock` diff is bounded.** Bumping one crate should touch that crate + its proc-macro counterpart + direct transitives. A wider lockfile diff is a red flag and needs investigation before commit. `cargo update` (no arguments) never lands.

@@ -14,6 +14,7 @@ import {
   type ConnectionState,
 } from "./gatewayClient";
 import { Login } from "./modules/Login";
+import { LegalSource } from "./modules/LegalSource";
 import { useTagBindings } from "./useTagBindings";
 import { useViewSubscription } from "./useViewSubscription";
 
@@ -106,13 +107,16 @@ export function App() {
 
   if (!sessionToken) {
     return (
-      <Login
-        client={client}
-        onAuthenticated={(token) => {
-          window.localStorage.setItem("openwebhmi.sessionToken", token);
-          setSessionToken(token);
-        }}
-      />
+      <>
+        <Login
+          client={client}
+          onAuthenticated={(token) => {
+            window.localStorage.setItem("openwebhmi.sessionToken", token);
+            setSessionToken(token);
+          }}
+        />
+        <LegalSource />
+      </>
     );
   }
 
@@ -155,6 +159,7 @@ export function App() {
           {connectionState === "connecting" ? "Connecting..." : "Loading view..."}
         </section>
       )}
+      <LegalSource />
     </main>
   );
 }

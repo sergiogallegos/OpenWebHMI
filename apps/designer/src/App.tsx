@@ -8,6 +8,7 @@ import { PropertyPanel } from "./modules/PropertyPanel";
 import { ScriptEditor } from "./modules/ScriptEditor";
 import { ScriptErrorPane } from "./modules/ScriptErrorPane";
 import { ScriptList } from "./modules/ScriptList";
+import { LegalSource } from "./modules/LegalSource";
 import { TagBrowser } from "./modules/TagBrowser";
 import { ThemeEditor } from "./modules/ThemeEditor";
 import { UserAdmin } from "./modules/UserAdmin";
@@ -359,6 +360,7 @@ export function App() {
             }}
           />
         ) : null}
+        <LegalSource />
       </section>
       <TagBrowser
         tags={project.tags}
@@ -383,7 +385,7 @@ const styles = {
   workbench: {
     minWidth: 0,
     display: "grid",
-    gridTemplateRows: "auto auto minmax(0, 1fr) auto",
+    gridTemplateRows: "auto auto minmax(0, 1fr) auto auto auto",
   },
   topBar: {
     display: "flex",

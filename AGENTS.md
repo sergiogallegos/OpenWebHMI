@@ -86,7 +86,7 @@ For known-flaky integration tests, three consecutive green runs is the bar befor
 
 - **Never `cargo update` all dependencies.** Use `cargo update --precise <crate>@<version>` when a specific bump is needed. Lockfile drift across unrelated deps hides supply-chain regressions and inflates review surface.
 - **`=`-pinned workspace versions stay pinned** until the task is explicitly a version bump. Current set: `tokio-modbus`, `async-opcua`, `rumqttc`, `rumqttd`, `prost`, `jsonpath-rust`, `ads`. Pinning is load-bearing.
-- **License gate**: MIT, Apache-2.0, BSD, or compatible only. GPL/AGPL/SSPL deps do not land. See `VISION.md` for the full policy.
+- **Inbound dependency license gate**: MIT, Apache-2.0, BSD, ISC, or specifically reviewed compatible terms only. The product's AGPL license does not permit drive-by GPL/AGPL/SSPL dependencies. See `VISION.md` for the full policy.
 - **`Cargo.lock` diff is bounded.** Bumped crate + proc-macro counterpart + direct transitives. Wider = investigate before committing.
 
 ## Honesty

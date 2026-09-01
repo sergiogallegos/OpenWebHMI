@@ -11,8 +11,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <h1>About OpenWebHMI</h1>
       <p class="lede muted">
         An open-source, web-first SCADA/HMI platform for small and mid-size
-        industrial systems. The current source release is MIT-licensed and
-        built in public on GitHub.
+        industrial systems. The product core is AGPL-3.0-only, the wire-protocol
+        packages are MPL-2.0, and development happens in public on GitHub.
       </p>
     </header>
 
@@ -99,19 +99,30 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section>
       <h2>License</h2>
       <p>
-        OpenWebHMI is released under the <strong>MIT License</strong>. The
-        current source revision has no per-server fees, module licenses, or
-        activation server. A coordinated source-license transition is being
-        planned; until it lands, the repository's current <code>LICENSE</code>
-        file remains authoritative. The OpenWebHMI name is an unregistered
-        project mark; it is not represented as a registered trademark.
+        OpenWebHMI's product core is <strong>AGPL-3.0-only</strong>; only the
+        Rust and TypeScript wire-protocol packages are <strong>MPL-2.0</strong>.
+        Commercial use remains permitted under those terms. There is no
+        alternative commercial license, activation server, module fee, or
+        per-server fee. Revisions through <code>a8cbdbc</code> keep their prior
+        MIT grant; it has not been revoked.
       </p>
       <p>
         <a
-          href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/LICENSE"
+          href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/LICENSE-POLICY.md"
           target="_blank"
           rel="noopener noreferrer"
-        >Read the LICENSE ↗</a>
+        >License map and canonical terms ↗</a>
+        ·
+        <a
+          href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/license-transition.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Transition FAQ ↗</a>
+      </p>
+      <p class="muted">
+        User-created plant projects and process data are not claimed by the
+        project. Software copied into a project remains governed by its license.
+        OpenWebHMI™ is an unregistered mark; the project does not use ®.
       </p>
     </section>
 

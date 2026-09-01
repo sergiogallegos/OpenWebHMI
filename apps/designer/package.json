@@ -2,6 +2,7 @@
   "name": "@openwebhmi/designer",
   "private": true,
   "version": "0.0.1",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "build": "vite build && tauri build",
@@ -18,7 +19,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@openwebhmi/component-library": "workspace:*",
     "@openwebhmi/protocol": "workspace:*",
-    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/api": "^2.11.1",
     "@vitejs/plugin-react": "^4.2.0",
     "monaco-editor": "^0.55.1",
     "react": "^18.2.0",
@@ -27,9 +28,10 @@
     "vite-plugin-monaco-editor": "^1.1.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/cli": "^2.11.4",
     "@testing-library/react": "^15.0.0",
     "@testing-library/user-event": "^14.5.0",
+    "@types/node": "^22.10.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "jsdom": "^24.1.0",

@@ -9,11 +9,11 @@
 
 <p align="center">
   <strong>Open-source, web-first SCADA / HMI platform</strong> for small and mid-size industrial systems.<br />
-  Five v1 drivers: <strong>Rockwell EtherNet/IP</strong>, <strong>OPC UA</strong>, <strong>Modbus TCP/RTU</strong>, <strong>MQTT</strong> (incl. Sparkplug B), and <strong>Beckhoff TwinCAT (ADS)</strong>. MIT-licensed, community-extensible.
+  Five v1 drivers: <strong>Rockwell EtherNet/IP</strong>, <strong>OPC UA</strong>, <strong>Modbus TCP/RTU</strong>, <strong>MQTT</strong> (incl. Sparkplug B), and <strong>Beckhoff TwinCAT (ADS)</strong>. AGPL core, MPL protocol packages.
 </p>
 
 <p align="center">
-  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+  <a href="./LICENSE-POLICY.md"><img alt="License: AGPL-3.0-only core and MPL-2.0 protocols" src="https://img.shields.io/badge/License-AGPL--3.0%20core%20%7C%20MPL--2.0%20protocols-blue.svg"></a>
   <a href="./docs/roadmap.md"><img alt="Status: pre-alpha" src="https://img.shields.io/badge/Status-pre--alpha-red.svg"></a>
 </p>
 
@@ -64,11 +64,11 @@ Three languages total — Rust, TypeScript, Python. Deliberately *not* five.
 | Designer | Java/Swing | C++/Qt + web technology; C#/.NET authoring[^optix-stack] | **Tauri + React/TypeScript** |
 | Web HMI | Perspective — React/TypeScript over Java | Web Presentation Engine — HTML5/browser | **React + TypeScript** |
 | Scripting | Jython 2.7.4 — Python 2.7 language level | C#/.NET NetLogic | **CPython 3.11+** in worker subprocesses |
-| Open source? | ❌ | ❌ | ✅ MIT |
+| Open source? | ❌ | ❌ | ✅ AGPL core / MPL protocols |
 
 [^optix-stack]: Optix is closed source. C++/Qt is supported by [Rockwell's native-runtime documentation](https://www.rockwellautomation.com/en-se/docs/factorytalk-optix/1-4-4/contents-ditamap/creating-projects/object-and-variable-reference/ftoptix-nativeui/datatypes/textrendertypeenum.html) and [current ASEM/Rockwell engineering roles](https://rockwellautomation.wd1.myworkdayjobs.com/en-US/External_Rockwell_Automation/job/Software-Engineer--C----Qt-_R26-1796); [C#/.NET NetLogic](https://www.rockwellautomation.com/en-us/docs/factorytalk-optix/1-5-7/contents-ditamap/extending-projects/netlogic.html) is publicly documented. The exact designer/runtime implementation boundary is not public.
 
-OpenWebHMI assigns one clear responsibility to each language: Rust owns the always-on gateway and protocol boundary, TypeScript owns the shared designer/runtime UI, and isolated CPython workers own plant scripting and the modern data/AI ecosystem. MIT licensing makes the whole system auditable, self-hostable, air-gap friendly, and extensible without a proprietary module or per-server licensing gate. This is not an argument that Java or C# are incapable; it is a deliberate alignment between each subsystem and the ecosystem best suited to it. Full reasoning: [`docs/stack-rationale.md`](docs/stack-rationale.md).
+OpenWebHMI assigns one clear responsibility to each language: Rust owns the always-on gateway and protocol boundary, TypeScript owns the shared designer/runtime UI, and isolated CPython workers own plant scripting and the modern data/AI ecosystem. The AGPL product core and MPL protocol packages keep the system auditable, self-hostable, air-gap friendly, and extensible without a proprietary module or per-server licensing gate. This is not an argument that Java or C# are incapable; it is a deliberate alignment between each subsystem and the ecosystem best suited to it. Full reasoning: [`docs/stack-rationale.md`](docs/stack-rationale.md).
 
 ## Quick reference
 
@@ -148,4 +148,11 @@ Sergio Gallegos — repo owner — [sergiogallegos.net](https://sergiogallegos.n
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+The product core is [`AGPL-3.0-only`](LICENSE); `crates/protocol` and
+`packages/protocol-ts` are [`MPL-2.0`](LICENSES/MPL-2.0.txt). Documentation and
+marks have separate terms. See [`LICENSE-POLICY.md`](LICENSE-POLICY.md) and the
+[`MIT → AGPL/MPL transition notice`](docs/license-transition.md).
+
+Commercial use is permitted under the applicable licenses. No alternative
+commercial license, activation server, module fee, or per-server fee is offered.
+Revisions through `a8cbdbc` retain their prior MIT grant.

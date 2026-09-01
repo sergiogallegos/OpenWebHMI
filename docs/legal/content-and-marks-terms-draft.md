@@ -1,7 +1,7 @@
 # Draft content and marks terms
 
-Status: proposal for legal review under CODEX-DG. These terms are not effective
-and do not replace the repository's current MIT license.
+Status: superseded on 2026-09-01 by the effective root `CONTENT-LICENSE.md`,
+`TRADEMARKS.md`, and `LICENSE-POLICY.md`. Retained as the CODEX-DG working record.
 
 ## Documentation and tutorial content
 

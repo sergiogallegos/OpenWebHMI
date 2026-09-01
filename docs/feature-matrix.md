@@ -241,7 +241,7 @@ means planned only where the linked plan gives it a prerequisite-backed horizon;
 
 | Feature | Ignition | Optix | OpenWebHMI |
 |---|:-:|:-:|---|
-| Open source | ❌ (closed source, free unlimited dev) | ❌ (closed source, free dev) | 🟢 v1 — **MIT** |
+| Open source | ❌ (closed source, free unlimited dev) | ❌ (closed source, free dev) | 🟢 v1 — **AGPL core / MPL protocols** |
 | Source-available components | partial | partial | 🟢 v1 — entire stack |
 | Free runtime license | ❌ (per-server license) | ➕ tiered | 🟢 v1 — runtime is free |
 | Community-publishable plugins | ✅ Exchange | ✅ | 🟢 v1 (Phase 4 SDK) |
@@ -260,7 +260,7 @@ We are not trying to be a 1:1 Ignition clone. Some explicit divergences:
 | Designer install | Java desktop app | **Tauri (Rust + web)** | Smaller download, faster startup, Mac-native. |
 | Runtime install | JVM bundle / .NET | **Single Rust binary + SQLite** | Zero-dependency deploy. |
 | Module distribution | Custom format | **crates.io / npm / PyPI** | No custom registry to maintain. |
-| Pricing | Per-server license | **Free, MIT-licensed** | Open source. |
+| Pricing | Per-server license | **Free, open source; AGPL core / MPL protocols** | No activation or per-server fee; commercial use remains permitted under the applicable licenses. |
 
 ---
 

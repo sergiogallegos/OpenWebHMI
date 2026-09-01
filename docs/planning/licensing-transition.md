@@ -1,12 +1,12 @@
 # OpenWebHMI licensing transition plan
 
-Status: proposed; no license change is effective until the ownership gate,
-scope matrix, license texts, manifests, public notices, and release evidence land
-together in the transition task.
+Status: activated 2026-09-01 by CODEX-DH/DI. Canonical terms and the effective
+path map are linked from `LICENSE-POLICY.md`.
 
-This plan is engineering and release guidance, not legal advice. An attorney
-experienced in open-source licensing should review the final boundary, notices,
-contribution terms, and trademark policy before the transition release.
+This plan is engineering and release guidance, not legal advice. The maintainer
+accepted proceeding without outside counsel on 2026-09-01 after a second
+good-faith review of authoritative license, CLA, and trademark materials. The
+canonical terms control, and outside review can still be obtained later.
 
 ## Decision
 
@@ -81,14 +81,13 @@ terms, but every accepted contribution remains available under the outbound
 license governing the relevant project material when it was submitted.
 
 No commercial license is created or offered by this decision. The CLA and its
-electronic acceptance flow require attorney review before the project relies on
-them for material external contributions.
+electronic acceptance flow launch under the maintainer-accepted risk record in
+`docs/license-transition.md`.
 
 ### 3. Documentation, demo media, and brand policy
 
 Software licenses are a poor fit for prose, screenshots, and trademarks. The
-maintainer accepted separate terms in principle. Counsel should confirm the
-working disposition before activation:
+maintainer adopted separate terms with the transition:
 
 - documentation and tutorials: `CC-BY-4.0`;
 - fictional demo data and redistributable media: an explicit Creative Commons
@@ -173,8 +172,8 @@ the full legal terms. Marketing copy never replaces the license text.
 ## Release sequence
 
 1. Freeze the candidate transition commit and complete the provenance inventory.
-2. Obtain legal review of ownership, scope matrix, contribution policy, project
-   content, plugin boundary, brand policy, and notices.
+2. Record the maintainer's review/risk disposition for ownership, scope matrix,
+   contribution policy, project content, plugin boundary, brand policy, and notices.
 3. Record the last MIT revision and publish a migration/FAQ document.
 4. Land license texts, package overrides, source-offer UI, contribution policy,
    repository docs, CI enforcement, and third-party notices atomically.

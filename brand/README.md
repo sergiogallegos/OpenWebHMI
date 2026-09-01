@@ -39,6 +39,13 @@ In HTML (designer, runtime-web):
 <link rel="icon" type="image/svg+xml" href="/brand/openwebhmi-favicon-blue.svg" />
 ```
 
-## License
+## Copyright and trademark terms
 
-Marks are released under the same **MIT** license as the rest of the project. Use them for forks, derivatives, third-party tools that integrate with OpenWebHMI, talks, articles, etc. Don't use them in a way that implies endorsement by the project that isn't there.
+These files are OpenWebHMI brand assets, not generally licensed as software.
+The `OpenWebHMI™` name and logos are unregistered marks claimed by Sergio
+Gallegos. Truthful reference, community discussion, and non-misleading
+compatibility uses are allowed under [`TRADEMARKS.md`](../TRADEMARKS.md).
+
+Forks may exercise the software rights in [`LICENSE-POLICY.md`](../LICENSE-POLICY.md)
+but must use distinct branding unless separate permission applies. Do not imply
+official status, certification, sponsorship, partnership, or endorsement.

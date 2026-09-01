@@ -26,6 +26,12 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/icon.png"]
+    "icon": ["icons/icon.png"],
+    "resources": {
+      "../../../LICENSE": "legal/LICENSE",
+      "../../../LICENSE-POLICY.md": "legal/LICENSE-POLICY.md",
+      "../../../LICENSES/MPL-2.0.txt": "legal/MPL-2.0.txt",
+      "../../../THIRD_PARTY_NOTICES.md": "legal/THIRD_PARTY_NOTICES.md"
+    }
   }
 }

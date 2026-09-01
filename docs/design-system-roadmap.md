@@ -189,7 +189,7 @@ Items below are not blockers; they are decisions to settle as the roadmap reache
 
 - **Storybook deployment target.** GitHub Pages is free and lives in-repo; Cloudflare Pages has better MDX support and faster cold-start. v1.1 #6 picks one when it lands.
 - **Style Dictionary version pin.** v4 is current; v3 has wider tooling support. v1.2 #7 picks based on what designer-side tooling actually exists at that point.
-- **Symbol package licensing.** Several ISA-101-aligned symbol libraries exist under various licenses (CC-BY-SA, MIT, Apache-2). v2.0 #12 picks based on license-compatibility with OpenWebHMI's MIT, not on aesthetics alone.
+- **Symbol package licensing.** Several ISA-101-aligned symbol libraries exist under various licenses (CC-BY-SA, MIT, Apache-2). v2.0 #12 picks only after compatibility review against the AGPL product boundary and the separate content/marks policy, not on aesthetics alone.
 - **MachineSchematic SVG authoring tool.** The schematic itself is project-authored. We can either rely on Inkscape / Figma export + a custom editor in the designer, or ship a minimal in-designer SVG editor. v2.0 #11 punts the choice to the spike phase.
 - **Distance-view trigger.** Toolbar toggle is the obvious answer; ambient-light sensor (where available) and proximity sensor (where available) are also options. v1.2 #9 ships toolbar-toggle; sensor-based switching is post-v2.0.
 

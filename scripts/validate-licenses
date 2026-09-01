@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""Validate OpenWebHMI's path licenses, source surfaces, and bundled assets."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import shutil
+import tempfile
+from pathlib import Path
+
+
+AGPL_SHA256 = "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+MPL_SHA256 = "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+ASSET_SUFFIXES = {
+    ".gif", ".ico", ".jpeg", ".jpg", ".l5x", ".otf", ".pdf", ".plc",
+    ".png", ".svg", ".ttf", ".webp", ".woff", ".woff2",
+}
+IGNORED_PARTS = {".git", "dist", "node_modules", "target"}
+
+
+def digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def validate(root: Path) -> list[str]:
+    errors: list[str] = []
+    expected_hashes = {
+        "LICENSE": AGPL_SHA256,
+        "LICENSES/AGPL-3.0-only.txt": AGPL_SHA256,
+        "crates/protocol/LICENSE": MPL_SHA256,
+        "packages/protocol-ts/LICENSE": MPL_SHA256,
+        "LICENSES/MPL-2.0.txt": MPL_SHA256,
+        "apps/runtime-web/public/legal/LICENSE": AGPL_SHA256,
+        "apps/runtime-web/public/legal/MPL-2.0.txt": MPL_SHA256,
+    }
+    for relative, expected in expected_hashes.items():
+        path = root / relative
+        if not path.is_file() or digest(path) != expected:
+            errors.append(f"{relative}: missing or non-canonical license text")
+
+    cargo_root = (root / "Cargo.toml").read_text()
+    protocol_cargo = (root / "crates/protocol/Cargo.toml").read_text()
+    if 'license = "AGPL-3.0-only"' not in cargo_root:
+        errors.append("Cargo.toml: workspace license must be AGPL-3.0-only")
+    if 'license = "MPL-2.0"' not in protocol_cargo or "license.workspace" in protocol_cargo:
+        errors.append("crates/protocol/Cargo.toml: explicit MPL-2.0 override required")
+
+    package_licenses = {
+        "package.json": "AGPL-3.0-only",
+        "apps/designer/package.json": "AGPL-3.0-only",
+        "apps/runtime-web/package.json": "AGPL-3.0-only",
+        "apps/website/package.json": "AGPL-3.0-only",
+        "packages/component-library/package.json": "AGPL-3.0-only",
+        "packages/protocol-ts/package.json": "MPL-2.0",
+    }
+    for relative, expected in package_licenses.items():
+        value = json.loads((root / relative).read_text()).get("license")
+        if value != expected:
+            errors.append(f"{relative}: expected license {expected}, found {value!r}")
+
+    source_surfaces = [
+        "apps/runtime-web/src/modules/LegalSource.tsx",
+        "apps/designer/src/modules/LegalSource.tsx",
+        "crates/gateway/src/main.rs",
+    ]
+    for relative in source_surfaces:
+        text = (root / relative).read_text()
+        for phrase in ("AGPL-3.0-only", "MPL-2.0", "Corresponding source"):
+            if phrase not in text:
+                errors.append(f"{relative}: missing source-offer phrase {phrase!r}")
+
+    inventory_path = root / "docs/legal/asset-inventory.json"
+    inventory = set(json.loads(inventory_path.read_text()).get("assets", {}))
+    assets = {
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file()
+        and path.suffix.lower() in ASSET_SUFFIXES
+        and not any(part in IGNORED_PARTS for part in path.relative_to(root).parts)
+    }
+    for asset in sorted(assets - inventory):
+        errors.append(f"{asset}: bundled asset is not classified in asset-inventory.json")
+    for asset in sorted(inventory - assets):
+        errors.append(f"{asset}: asset inventory entry does not resolve")
+
+    stale_checks = {
+        "README.md": ("License-MIT", "✅ MIT", "MIT licensing"),
+        "VISION.md": ("MIT-licensed", "OpenWebHMI is MIT-licensed"),
+        "apps/website/src/pages/index.astro": ("MIT-licensed", "✅ <strong>MIT"),
+        "apps/website/src/pages/about.astro": ("released under the <strong>MIT",),
+        "apps/website/src/components/Footer.astro": ("MIT License", "MIT-licensed"),
+        "docs/feature-matrix.md": ("v1 — **MIT**",),
+        "docs/stack-rationale.md": ("✅ **MIT**", "MIT licensing"),
+        "brand/README.md": ("same **MIT** license",),
+    }
+    for relative, phrases in stale_checks.items():
+        text = (root / relative).read_text()
+        for phrase in phrases:
+            if phrase in text:
+                errors.append(f"{relative}: stale product-license claim {phrase!r}")
+
+    return errors
+
+
+def self_test(root: Path) -> list[str]:
+    failures: list[str] = []
+    mutations = (
+        ("stale MIT manifest", "package.json", lambda text: text.replace("AGPL-3.0-only", "MIT", 1)),
+        ("missing MPL override", "crates/protocol/Cargo.toml", lambda text: text.replace('license = "MPL-2.0"', "license.workspace = true", 1)),
+        ("missing source offer", "apps/runtime-web/src/modules/LegalSource.tsx", lambda text: text.replace("Corresponding source", "Source", 1)),
+    )
+    with tempfile.TemporaryDirectory() as directory:
+        copy = Path(directory) / "repo"
+        shutil.copytree(root, copy, ignore=shutil.ignore_patterns(".git", "dist", "node_modules", "target"))
+        for name, relative, mutate in mutations:
+            path = copy / relative
+            original = path.read_text()
+            path.write_text(mutate(original))
+            if not validate(copy):
+                failures.append(f"self-test did not reject {name}")
+            path.write_text(original)
+        unclassified = copy / "apps/website/public/unclassified.svg"
+        unclassified.write_text("<svg xmlns=\"http://www.w3.org/2000/svg\"/>")
+        if not validate(copy):
+            failures.append("self-test did not reject unclassified bundled asset")
+    return failures
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--self-test", action="store_true")
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parent.parent
+    errors = validate(root)
+    if args.self_test and not errors:
+        errors.extend(self_test(root))
+    if errors:
+        for error in errors:
+            print(f"validate-licenses: {error}")
+        return 1
+    print("validate-licenses: ok")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

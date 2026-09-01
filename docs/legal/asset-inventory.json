@@ -1,0 +1,14 @@
+{
+  "assets": {
+    "apps/designer/src-tauri/icons/icon.ico": "First-party OpenWebHMI mark; TRADEMARKS.md",
+    "apps/designer/src-tauri/icons/icon.png": "First-party OpenWebHMI mark; TRADEMARKS.md",
+    "apps/website/public/favicon.svg": "First-party OpenWebHMI mark; TRADEMARKS.md",
+    "apps/website/public/og-image.svg": "First-party OpenWebHMI social artwork; TRADEMARKS.md",
+    "brand/OpenWebHMI.pdf": "First-party OpenWebHMI brand reference; TRADEMARKS.md",
+    "brand/openwebhmi-favicon-black.svg": "First-party OpenWebHMI mark; TRADEMARKS.md",
+    "brand/openwebhmi-favicon-blue.svg": "First-party OpenWebHMI mark; TRADEMARKS.md",
+    "brand/openwebhmi-mark-black.svg": "First-party OpenWebHMI mark; TRADEMARKS.md",
+    "brand/openwebhmi-mark-blue.svg": "First-party OpenWebHMI mark; TRADEMARKS.md",
+    "brand/openwebhmi-mark-white.svg": "First-party OpenWebHMI mark; TRADEMARKS.md"
+  }
+}

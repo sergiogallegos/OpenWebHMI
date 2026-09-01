@@ -21,6 +21,11 @@ the CLA or provide written authorization linked from the pull request. Mark mate
 that is not intended as a contribution accordingly and disclose all third-party
 code, media, generated content, and license terms before review.
 
+Outbound licensing follows [`LICENSE-POLICY.md`](../LICENSE-POLICY.md): product
+code is AGPL-3.0-only, while only `crates/protocol` and `packages/protocol-ts`
+are MPL-2.0. Documentation and marks have separate terms. Do not place code in a
+protocol package merely to obtain the narrower MPL boundary.
+
 ---
 
 ## 1. What you can contribute

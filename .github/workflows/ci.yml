@@ -74,3 +74,14 @@ jobs:
           python-version: '3.12'
       - name: Validate agent task files, board rows, and log lines
         run: scripts/validate-agent-files
+
+  validate-licenses:
+    name: validate-licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate license map, source offers, and bundled assets
+        run: scripts/validate-licenses --self-test

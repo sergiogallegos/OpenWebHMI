@@ -177,8 +177,6 @@ does not pull post-1.0 implementation into the current release.
 | CODEX-DB | Omarchy Linux first public demo deployment and video proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DB-omarchy-first-demo-video.md`](tasks/CODEX-DB-omarchy-first-demo-video.md) |
 | CODEX-DE | Website demo hub and shipped-product visual story | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DE-website-demo-hub-visual-story.md`](tasks/CODEX-DE-website-demo-hub-visual-story.md) |
 | CODEX-DF | Website discoverability, social previews, and launch metadata | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DF-website-discovery-social-metadata.md`](tasks/CODEX-DF-website-discovery-social-metadata.md) |
-| CODEX-DH | Atomic AGPL core and MPL protocol repository transition | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DH-agpl-mpl-repository-transition.md`](tasks/CODEX-DH-agpl-mpl-repository-transition.md) |
-| CODEX-DI | AGPL/MPL public documentation, website, and transition communication | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DI-license-docs-website-transition.md`](tasks/CODEX-DI-license-docs-website-transition.md) |
 
 ### Phase 5 dependency graph
 
@@ -293,6 +291,8 @@ exploratory/deferred and intentionally have no executable board task yet.
 | CODEX-DC | Website positioning and shipped-versus-planned claim reconciliation; interactive browser smoke deferred | codex | `53843e5` | 4 |
 | CODEX-DG | AGPL/MPL transition specification, ownership audit, CLA, and policy gates; attorney review gates DH | codex | `53843e5` | 4 |
 | CODEX-DJ | Remove unused EPL-derived Sparkplug schema and reconcile provenance docs | codex | `53843e5` | 4 |
+| CODEX-DH | Launch AGPL product core, MPL protocol exceptions, source surfaces, notices, and CI enforcement | codex | `a8cbdbc` | 4 |
+| CODEX-DI | Publish coordinated AGPL/MPL repository and website communication; visual smoke deferred | codex | `a8cbdbc` | 4 |
 
 ## Conventions
 

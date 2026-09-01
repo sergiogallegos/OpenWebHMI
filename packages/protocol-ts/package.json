@@ -2,6 +2,7 @@
   "name": "@openwebhmi/protocol",
   "private": true,
   "version": "0.0.1",
+  "license": "MPL-2.0",
   "type": "module",
   "exports": {
     ".": {

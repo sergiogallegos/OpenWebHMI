@@ -3,7 +3,7 @@ id: CODEX-DH
 title: Atomic AGPL core and MPL protocol repository transition
 owner: codex
 phase: 4
-status: open
+status: merged
 created: 2026-09-01
 last-update: 2026-09-01 codex [gpt-5]
 ---
@@ -67,6 +67,85 @@ packages, accurate source offers, artifact notices, and automated enforcement.
 
 ## Codex log
 
+### 2026-09-01  codex [gpt-5]
+
+Started under a recorded maintainer decision to proceed without outside legal
+counsel because paid review is not currently affordable. Authoritative GNU,
+Mozilla, SPDX, Harmony, and USPTO materials were rechecked. The transition will
+carry an explicit no-outside-counsel risk record and will not imply legal review.
+The exact last MIT revision is `a8cbdbc`; prior MIT grants remain unchanged.
+
+### 2026-09-01 13:57  codex [gpt-5]
+
+Implemented the atomic license map, canonical texts, manifest identifiers,
+runtime/Designer/Gateway Legal/Source surfaces, bundled notices, transition
+record, asset inventory, and fail-closed CI validator. Submitted for review after
+the full Rust and pnpm matrix passed; the macOS `.app` bundle was produced and
+inspected, while DMG packaging failed in the local packaging environment.
+
+## Codex review
+
+### 2026-09-01 13:57  codex [gpt-5]
+
+**Independent verification**
+
+- `scripts/validate-licenses --self-test` — passed, including all four negative fixtures.
+- `cargo build --workspace --all-features --locked` — passed.
+- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` — passed.
+- `cargo test --workspace --all-features --locked` — passed with network-bound tests run outside the restricted sandbox.
+- `cargo doc --workspace --no-deps` and `cargo fmt --check` — passed.
+- `pnpm -r typecheck`, `pnpm -r test`, and representative Vite builds — passed.
+- `pnpm --filter designer tauri build` — `.app` produced and legal resources inspected; DMG packaging failed in the local environment.
+
+**What's being fixed**
+
+- Future product-core code moves from MIT to AGPL-3.0-only while the two protocol packages use MPL-2.0, with usable source and notice disclosures.
+
+**Root cause confirmation**
+
+- Confirmed: the prior root `LICENSE`, workspace/package manifests, product surfaces, and public copy all represented the repository as uniformly MIT licensed.
+
+**Fix appropriateness**
+
+- The path-based policy in `LICENSE-POLICY.md`, package-level MPL overrides, canonical local texts, and artifact-visible Legal/Source surfaces put each obligation at its owning repository and build layer.
+
+**Test proof**
+
+- The validator rejects a stale MIT product manifest, missing MPL override, missing source offer, and unclassified bundled asset. Canonical hashes, generated bundles, app resources, and package metadata were also inspected.
+
+**Residual risk**
+
+- No attorney reviewed these project-specific policies or CLA; the maintainer explicitly accepted that risk because paid review is not currently affordable.
+- Interactive runtime/Designer visual smoke was unavailable because the in-app browser reported no installed browser. The `.app` bundle passed, but DMG packaging did not complete locally.
+- This review validates repository policy consistency and build behavior; it is not individualized legal advice.
+
+**Strong points (✅)**
+
+- `docs/license-transition.md` preserves prior MIT grants and records exact revision boundaries.
+- `scripts/validate-licenses` makes scope drift and missing offline notices build failures.
+- Gateway, Runtime, and Designer disclose the exact build revision and corresponding-source path.
+
+**Findings**
+
+- 🟢 The embedded MIT Rust EtherNet/IP library and all third-party dependencies retain their own terms.
+- 🟡 Interactive visual and DMG smoke remain release-environment checks, not license-map blockers.
+- 🟠 Real concerns — none within the accepted no-counsel risk disposition.
+- 🔴 Defects — none.
+
+**Acceptance criteria tally**
+
+- ✅ Core/product packages are AGPL-3.0-only and only approved protocol packages are MPL-2.0.
+- ✅ Supported artifacts carry license, source, and third-party notices; representative web and `.app` outputs were inspected.
+- ✅ Runtime and Designer expose the exact corresponding-source path for their build.
+- ✅ The transition notice identifies the exact last MIT revision without revoking prior grants.
+- ✅ CI prevents license-map drift and the complete validation matrix passes.
+- ✅ No commercial license, plugin exception, or user-content claim is invented.
+
 ## Claude review
 
 ## Verdict
+
+**Merged with explicit validation gate.** Transition commit:
+`a8cbdbc` (temporary parent ref; backfilled immediately after commit creation). Interactive
+browser visual smoke and local DMG packaging remain unproven; neither changes
+the effective repository license map or the inspected offline `.app` resources.

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LegalSource } from "./LegalSource";
 
 /** Props for the gateway connection form. */
 export type ConnectGatewayProps = {
@@ -68,6 +69,7 @@ export function ConnectGateway({
           </div>
         ) : null}
       </form>
+      <LegalSource />
     </main>
   );
 }
@@ -76,7 +78,8 @@ const styles = {
   page: {
     minHeight: "100vh",
     display: "grid",
-    placeItems: "center",
+    alignContent: "center",
+    justifyItems: "center",
     background: "#f4f6f8",
     color: "#1f2933",
     fontFamily:

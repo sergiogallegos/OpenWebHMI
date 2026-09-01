@@ -15,7 +15,7 @@ This document is the substantive answer to "why not Java? why not C#? why not al
 | Scripting | **Jython 2.7.4** — Python 2.7 language level | **C#/.NET NetLogic** | **CPython 3.11+** in worker subprocesses |
 | Module / extension format | proprietary `.modl` | proprietary | **crates.io / npm / PyPI** (no custom registry) |
 | Deployment shape | JVM-based gateway and clients | native runtime for Windows/Linux and x86/ARM | **Rust gateway + browser clients + CPython workers** |
-| Open source? | ❌ | ❌ | ✅ **MIT** |
+| Open source? | ❌ | ❌ | ✅ **AGPL core / MPL protocols** |
 
 [^optix-stack]: FactoryTalk Optix is closed source. Rockwell documents [Qt in its native presentation engine](https://www.rockwellautomation.com/en-se/docs/factorytalk-optix/1-4-4/contents-ditamap/creating-projects/object-and-variable-reference/ftoptix-nativeui/datatypes/textrendertypeenum.html) and [C# NetLogic compiled into .NET assemblies](https://www.rockwellautomation.com/en-us/docs/factorytalk-optix/1-5-7/contents-ditamap/extending-projects/netlogic.html); [current ASEM/Rockwell roles](https://rockwellautomation.wd1.myworkdayjobs.com/en-US/External_Rockwell_Automation/job/Software-Engineer--C----Qt-_R26-1796) seek C++/Qt engineers for native and embedded industrial UI work. That supports the stack characterization, but the exact internal boundary between the designer, framework, and runtime is not public.
 
@@ -23,7 +23,7 @@ The three stacks reflect three different bets:
 
 - **Ignition** uses a mature Java/JVM platform, a Swing designer, a React/TypeScript web runtime, and Jython for user scripting. Its integration story is strongest inside the Java ecosystem, while its Python language level remains 2.7.
 - **Optix** combines a native, cross-platform industrial runtime with Qt-based presentation and a C#/.NET customization model. That is a capable embedded-to-edge design, but its implementation and extension boundary remain vendor-controlled.
-- **OpenWebHMI** uses **Rust for the always-on systems boundary**, **TypeScript for the complete UI surface**, and **CPython for plant scripting and data work**. MIT licensing makes those boundaries inspectable and changeable by the operator rather than only by the vendor.
+- **OpenWebHMI** uses **Rust for the always-on systems boundary**, **TypeScript for the complete UI surface**, and **CPython for plant scripting and data work**. The AGPL product core and MPL protocol packages make those boundaries inspectable and changeable by the operator rather than only by the vendor.
 
 ## Why the combination is the vision
 
@@ -32,7 +32,7 @@ The advantage is not that Rust, TypeScript, or Python wins every category indivi
 - **Rust protects the plant-facing core.** Drivers, tag processing, alarms, history, authentication, and client fan-out live in a memory-safe systems language without garbage-collector pauses. This is the smallest trusted core and the part that must remain available when a user script fails.
 - **TypeScript unifies authoring and operation.** The designer, web runtime, component library, and protocol types use the browser ecosystem. Components and interaction models can be shared instead of maintaining separate desktop and web widget families.
 - **CPython meets plant engineers where data work already happens.** Scripts use the current Python language and its packaging ecosystem. Worker subprocesses isolate interpreter and native-extension failures from the Rust gateway.
-- **Open source turns technical choices into operator rights.** MIT licensing permits source review, internal forks, air-gapped operation, independent security audits, and extensions without a vendor-controlled module format or recurring runtime entitlement.
+- **Open source turns technical choices into operator rights.** The AGPL/MPL split permits source review, internal use, air-gapped operation, independent security audits, modification, and redistribution under the applicable terms without a recurring runtime entitlement.
 
 This separation also creates an understandable trust model: Rust is trusted platform code, TypeScript is distributed UI code, and Python is user-authored code behind a process boundary. The stack is therefore more than a list of popular languages; it expresses where failures are allowed, who can extend the system, and who ultimately controls a deployment.
 

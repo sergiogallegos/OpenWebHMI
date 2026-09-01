@@ -23,10 +23,14 @@ use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 const SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
+const BUILD_COMMIT: &str = env!("OPENWEBHMI_GIT_COMMIT");
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
 struct Args {
+    /// Print license and corresponding-source information, then exit.
+    #[arg(long)]
+    legal: bool,
     /// Address the WebSocket gateway binds.
     #[arg(long, default_value = "127.0.0.1:8080")]
     bind: SocketAddr,
@@ -68,7 +72,25 @@ struct Args {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+    if args.legal {
+        print_legal_source();
+        return Ok(());
+    }
     run_gateway(args, CancellationToken::new(), tokio::signal::ctrl_c()).await
+}
+
+fn print_legal_source() {
+    println!("OpenWebHMI Gateway {}", env!("CARGO_PKG_VERSION"));
+    println!("Product core license: AGPL-3.0-only");
+    println!("Wire protocol packages: MPL-2.0");
+    println!("Build commit: {BUILD_COMMIT}");
+    println!(
+        "Corresponding source: https://github.com/sergiogallegos/OpenWebHMI/tree/{BUILD_COMMIT}"
+    );
+    println!(
+        "License map: https://github.com/sergiogallegos/OpenWebHMI/blob/{BUILD_COMMIT}/LICENSE-POLICY.md"
+    );
+    println!("Official builds include LICENSE, LICENSE-POLICY.md, and THIRD_PARTY_NOTICES.md.");
 }
 
 /// Cancel-safe: `run_server`, Ctrl-C, and `CancellationToken::cancelled` are
@@ -626,6 +648,7 @@ mod tests {
         let shutdown = CancellationToken::new();
         let cancel = shutdown.clone();
         let args = Args {
+            legal: false,
             bind: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0),
             backup_bind: None,
             log_level: "off".to_string(),
@@ -748,6 +771,7 @@ mod tests {
 
     fn test_args(root: &std::path::Path, bind: SocketAddr) -> Args {
         Args {
+            legal: false,
             bind,
             backup_bind: None,
             log_level: "off".to_string(),

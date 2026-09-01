@@ -1,8 +1,7 @@
 # Licensing transition audit
 
-Status: CODEX-DG working record. This document does not change the effective
-license of any file. The repository remains MIT until CODEX-DH lands the reviewed
-transition atomically.
+Status: CODEX-DG audit, activated by CODEX-DH on 2026-09-01. The effective terms
+are the canonical texts and path map linked from the root `LICENSE-POLICY.md`.
 
 ## Recorded direction
 
@@ -133,12 +132,12 @@ is present when an employer or other entity owns relevant rights.
 The CLA is adapted from the Harmony Contributor License Agreement model. It does
 not assign copyright. It grants copyright and patent rights sufficient for future
 relicensing while promising continued availability under the outbound license in
-effect at submission. An attorney should review the agreement and electronic
-acceptance mechanics before relying on it for material external contributions.
+effect at submission. The maintainer accepted the electronic acceptance
+mechanics under the risk disposition below.
 
-## Separate-content working disposition
+## Separate-content disposition
 
-Subject to legal review before CODEX-DH:
+Finalized by CODEX-DH:
 
 - user-facing documentation and tutorials: CC-BY-4.0;
 - reproducible screenshots and general marketing/demo media: CC-BY-4.0 unless an
@@ -149,20 +148,28 @@ Subject to legal review before CODEX-DH:
   separate trademark policy, not licensed for misleading fork branding;
 - third-party media: its original license and attribution.
 
-## User-content working disposition
+## User-content disposition
 
-The intended policy is that operators retain rights in projects, tag models,
+The policy states that operators retain rights in projects, tag models,
 historian/process data, PLC programs, drawings, recipes, scripts, and other content
-they create or supply. CODEX-DG does not assert that every plugin or script is
-legally independent of the AGPL product. Counsel must review the exact project-file,
-script, plugin, generated-output, and module-SDK language before it becomes an
-exception or public promise.
+they independently create or supply. It does not assert that every plugin or
+script is legally independent of the AGPL product and grants no plugin or module
+SDK exception.
 
-## Blocking attestations and review
+## Maintainer risk disposition before activation
 
-The following remain blocking for CODEX-DH:
+Paid outside legal review was not affordable at launch. On 2026-09-01 the
+maintainer directed activation after a second good-faith review against the
+canonical GNU AGPLv3 and Mozilla MPL 2.0 texts, Mozilla's MPL FAQ, SPDX,
+Harmony CLA materials, and USPTO trademark guidance. This is an accepted project
+risk and does not imply professional legal approval.
 
-- file-level provenance review for copied/generated/vendor/media material;
-- legal review of the CLA, electronic acceptance, AGPL network-source offer,
-  MPL boundary, user-content language, documentation/media terms, and trademark policy;
-- transition freeze identifying the exact last MIT commit.
+- The ownership attestation and file/provenance inventory are accepted.
+- The last MIT revision is `a8cbdbc`; the first transition commit is backfilled
+  in `docs/license-transition.md` immediately after it is created.
+- Documentation/tutorial terms are finalized in `CONTENT-LICENSE.md`; media
+  requires an explicit per-asset declaration.
+- Third-party screenshot/font/icon/mark rights remain excluded unless inventoried.
+- `brand/README.md` is governed by the root trademark policy.
+- User content is not claimed; copied software remains governed by its license.
+- No plugin or module-SDK exception is granted.
