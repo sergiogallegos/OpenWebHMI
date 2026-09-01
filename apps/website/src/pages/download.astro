@@ -60,7 +60,7 @@ cargo build --workspace</code></pre>
     </section>
 
     <section class="download-section">
-      <h2>Run the current demo</h2>
+      <h2>Run the current developer demo</h2>
       <p class="muted">
         Three terminals. After this, the runtime page shows a sin wave, a
         counter, and a Pressure value coming from the Rockwell-protocol
@@ -81,25 +81,37 @@ cargo build --workspace</code></pre>
     </section>
 
     <section class="download-section">
-      <h2>Coming in Phase 4 (1.0)</h2>
+      <span class="badge">In development</span>
+      <h2>Product-ready reference demo</h2>
+      <p>
+        The planned default bundle is a fictional manufacturing HMI that runs
+        offline with deterministic simulated PLC data. An explicit real
+        Rockwell profile will drive the same screens and logical tags from a
+        physical PLC. Profile selection will be visible, and a failed PLC
+        connection will not silently switch to simulation.
+      </p>
+      <p class="muted">
+        The first showcase is planned on Linux, with Omarchy as the initial
+        recording environment—not an exclusive dependency, support guarantee,
+        or official partnership.
+      </p>
+    </section>
+
+    <section class="download-section">
+      <h2>Release packaging targets</h2>
+      <p class="muted">
+        These remain targets until release artifacts are built and smoke-tested.
+        No installer is advertised as downloadable today.
+      </p>
       <ul class="future">
         <li>
-          <strong>Gateway installers</strong>: macOS <code>.pkg</code>,
-          Linux <code>.deb</code> + <code>.rpm</code> from CI builds,
-          AppImage from release builds, Windows MSI, and a Docker image.
+          <strong>Gateway</strong>: standard artifacts for Linux, macOS, and
+          Windows, plus a container image, after release validation.
         </li>
         <li>
-          <strong>Designer installers</strong>: Tauri-bundled
-          <code>.dmg</code> for macOS and signed installer for Windows.
-        </li>
-        <li>
-          <strong>Single-line installers</strong> via Homebrew, Scoop, and a
-          curl-pipe-shell script.
-        </li>
-        <li>
-          <strong>Hosted demo gateway</strong> at
-          <code>demo.openwebhmi.com</code> for evaluating the runtime
-          without local setup.
+          <strong>Designer</strong>: Tauri release artifacts for Linux, macOS,
+          and Windows after each platform passes its installation and launch
+          evidence gate.
         </li>
       </ul>
     </section>

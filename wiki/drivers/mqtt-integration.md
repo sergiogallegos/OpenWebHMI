@@ -31,7 +31,7 @@ The brief named `rumqttc = "0.24"`. At implementation time the compatible curren
 | `rumqttc` selected as the v1 wire crate | CODEX-Y task brief and implementation | `docs/agents/tasks/CODEX-Y-driver-mqtt.md`, `Cargo.toml` |
 | Resolved `rumqttc` version is `0.25.1`; `rumqttd` version is `0.20.0` | Cargo lockfile | `Cargo.lock` |
 | Upstream commits are recorded in crate VCS metadata | Cargo VCS metadata | `~/.cargo/registry/src/.../rumqttc-0.25.1/.cargo_vcs_info.json`, `~/.cargo/registry/src/.../rumqttd-0.20.0/.cargo_vcs_info.json` |
-| Sparkplug B payload schema subset is vendored | OpenWebHMI proto | `crates/driver-mqtt/proto/sparkplug_b.proto` |
+| Sparkplug B payload wire fields are first-party Rust `prost` types | OpenWebHMI implementation against the public specification | `crates/driver-mqtt/src/sparkplug.rs` |
 | Address parser supports generic and Sparkplug B shapes | OpenWebHMI code | `crates/driver-mqtt/src/address.rs` |
 | Sparkplug alias lifecycle is implemented and unit-tested | OpenWebHMI code | `crates/driver-mqtt/src/sparkplug.rs` |
 | Simulator-backed integration validates generic and Sparkplug updates | OpenWebHMI test | `crates/driver-mqtt/tests/integration.rs` |

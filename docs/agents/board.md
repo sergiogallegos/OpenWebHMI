@@ -175,9 +175,10 @@ does not pull post-1.0 implementation into the current release.
 | CODEX-CZ | Demo marketing capture pipeline and public content kit | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CZ-demo-marketing-content-kit.md`](tasks/CODEX-CZ-demo-marketing-content-kit.md) |
 | CODEX-DA | Generic Rockwell demo PLC profile, controller package, and hardware proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DA-rockwell-demo-plc-profile.md`](tasks/CODEX-DA-rockwell-demo-plc-profile.md) |
 | CODEX-DB | Omarchy Linux first public demo deployment and video proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DB-omarchy-first-demo-video.md`](tasks/CODEX-DB-omarchy-first-demo-video.md) |
-| CODEX-DC | Website positioning and shipped-versus-planned claim reconciliation | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DC-website-positioning-claims.md`](tasks/CODEX-DC-website-positioning-claims.md) |
 | CODEX-DE | Website demo hub and shipped-product visual story | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DE-website-demo-hub-visual-story.md`](tasks/CODEX-DE-website-demo-hub-visual-story.md) |
 | CODEX-DF | Website discoverability, social previews, and launch metadata | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DF-website-discovery-social-metadata.md`](tasks/CODEX-DF-website-discovery-social-metadata.md) |
+| CODEX-DH | Atomic AGPL core and MPL protocol repository transition | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DH-agpl-mpl-repository-transition.md`](tasks/CODEX-DH-agpl-mpl-repository-transition.md) |
+| CODEX-DI | AGPL/MPL public documentation, website, and transition communication | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DI-license-docs-website-transition.md`](tasks/CODEX-DI-license-docs-website-transition.md) |
 
 ### Phase 5 dependency graph
 
@@ -203,6 +204,12 @@ DC website positioning/claim reconciliation (may proceed before the demo ships)
   └── CY + CZ + CN -> DE website demo hub/visual story
                         └── CZ -> DF discovery/social/launch metadata
                               (DB required only for published-video metadata)
+
+DG ownership/provenance + licensing policy gate
+  └── DJ remove unused EPL-derived Sparkplug schema
+        └── DH atomic AGPL core/MPL protocol transition
+              └── DI repository docs + website communication
+              (DH + DI publish in one coordinated transition window)
 ```
 
 Recipes/maintenance remain planned candidates after CR/CO. Part/process data,
@@ -283,6 +290,9 @@ exploratory/deferred and intentionally have no executable board task yet.
 | CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | `823d7a1` | 4 |
 | CODEX-AZ | ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build) | codex | `bd3d006` | 4 |
 | CODEX-BA | website refresh — surface AN/AO/AS/AT/AQ/AR features on openwebhmi.com landing + docs + download pages | codex | `a7ba50a` | 4 |
+| CODEX-DC | Website positioning and shipped-versus-planned claim reconciliation; interactive browser smoke deferred | codex | `f635f4a` | 4 |
+| CODEX-DG | AGPL/MPL transition specification, ownership audit, CLA, and policy gates; attorney review gates DH | codex | `f635f4a` | 4 |
+| CODEX-DJ | Remove unused EPL-derived Sparkplug schema and reconcile provenance docs | codex | `f635f4a` | 4 |
 
 ## Conventions
 

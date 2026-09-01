@@ -6,6 +6,21 @@ This document covers **what** you can contribute, **how** the contribution flows
 
 For the architectural context behind these instructions, read [`architecture.md`](architecture.md) and [`roadmap.md`](roadmap.md) first.
 
+## Contributor License Agreement
+
+Every contribution merged on or after 2026-09-01 requires affirmative acceptance
+of the [OpenWebHMI Contributor License Agreement](../CONTRIBUTOR_LICENSE_AGREEMENT.md),
+version 1.0. Contributors retain their copyright while granting the project rights
+needed to maintain and relicense accepted contributions. The contribution remains
+available under the OpenWebHMI license governing the relevant material when it was
+submitted, even if the project later offers it under additional terms.
+
+The pull-request checklist records acceptance. If an employer, client, or another
+entity owns or may own the contribution, an authorized representative must accept
+the CLA or provide written authorization linked from the pull request. Mark material
+that is not intended as a contribution accordingly and disclose all third-party
+code, media, generated content, and license terms before review.
+
 ---
 
 ## 1. What you can contribute

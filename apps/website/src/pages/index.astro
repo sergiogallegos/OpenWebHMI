@@ -11,15 +11,14 @@ const BLOB = `${REPO}/blob/main`;
     <div class="container hero-inner">
       <Logo size={88} />
       <span class="badge warn">Pre-alpha · Phase 4 in progress</span>
-      <h1>The open-source SCADA & HMI platform.</h1>
+      <h1>Open-source SCADA/HMI for real machines.</h1>
       <p class="lede">
-        Web-first runtime, cross-platform desktop designer, plant-floor
-        connectivity. Built on <strong>Rust</strong>,
-        <strong>TypeScript</strong>, and modern <strong>Python</strong> for
-        in-platform AI/ML — not Java, not .NET, not Jython 2.7.
+        Design operator views, run them in a browser, and connect plant-floor
+        data through a Rust gateway. OpenWebHMI is a pre-alpha platform built
+        in public for small and mid-size industrial systems.
       </p>
       <div class="hero-actions">
-        <a class="button primary" href="/download">Get started →</a>
+        <a class="button primary" href="/download">Build from source →</a>
         <a
           class="button secondary"
           href="https://github.com/sergiogallegos/OpenWebHMI"
@@ -30,6 +29,44 @@ const BLOB = `${REPO}/blob/main`;
       <p class="hero-meta subtle">
         MIT-licensed · single Rust gateway binary · no JVM · no per-server fees
       </p>
+    </div>
+  </section>
+
+  <section class="container section">
+    <h2>Product path</h2>
+    <p class="muted">
+      A working SCADA/HMI foundation comes first. The reference demo and
+      manufacturing features build on that foundation without expanding the
+      v1.0 promise.
+    </p>
+    <div class="status-grid">
+      <article>
+        <span class="badge success">Available</span>
+        <h3>SCADA/HMI foundation</h3>
+        <p>
+          Source builds include the Rust gateway, browser runtime, form-based
+          designer, tag flow, history, alarms, authentication, scripting, and
+          a Rockwell-protocol simulator vertical slice.
+        </p>
+      </article>
+      <article>
+        <span class="badge">In development</span>
+        <h3>Default reference demo</h3>
+        <p>
+          One fictional manufacturing HMI will ship with deterministic offline
+          simulation and an explicit real Rockwell PLC profile using the same
+          screens and logical tags. It will never silently fall back between
+          profiles.
+        </p>
+      </article>
+      <article>
+        <span class="badge">Direction</span>
+        <h3>Optional manufacturing modules</h3>
+        <p>
+          Production, downtime, OEE, reporting, and equipment modules are a
+          post-1.0 direction—not shipped v1.0 features or an MES promise.
+        </p>
+      </article>
     </div>
   </section>
 
@@ -58,7 +95,7 @@ const BLOB = `${REPO}/blob/main`;
       <li><strong>Single gateway</strong> per deployment</li>
       <li><strong>≤ 10,000</strong> live tags per gateway</li>
       <li><strong>≤ 50</strong> concurrent runtime clients per gateway</li>
-      <li><strong>Five shipped drivers:</strong> Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff ADS</li>
+      <li><strong>Five v1 driver targets:</strong> Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff ADS</li>
       <li><strong>Web-only runtime</strong>; Tauri desktop runtime is post-1.0</li>
       <li><strong>Linux, macOS, Windows</strong> for gateway and designer</li>
     </ul>
@@ -129,10 +166,10 @@ const BLOB = `${REPO}/blob/main`;
         contributor ecosystem instead of maintaining unrelated UI stacks.
       </li>
       <li>
-        <strong>CPython owns user automation and data work:</strong> modern
-        packages such as <code>numpy</code>, <code>pandas</code>, and ML or LLM
-        SDKs run in isolated workers, so script failures do not take down the
-        gateway.
+        <strong>CPython owns user automation and data work:</strong> scripts run
+        in worker subprocesses with gateway-enforced timeouts. Available
+        third-party packages depend on the deployment environment; process
+        separation is not a complete security sandbox.
       </li>
       <li>
         <strong>MIT licensing makes openness architectural:</strong> plants can
@@ -229,7 +266,7 @@ const BLOB = `${REPO}/blob/main`;
       </li>
       <li>
         <span class="badge success">✓ Phase 2</span>
-        Designer MVP — form-based authoring, 6 essential components, hot reload.
+        Designer MVP — form-based authoring, an initial component set, hot reload.
       </li>
       <li>
         <span class="badge success">✓ Phase 3</span>
@@ -237,9 +274,10 @@ const BLOB = `${REPO}/blob/main`;
       </li>
       <li>
         <span class="badge">In progress</span>
-        Phase 4 — five drivers are in place for the v1.0 envelope; the current
-        closeout work is CI hygiene, release packaging, website/docs refresh,
-        and the real-hardware validation gate before 1.0. Recent v1.x
+        Phase 4 — five driver implementations are being hardened and integrated
+        for the v1.0 envelope. Current closeout work includes CI hygiene,
+        release packaging, website/docs refresh, and the physical Rockwell PLC
+        validation gate before 1.0. Recent v1.x
         additions include audit-log Part 11 framing, themes, widget transfer,
         historian retention planning, and Raspberry Pi deployment notes.
       </li>
@@ -259,7 +297,7 @@ const BLOB = `${REPO}/blob/main`;
       <li>A hard-real-time control platform.</li>
       <li>A safety-rated (IEC 61508 / SIL) system.</li>
       <li>A replacement for vendor-specific PLC engineering tooling.</li>
-      <li>An MES platform — that's a year-2+ conversation, not a 1.0 promise.</li>
+      <li>An MES platform — optional manufacturing modules are post-1.0 direction, not a 1.0 promise.</li>
       <li>An enterprise-scale (&gt;10K tag, &gt;50 client, multi-gateway) system in v1.</li>
     </ul>
   </section>
@@ -325,6 +363,35 @@ const BLOB = `${REPO}/blob/main`;
   .hero-meta {
     margin-top: 8px;
     font-size: 0.9rem;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .status-grid article {
+    padding: 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .status-grid h3 {
+    margin: 16px 0 8px;
+  }
+
+  .status-grid p {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 760px) {
+    .status-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .section {

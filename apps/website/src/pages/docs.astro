@@ -42,7 +42,7 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
       },
       {
         title: "Stack rationale",
-        description: "Why Rust + Python + TypeScript instead of Java/Jython or C++/Qt/C#. The architecture and AI/ML differentiators.",
+        description: "Why Rust + Python + TypeScript, and the responsibility assigned to each language.",
         href: `${BLOB}/docs/stack-rationale.md`,
         audience: "everyone",
       },
@@ -50,6 +50,30 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
         title: "Scale estimates",
         description: "Expected lines of code per component for v1.0 (target floor 2M), with actuals tracked over time.",
         href: `${BLOB}/docs/scale-estimates.md`,
+        audience: "everyone",
+      },
+    ],
+  },
+  {
+    name: "Product direction & reference demo",
+    description: "Planning documents distinguish the v1.0 SCADA/HMI product from optional post-1.0 manufacturing work.",
+    docs: [
+      {
+        title: "Manufacturing platform direction",
+        description: "Post-1.0 module boundaries for production, downtime, OEE, reporting, and equipment capabilities.",
+        href: `${BLOB}/docs/planning/manufacturing-platform.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Reference capability analysis",
+        description: "Capability map derived from the local reference projects without copying their product identity.",
+        href: `${BLOB}/docs/planning/reference-capability-analysis.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Manufacturing reference demo",
+        description: "Planned default offline simulation and explicit real Rockwell profile for one shared HMI project.",
+        href: `${BLOB}/docs/planning/manufacturing-demo.md`,
         audience: "everyone",
       },
     ],

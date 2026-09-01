@@ -4,15 +4,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 <BaseLayout
   title="About"
-  description="OpenWebHMI is an open-source SCADA / HMI platform built collaboratively by humans and AI. Learn about the project's mission, contribution model, and license."
+  description="OpenWebHMI is an open-source, web-first SCADA/HMI platform. Learn about the mission, contribution model, current license, and pre-alpha status."
 >
   <div class="container about">
     <header>
       <h1>About OpenWebHMI</h1>
       <p class="lede muted">
-        An open-source, web-first SCADA / HMI platform for small and mid-size
-        industrial systems. MIT-licensed. Built in the open, on GitHub, by
-        humans collaborating with AI.
+        An open-source, web-first SCADA/HMI platform for small and mid-size
+        industrial systems. The current source release is MIT-licensed and
+        built in public on GitHub.
       </p>
     </header>
 
@@ -29,9 +29,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>
         OpenWebHMI's goal is a credible open-source platform a small or
         mid-size plant could actually run — without a JVM, without
-        per-server licensing, with a modern Python ecosystem in scripts so
-        predictive maintenance and AI assistance are normal features rather
-        than external integration projects.
+        per-server licensing. Rust handles the plant-facing core, TypeScript
+        handles the designer and browser runtime, and CPython workers provide
+        an automation surface without placing Python in the control path.
       </p>
     </section>
 
@@ -66,23 +66,23 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section>
       <h2>Contributing</h2>
       <p>
-        Contributions are welcome — the project is structured around
-        community-built drivers, components, and script libraries. Three
-        plugin extension points:
+        Contributions are welcome. The main contribution surfaces are drivers,
+        components, and script libraries; packaging and distribution contracts
+        for third-party extensions continue to mature before 1.0.
       </p>
       <ul class="role-list">
         <li>
-          <strong>Drivers</strong> (Rust, published to crates.io) implementing
+          <strong>Drivers</strong> (Rust) implementing
           the <code>Driver</code> trait.
         </li>
         <li>
-          <strong>Components</strong> (TS / React, published to npm)
+          <strong>Components</strong> (TypeScript / React)
           declaring a <code>propsSchema</code> that drives the designer's
           property panel automatically.
         </li>
         <li>
-          <strong>Script libraries</strong> (Python, project-bundled or
-          PyPI) exercising the <code>system.*</code> standard library.
+          <strong>Script libraries</strong> (Python) exercising the
+          <code>system.*</code> standard library within the documented host.
         </li>
       </ul>
       <p>
@@ -100,9 +100,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <h2>License</h2>
       <p>
         OpenWebHMI is released under the <strong>MIT License</strong>. The
-        runtime is free; there are no per-server fees, no module licenses,
-        no activation servers. Brand assets are MIT-licensed too — fork
-        away.
+        current source revision has no per-server fees, module licenses, or
+        activation server. A coordinated source-license transition is being
+        planned; until it lands, the repository's current <code>LICENSE</code>
+        file remains authoritative. The OpenWebHMI name is an unregistered
+        project mark; it is not represented as a registered trademark.
       </p>
       <p>
         <a
@@ -130,9 +132,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>
         <strong>Pre-alpha.</strong> The architecture, roadmap, and feature
         scope are committed, and the implementation is progressing quickly.
-        Don't deploy this anywhere that matters yet. Real-hardware validation —
-        against physical Rockwell, OPC UA, Modbus, MQTT/Sparkplug B, and
-        Beckhoff TwinCAT endpoints — is a hard gate before 1.0.
+        Don't deploy this anywhere that matters yet. A 24-hour validation run
+        against a physical Rockwell PLC is the binding real-hardware gate before
+        1.0; other protocol claims remain limited to their recorded test evidence.
       </p>
     </section>
   </div>

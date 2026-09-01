@@ -116,7 +116,7 @@ Deliverables:
 - **Four new drivers** (committed v1 scope, tracked separately):
   - `crates/driver-opcua` — [CODEX-W](agents/tasks/CODEX-W-driver-opcua.md). Validates the `Driver` trait against a fundamentally different protocol from EtherNet/IP. Opens up Siemens / Schneider / Beckhoff via OPC UA endpoints.
   - `crates/driver-modbus` — [CODEX-X](agents/tasks/CODEX-X-driver-modbus.md). TCP + RTU in one crate. The most common legacy protocol — every Schneider, Eaton, AB Micro, GE Versamax speaks it.
-  - `crates/driver-mqtt` — [CODEX-Y](agents/tasks/CODEX-Y-driver-mqtt.md). Generic topic-to-tag mapping + Sparkplug B (the IIoT MQTT spec used in cloud-deployed Ignition). Includes vendored Sparkplug B protobuf schema.
+  - `crates/driver-mqtt` — [CODEX-Y](agents/tasks/CODEX-Y-driver-mqtt.md). Generic topic-to-tag mapping + Sparkplug B (the IIoT MQTT spec used in cloud-deployed Ignition). The required protobuf wire fields are implemented as first-party Rust `prost` message types against the public specification.
   - `crates/driver-ads` — [CODEX-Z](agents/tasks/CODEX-Z-driver-ads.md). Beckhoff TwinCAT (PLC + NC + I/O symbol access via ADS device notifications).
 - **More components** (target: 25+ total): `Gauge, Pie/Bar/Line charts, AlarmBanner, MultiState, ProgressBar, Slider, Dropdown, Tabs, DataGrid`, etc.
 - **Plugin SDK** (`packages/sdk` + Rust crate templates):
