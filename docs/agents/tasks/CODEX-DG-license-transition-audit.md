@@ -157,7 +157,7 @@ in the audit and the exact transition freeze/cutoff.
 
 ## Verdict
 
-**Merged with explicit validation gate.** Merge commit: `f635f4a` (placeholder; backfilled after commit).
+**Merged with explicit validation gate.** Merge commit: `53843e5`.
 The audit, CLA launch, and policy drafts are complete. CODEX-DH remains blocked
 until the recorded attorney-review items are resolved and the atomic transition
 freeze identifies the exact last MIT revision. Trademark registration is not a

@@ -164,7 +164,7 @@ deferred because browser discovery returned no available browser.
 
 ## Verdict
 
-**Merged with explicit validation gate.** Merge commit: `f635f4a` (placeholder; backfilled after commit).
+**Merged with explicit validation gate.** Merge commit: `53843e5`.
 Public claims now distinguish available behavior, in-development demo work, and
 post-1.0 direction. Interactive desktop/mobile visual and accessibility smoke
 remains required when a browser is available; no pixel-level pass is claimed.

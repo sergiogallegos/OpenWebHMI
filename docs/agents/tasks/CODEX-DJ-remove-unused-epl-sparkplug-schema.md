@@ -127,6 +127,6 @@ tests; the three counted runs used approved local bind access.
 
 ## Verdict
 
-**Merged.** Merge commit: `f635f4a` (placeholder; backfilled after commit).
+**Merged.** Merge commit: `53843e5`.
 The unused EPL-derived schema is removed, active first-party wire types are
 unchanged, and independent workspace verification passed.

@@ -290,9 +290,9 @@ exploratory/deferred and intentionally have no executable board task yet.
 | CODEX-AM | Stdlib + deps modernization — thiserror = "2", single format-capture, missing-docs lint consistency | codex | `823d7a1` | 4 |
 | CODEX-AZ | ci: AppImage bundling fails with 'failed to run linuxdeploy' (apps/designer tauri build) | codex | `bd3d006` | 4 |
 | CODEX-BA | website refresh — surface AN/AO/AS/AT/AQ/AR features on openwebhmi.com landing + docs + download pages | codex | `a7ba50a` | 4 |
-| CODEX-DC | Website positioning and shipped-versus-planned claim reconciliation; interactive browser smoke deferred | codex | `f635f4a` | 4 |
-| CODEX-DG | AGPL/MPL transition specification, ownership audit, CLA, and policy gates; attorney review gates DH | codex | `f635f4a` | 4 |
-| CODEX-DJ | Remove unused EPL-derived Sparkplug schema and reconcile provenance docs | codex | `f635f4a` | 4 |
+| CODEX-DC | Website positioning and shipped-versus-planned claim reconciliation; interactive browser smoke deferred | codex | `53843e5` | 4 |
+| CODEX-DG | AGPL/MPL transition specification, ownership audit, CLA, and policy gates; attorney review gates DH | codex | `53843e5` | 4 |
+| CODEX-DJ | Remove unused EPL-derived Sparkplug schema and reconcile provenance docs | codex | `53843e5` | 4 |
 
 ## Conventions
 

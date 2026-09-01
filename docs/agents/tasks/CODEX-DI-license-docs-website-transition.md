@@ -71,4 +71,3 @@ AGPL-core/MPL-protocol transition accurately, consistently, and in plain languag
 ## Claude review
 
 ## Verdict
-

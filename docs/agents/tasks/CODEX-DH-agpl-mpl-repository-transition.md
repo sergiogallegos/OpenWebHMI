@@ -70,4 +70,3 @@ packages, accurate source offers, artifact notices, and automated enforcement.
 ## Claude review
 
 ## Verdict
-

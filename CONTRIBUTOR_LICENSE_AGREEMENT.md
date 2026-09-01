@@ -152,4 +152,3 @@ the material, its owner, its source, and its license, and mark the material
 
 Questions about this Agreement may be raised through the OpenWebHMI repository:
 <https://github.com/sergiogallegos/OpenWebHMI>.
-
