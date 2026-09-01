@@ -80,8 +80,8 @@ The exact last MIT revision is `a8cbdbc`; prior MIT grants remain unchanged.
 Implemented the atomic license map, canonical texts, manifest identifiers,
 runtime/Designer/Gateway Legal/Source surfaces, bundled notices, transition
 record, asset inventory, and fail-closed CI validator. Submitted for review after
-the full Rust and pnpm matrix passed; the macOS `.app` bundle was produced and
-inspected, while DMG packaging failed in the local packaging environment.
+the Rust matrix and pnpm typecheck/test passed; all web/package builds and the
+macOS `.app` passed, while aggregate `pnpm -r build` stopped at DMG packaging.
 
 ## Codex review
 
@@ -95,6 +95,7 @@ inspected, while DMG packaging failed in the local packaging environment.
 - `cargo test --workspace --all-features --locked` — passed with network-bound tests run outside the restricted sandbox.
 - `cargo doc --workspace --no-deps` and `cargo fmt --check` — passed.
 - `pnpm -r typecheck`, `pnpm -r test`, and representative Vite builds — passed.
+- `pnpm -r build` — all package/web builds and the Designer binary/`.app` passed; the command failed only when the local Tauri process invoked `bundle_dmg.sh`.
 - `pnpm --filter designer tauri build --bundles app` — passed after the transition commit; the exact source revision and canonical legal resources were inspected in the output.
 
 **What's being fixed**
@@ -138,7 +139,7 @@ inspected, while DMG packaging failed in the local packaging environment.
 - ✅ Supported artifacts carry license, source, and third-party notices; representative web and `.app` outputs were inspected.
 - ✅ Runtime and Designer expose the exact corresponding-source path for their build.
 - ✅ The transition notice identifies the exact last MIT revision without revoking prior grants.
-- ✅ CI prevents license-map drift and the complete validation matrix passes.
+- 🟡 partially CI prevents license-map drift and the code/test matrix passes; aggregate `pnpm -r build` remains red only at local DMG packaging, while `tauri build --bundles app` passes.
 - ✅ No commercial license, plugin exception, or user-content claim is invented.
 
 ## Claude review
