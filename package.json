@@ -2,7 +2,7 @@
   "name": "openwebhmi",
   "private": true,
   "version": "0.0.0",
-  "description": "Open-source SCADA/HMI/MES platform — gateway-centric Rust runtime + Tauri designer + web HMI",
+  "description": "Open-source SCADA/HMI platform — gateway-centric Rust runtime + Tauri designer + web HMI",
   "license": "MIT",
   "repository": "github:sergiogallegos/OpenWebHMI",
   "packageManager": "pnpm@9.0.0",

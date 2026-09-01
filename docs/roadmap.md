@@ -139,17 +139,47 @@ If real hardware is still unavailable when the rest of Phase 4 completes, the re
 
 ---
 
-## Phase 5+ — Year 2 horizons (sketched, not committed)
+## Phase 5+ — Post-1.0 horizons
 
-After 1.0, sequencing is community-driven. Likely directions:
+Phase 5+ does not change the v1.0 exit gate. The authoritative manufacturing
+capability, dependency, storage, quality, packaging, and safety plan is
+[`planning/manufacturing-platform.md`](planning/manufacturing-platform.md); the
+built-in starter project is specified in
+[`planning/manufacturing-demo.md`](planning/manufacturing-demo.md).
 
-- **MES capabilities:** recipe management, batch execution (ISA-88-inspired), OEE calculation, traceability records.
-- **Mobile / responsive runtime:** layouts that adapt; PWA for tablet.
-- **Redundancy:** primary/backup gateway with state replication.
-- **More drivers:** Siemens S7, BACnet, additional EtherNet/IP-speaking vendors (Omron, Schneider, Bosch), and any community-contributed protocols beyond the five v1 drivers.
-- **Pluggable historian backends:** Timescale, Influx, Parquet/DuckDB.
-- **Cloud-managed option:** hosted gateway service for those who don't want self-hosting.
-- **AI assistance:** in-designer AI that suggests components, writes scripts, or auto-builds views from a tag list.
+### Foundation release — planned after v1.0
+
+- module contribution and module-owned storage/migration contracts;
+- versioned project templates and deterministic scenario simulation;
+- server-authoritative action/command authorization and audit;
+- optional equipment hierarchy;
+- semantic manufacturing facts, rebuildable projections, and quality metadata;
+- manufacturing component pack and interactive line layout;
+- initial Basic Machine HMI / Manufacturing Demo template.
+
+### Manufacturing release — planned after the foundation
+
+- production counters, targets, model context, machine state, and timelines;
+- alarm/fault analytics built on the existing alarm journal and semantic facts;
+- reproducible reporting data sources, definitions, PDF/CSV, and metadata;
+- versioned downtime/loss policy, reason capture, corrections, and recalculation;
+- OEE only after equipment boundaries, targets/planned time, production,
+  downtime policy, and data-quality contracts are proven.
+
+### Later — exploratory or deferred
+
+- recipes/changeover and maintenance/PM are strong candidates after the command
+  and module-storage contracts;
+- part/process data precedes SPC and traceability;
+- SPC, energy/sustainability, and equipment health require their own validated
+  domain models and remain exploratory;
+- traceability, Andon, MES integration/execution, and advanced ML are deferred
+  until their identity, event, and evidence prerequisites exist;
+- responsive/PWA runtime, redundancy, more drivers, historian backends, optional
+  hosted management, and Designer assistance remain independent post-1.0 tracks.
+
+All modules preserve Linux, macOS, and Windows support for both Gateway and
+Designer. Platform-specific integrations remain optional adapters.
 
 ---
 

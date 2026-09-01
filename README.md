@@ -23,7 +23,7 @@
 
 OpenWebHMI is an **open-source alternative to Inductive Automation Ignition** (with Rockwell FactoryTalk Optix as a secondary reference). Self-hosted, gateway-centric, web-first runtime, cross-platform desktop designer. Built for plant-floor SCADA and HMI on **small and mid-size industrial systems**.
 
-A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Win + Mac) connect to it. Plant-floor connectivity ships **five v1 drivers** spanning the dominant protocol families: Rockwell EtherNet/IP (CompactLogix, ControlLogix) via the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate, OPC UA for vendor-neutral integration (Siemens, Schneider, Yokogawa, and many others expose OPC UA endpoints natively), Modbus TCP/RTU for serial and TCP devices, MQTT with Sparkplug B for IIoT broker patterns, and **Beckhoff TwinCAT via ADS** for symbol-based PLC, NC, and I/O access.
+A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Linux, macOS, and Windows) connect to it. Plant-floor connectivity ships **five v1 drivers** spanning the dominant protocol families: Rockwell EtherNet/IP (CompactLogix, ControlLogix) via the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate, OPC UA for vendor-neutral integration (Siemens, Schneider, Yokogawa, and many others expose OPC UA endpoints natively), Modbus TCP/RTU for serial and TCP devices, MQTT with Sparkplug B for IIoT broker patterns, and **Beckhoff TwinCAT via ADS** for symbol-based PLC, NC, and I/O access.
 
 ### v1.0 target scope
 
@@ -32,7 +32,7 @@ A single **Rust gateway** owns the project, the tags, the drivers, the historian
 - **≤ 50 concurrent runtime clients** per gateway.
 - **Five drivers shipped**: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser); Tauri desktop runtime is post-1.0.
-- **Linux + macOS + Windows** for the gateway; Raspberry Pi 4 / 5 edge deployment is documented in [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md). Designer support remains desktop-focused.
+- **Linux + macOS + Windows** for both the gateway and desktop Designer; Raspberry Pi 4 / 5 edge deployment is documented in [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md).
 
 These bounds are *the* design constraint. If anything in this repo implies bigger numbers, it's wrong and should be fixed. Larger deployments are a year-2+ conversation, not a v1.0 promise.
 
@@ -48,7 +48,7 @@ OpenWebHMI's goal is a credible open-source platform a small or mid-size plant c
 
 - **Gateway**: Rust + Tokio (single binary, embedded SQLite)
 - **Drivers**: Rust, in-process plugin model. Five v1 drivers: Rockwell EtherNet/IP (via `rust-ethernet-ip`), OPC UA (via `async-opcua`), Modbus TCP/RTU (via `tokio-modbus`), MQTT incl. Sparkplug B (via `rumqttc` + `prost`), and Beckhoff TwinCAT ADS (via `ads`).
-- **Designer / IDE**: Tauri (Rust shell) + React + TypeScript (Win + Mac)
+- **Designer / IDE**: Tauri (Rust shell) + React + TypeScript (Linux + macOS + Windows)
 - **HMI runtime**: React + TypeScript in the browser
 - **Scripting**: CPython 3.11+ worker subprocesses over JSON-RPC for crash isolation
 - **Wire protocol**: JSON over WebSocket (single duplex stream per client)
@@ -77,6 +77,8 @@ OpenWebHMI assigns one clear responsibility to each language: Rust owns the alwa
 | [`docs/architecture.md`](docs/architecture.md) | System topology, every component, data flows, failure modes, security boundaries |
 | [`docs/roadmap.md`](docs/roadmap.md) | Phase 0 → 1.0 plan with concrete exit criteria per phase |
 | [`docs/feature-matrix.md`](docs/feature-matrix.md) | Side-by-side feature catalog vs Ignition and Optix; v1 / post-1.0 / not-planned markers |
+| [`docs/planning/manufacturing-platform.md`](docs/planning/manufacturing-platform.md) | Authoritative post-1.0 manufacturing capability, architecture, dependency, and sequencing plan |
+| [`docs/planning/manufacturing-demo.md`](docs/planning/manufacturing-demo.md) | Built-in starter/template and deterministic manufacturing demo plan |
 | [`docs/stack-rationale.md`](docs/stack-rationale.md) | Why **Rust + Python + TypeScript** vs Ignition's Java/Jython or Optix's C++/Qt/C# stack — and why the Python side unlocks AI/ML and predictive maintenance natively |
 | [`docs/scale-estimates.md`](docs/scale-estimates.md) | Expected LOC per component for v1.0 (target floor: **2M+**), with the actual count tracked over time |
 | [`docs/contributing.md`](docs/contributing.md) | How to add drivers, components, scripts; PR workflow; local dev setup |
@@ -94,7 +96,7 @@ OpenWebHMI assigns one clear responsibility to each language: Rust owns the alwa
 - **Phase 2** — Designer MVP: visual drag/drop authoring, 10 standard components, hot reload. *(~3 months)*
 - **Phase 3** — Core SCADA: alarms, historian + trends, auth + roles, Python scripting. *(~3 months)*
 - **Phase 4** — 1.0: four new drivers (OPC UA, Modbus TCP/RTU, MQTT/Sparkplug B, Beckhoff ADS) alongside Rockwell, plugin SDK, 25 components, real-hardware validation gate, public release. *(~3 months)*
-- **Phase 5+** — MES (recipes, OEE, traceability), redundancy, mobile, more drivers.
+- **Phase 5+** — modular manufacturing foundation and optional modules, redundancy, responsive runtime, and more drivers. Manufacturing sequencing is detailed in [`docs/planning/manufacturing-platform.md`](docs/planning/manufacturing-platform.md).
 
 Full detail: [`docs/roadmap.md`](docs/roadmap.md).
 
@@ -103,7 +105,7 @@ Full detail: [`docs/roadmap.md`](docs/roadmap.md).
 What OpenWebHMI 1.0 aims to ship that Ignition users would recognize:
 
 - Tag providers, OPC tags, memory tags, expression tags, UDTs
-- Drag/drop visual designer (Tauri, Win + Mac)
+- Drag/drop visual designer (Tauri, Linux + macOS + Windows)
 - Web HMI runtime with live tag binding, project themes, navigation. See [`docs/theme-editor.md`](docs/theme-editor.md).
 - Raspberry Pi 4 / 5 gateway deployment guide with systemd unit and cross-compile notes. See [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md).
 - Single-widget export/import for moving configured components between projects. See [`docs/widget-export-import.md`](docs/widget-export-import.md).

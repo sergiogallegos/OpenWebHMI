@@ -19,7 +19,7 @@ Open-source, web-first **SCADA / HMI** platform for small and mid-size industria
 | Concurrent runtime clients | **≤ 50** browser sessions per gateway |
 | Drivers shipped | Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS); others post-1.0 |
 | Runtime surfaces | Web (browser) only; Tauri desktop runtime is post-1.0 |
-| Designer surfaces | Tauri desktop on Windows and macOS; Linux is post-1.0 |
+| Designer surfaces | Tauri desktop on Linux, macOS, and Windows |
 | Gateway platforms | Linux, macOS, Windows; ARM Linux / Raspberry Pi deployment is documented in [`docs/deployment/raspberry-pi.md`](deployment/raspberry-pi.md) |
 | Authentication | Local users + roles + per-view ACLs; SSO/AD/LDAP post-1.0 |
 
@@ -30,7 +30,7 @@ These numbers are the design constraint. Tag-engine, WebSocket fan-out, project 
 OpenWebHMI follows the **Ignition gateway-centric** model:
 
 - A single **Gateway** (Rust binary) is the deployment unit. It owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication.
-- Many **Designer** clients (Tauri desktop app, Win + Mac) connect to a gateway to author projects.
+- Many **Designer** clients (Tauri desktop app on Linux, macOS, and Windows) connect to a gateway to author projects.
 - Many **HMI Runtime** clients (browser) connect to the same gateway to render projects with live tag data.
 - **Local mode** = one gateway + one client co-located on a single machine. Same code path as multi-client; just one process per role.
 
@@ -84,7 +84,7 @@ OpenWebHMI follows the **Ignition gateway-centric** model:
 | Drivers | **Rust** (in-process plugins) | Tightest possible coupling to tag engine; reuse vendor crates (`rust-ethernet-ip`, `tokio-modbus`, etc.). |
 | Scripting | **CPython 3.11+** worker subprocesses over JSON-RPC | Familiar to plant engineers (Ignition uses Jython); subprocess isolation sidesteps GIL contention and survives script crashes. |
 | Wire protocol | **JSON over WebSocket** (v1) | Single duplex stream per client; debuggable; trivial TS interop. MessagePack/CBOR is a future optimization. |
-| Designer / IDE | **Tauri** (Rust shell) + **React + TS** | Native binary, small footprint vs Electron, ships on Win + Mac. React for ecosystem (Monaco, react-konva, etc.). |
+| Designer / IDE | **Tauri** (Rust shell) + **React + TS** | Native binary, small footprint vs Electron, ships on Linux, macOS, and Windows. React for ecosystem (Monaco, react-konva, etc.). |
 | HMI runtime | **React + TS** in a browser | Single rendering surface for v1; web-only is dramatically simpler than Vision-style desktop client. |
 | Component library | **React** components, schema-driven | Same components used by designer (with adornments) and runtime (live). |
 | Persistence | **SQLite** for project store, historian, auth | Zero-ops, embedded, single-file backups. Pluggable backend (Postgres + Timescale) deferred to v2. |
@@ -252,7 +252,7 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 
 ### 4.10 Designer / IDE (`apps/designer`)
 
-Tauri shell (Rust) + React UI (TS). Cross-platform: Windows + macOS.
+Tauri shell (Rust) + React UI (TS). Cross-platform: Linux, macOS, and Windows.
 
 Modules:
 - **Connection** — pick gateway, log in.

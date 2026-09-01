@@ -54,7 +54,7 @@ open ──▶ in-progress ──▶ submitted ──▶ under-review ──┬�
 
 | Status | Meaning | Set by |
 |---|---|---|
-| `open` | Brief written, no work started | claude (when authoring brief) |
+| `open` | Brief written, no work started | task author (normally Claude; Codex when directed by the maintainer) |
 | `in-progress` | Codex acknowledged and started | codex (when starting work) |
 | `submitted` | Codex finished, awaiting review | codex (with commit ref or diff) |
 | `under-review` | Claude has begun reviewing | claude (when starting review) |
@@ -74,8 +74,8 @@ All three are part of the same edit.
 
 Every task file has these sections, in this order:
 
-1. **Frontmatter** (yaml). Fields: `id`, `title`, `owner`, `phase`, `status`, `created`, `last-update`.
-2. **Brief** — written once by claude. Codex must not edit this. If the brief is wrong, codex appends a question in `## Codex log` rather than editing.
+1. **Frontmatter** (yaml). Fields: `id`, `title`, `owner`, `phase`, `status`, `created`, `last-update`. `phase` is a non-negative roadmap phase; post-1.0 work may use Phase 5 or later.
+2. **Brief** — written once by the task author (normally Claude; Codex may author when directed by the maintainer). After work starts, Codex must not edit it. If the brief is wrong, Codex appends a question in `## Codex log` rather than editing.
 3. **Codex log** — append-only by codex. Each entry is timestamped and signed. Format below.
 4. **Claude review** — append-only by claude after submission.
 5. **Verdict** — final disposition by claude.

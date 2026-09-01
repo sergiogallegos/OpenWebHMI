@@ -161,7 +161,7 @@
 
 | Feature | Ignition | Optix | OpenWebHMI |
 |---|:-:|:-:|---|
-| Cross-platform (Win + Mac + Linux) | ✅ Win/Mac/Linux | Win + Linux runtime, Win-only Studio | 🟢 v1 — Win + Mac (Linux post-1.0) |
+| Cross-platform (Win + Mac + Linux) | ✅ Win/Mac/Linux | Win + Linux runtime, Win-only Studio | 🟢 v1 — Linux + macOS + Windows; release validation tracked in the hardening board |
 | Visual canvas | ✅ | ✅ | 🟢 v1 (Phase 2) |
 | Project resources tree | ✅ | ✅ | 🟢 v1 |
 | Tag browser (live PLC browse) | ✅ | ✅ | 🟢 v1 (Phase 1) |
@@ -201,15 +201,28 @@
 
 ## 12. MES / Industry 4.0
 
+Post-1.0 manufacturing direction is governed by
+[`planning/manufacturing-platform.md`](planning/manufacturing-platform.md).
+The statuses below do not add anything to the v1.0 scope contract. `post-1.0`
+means planned only where the linked plan gives it a prerequisite-backed horizon;
+`maybe` remains exploratory or community-led.
+
 | Feature | Ignition | Optix | OpenWebHMI |
 |---|:-:|:-:|---|
-| Recipe management | ➕ Sepasoft | ✅ | 🟡 post-1.0 (Phase 5+) |
-| OEE calculation | ➕ Sepasoft | ❔ | 🟡 post-1.0 |
-| Track and Trace | ➕ Sepasoft | ❔ | 🟡 post-1.0 |
-| SPC (Statistical Process Control) | ➕ Sepasoft | ❔ | 🔵 maybe |
+| Equipment hierarchy | ➕ Sepasoft | ✅ (Information Model) | 🟡 post-1.0 foundation (optional project artifact) |
+| Production monitoring / machine state | ➕ Sepasoft | ❔ | 🟡 post-1.0 manufacturing module |
+| Downtime / loss classification | ➕ Sepasoft | ❔ | 🟡 post-1.0 after production facts and policies |
+| Fault analytics (Pareto, duration, MTBF/MTTR) | ➕ Sepasoft | ❔ | 🟡 post-1.0; extends alarm/fact infrastructure |
+| Recipe management | ➕ Sepasoft | ✅ | 🟡 post-1.0 after command and module-storage contracts |
+| OEE calculation | ➕ Sepasoft | ❔ | 🟡 post-1.0 after production, downtime, targets, boundaries, and quality |
+| Part/process data | ➕ Sepasoft | ❔ | 🔵 exploratory after manufacturing fact storage |
+| Track and Trace | ➕ Sepasoft | ❔ | 🔵 deferred until part identity and operation events exist |
+| SPC (Statistical Process Control) | ➕ Sepasoft | ❔ | 🔵 exploratory; requires validated statistical definitions |
 | Batch execution (ISA-88) | ➕ Sepasoft | ❔ | 🟡 post-1.0 |
-| Predictive maintenance hooks | ❔ | ❔ | 🔵 maybe |
-| Energy monitoring | ❔ | ❔ | 🔵 maybe |
+| Maintenance / PM | ➕ Sepasoft | ❔ | 🔵 planned candidate after module storage |
+| Predictive maintenance hooks | ❔ | ❔ | 🔵 exploratory; transparent statistics before ML |
+| Energy monitoring | ❔ | ❔ | 🔵 exploratory optional module |
+| Andon / team calls | ➕ Sepasoft | ❔ | 🔵 deferred until equipment/workflow identity is stable |
 | Sequential Function Charts (SFC) | ✅ | ❔ | 🔵 maybe |
 
 ## 13. Specialized / niche

@@ -276,3 +276,24 @@ Use `--` for task-id when the event is project-wide (protocol bootstrap, etc).
 2026-07-12 21:24  claude [Fable 5]  CODEX-CL  Opened. Tier 7 feature-gap (MEDIUM, pairs with CI). Close the documented-vs-implemented scripting gap with an explicit implement-or-defer decision per item: recommend implementing system.alarm.ack (AlarmEngine::ack exists), on_timer, system.tag.subscribe (TagStore::subscribe exists); defer system.db.query/system.http.* pending VISION.md scope check. Confirm ambiguous items in the Codex log before building.
 2026-08-25 12:32  codex [gpt-5]  CODEX-BK  Started. Updating the full compatible Cargo dependency set at the maintainer's direction, moving rust-ethernet-ip to 1.2.1, adapting the Rockwell wrapper, and fixing target-type-aware writes through pre-write typed reads.
 2026-08-25 12:44  codex [gpt-5]  CODEX-BK  Submitted as an uncommitted diff. rust-ethernet-ip 1.2.1, target-aware checked scalar writes, sender-context-compatible simulator, and maintainer-requested full compatible lock refresh; full Rust validation passed, hardware validation deferred.
+2026-09-01  codex [gpt-5]  CODEX-CM  Opened and started. Evidence-based manufacturing capability, reference-gap, starter-demo, roadmap, and task-program documentation; reference repositories remain read-only.
+2026-09-01  codex [gpt-5]  CODEX-CN  Opened. Close the v1.0 Linux/macOS/Windows Designer release-proof gap without changing the browser-only runtime scope.
+2026-09-01  codex [gpt-5]  CODEX-CO  Opened, post-1.0 gated. General module contribution and module-owned SQLite storage/migration contract.
+2026-09-01  codex [gpt-5]  CODEX-CP  Opened, post-1.0 gated. Versioned project templates and deterministic, explicitly simulated scenarios.
+2026-09-01  codex [gpt-5]  CODEX-CQ  Opened, post-1.0 gated. Optional equipment identity plus semantic facts, projections, and quality gaps.
+2026-09-01  codex [gpt-5]  CODEX-CR  Opened, post-1.0 gated. Server-authoritative action ACL, allowlist, result/actual-state, and audit command gateway.
+2026-09-01  codex [gpt-5]  CODEX-CS  Opened, post-1.0 gated. Manufacturing web component pack and equipment-aware line layout.
+2026-09-01  codex [gpt-5]  CODEX-CT  Opened, post-1.0 gated. Production counts/targets/model context, machine state, and quality-aware timeline.
+2026-09-01  codex [gpt-5]  CODEX-CU  Opened, post-1.0 gated. Extend the existing alarm journal with mature lifecycle and equipment-aware fault analytics.
+2026-09-01  codex [gpt-5]  CODEX-CV  Opened, post-1.0 gated. Reproducible report definitions, rendering, PDF/CSV, filters, and version metadata.
+2026-09-01  codex [gpt-5]  CODEX-CW  Opened, post-1.0 gated. Versioned downtime policy, immutable corrections, and atomic recalculation.
+2026-09-01  codex [gpt-5]  CODEX-CX  Opened, post-1.0 gated. Hierarchical quality-aware OEE after production/downtime prerequisites.
+2026-09-01  codex [gpt-5]  CODEX-CY  Opened, post-1.0 gated. Incremental fictional manufacturing demo integration; initial slice does not wait for OEE.
+2026-09-01  codex [gpt-5]  CODEX-CM  Submitted as an uncommitted diff. Authoritative plan, anonymized evidence/adoption matrix, demo plan, roadmap integration, Linux contract reconciliation, and CN..CY task program; agent validation, local links, privacy grep, and diff check passed.
+2026-09-01  codex [gpt-5]  CODEX-CY  Maintainer clarification: a locally bundled default demo is a product-ready release gate, not an optional download; first run must offer Open Demo/Create from template offline.
+2026-09-01  codex [gpt-5]  CODEX-CZ  Opened. Use deterministic scenes from the real shipped demo for reproducible website/docs screenshots, YouTube plans, release posts, social content, and presentations; no mock-only or customer-derived visuals.
+2026-09-01  codex [gpt-5]  CODEX-DA  Opened. The same shipped demo supports default offline simulation and an opt-in real Rockwell PLC profile; shared logical tags/screens, explicit mode, no automatic fallback, generic controller package, and recorded hardware proof.
+2026-09-01  codex [gpt-5]  CODEX-DB  Opened. First public demo video on a recorded Omarchy Linux configuration: Gateway + Designer + browser runtime, offline simulation, explicit real Rockwell profile, and honest disconnect behavior.
+2026-09-01  codex [gpt-5]  CODEX-DC  Opened. Align website positioning and claims with shipped SCADA/HMI scope, explicit in-development labels, post-1.0 manufacturing direction, Linux evidence, and the planned dual-profile demo.
+2026-09-01  codex [gpt-5]  CODEX-DE  Opened. Build a first-class demo hub and real-product visual story from the shipped default demo and approved reproducible captures; no mock-only features or missing-artifact calls to action.
+2026-09-01  codex [gpt-5]  CODEX-DF  Opened. Add canonical/search/social/video metadata and real-product previews with claim, privacy, and no-telemetry gates.

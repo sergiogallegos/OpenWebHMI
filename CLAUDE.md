@@ -56,14 +56,15 @@ Document Claude-applied fixes transparently in the verdict.
 
 ## Brief authoring conventions
 
-When opening a new task (`CODEX-{next-letter}`):
+When opening a new task (`CODEX-{next-letter}`), or when reviewing a task Codex
+authored under explicit maintainer direction:
 
 ```yaml
 ---
 id: CODEX-XY
 title: <short title>
 owner: codex
-phase: <0..4>
+phase: <non-negative roadmap phase>
 status: open
 created: YYYY-MM-DD
 last-update: YYYY-MM-DD claude [Opus 4.7]

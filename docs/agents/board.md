@@ -150,6 +150,65 @@ CI hygiene tasks AU + AV merged at `4e9bc9b`. Each unblocked the job's setup gat
 
 **Quality sweep (review pass 2 — Rust 1.95 + edition 2024 idioms vs tokio/axum/ripgrep).** CODEX-AG was the mechanical edition migration; this is the deferred idiom modernization, sliced four ways. CODEX-AJ (Tier 1, runtime-health gaps) leads; AK/AL/AM open after AJ merges to avoid blurring correctness fixes with surface cleanup.
 
+## Phase 5 — Manufacturing platform foundation and first modules
+
+**Gate:** CN is a v1.0 cross-platform contract task. CM is documentation-only.
+CO..CY do not begin until the relevant v1.0 hardening, plugin SDK, performance,
+and hardware-validation gates are complete. `open` means the brief exists; it
+does not pull post-1.0 implementation into the current release.
+
+| Id | Title | Owner | Status | Last update | File |
+|---|---|---|---|---|---|
+| CODEX-CM | Evidence-based manufacturing platform roadmap and task program | codex | submitted | 2026-09-01 codex [gpt-5] | [`CODEX-CM-manufacturing-platform-plan.md`](tasks/CODEX-CM-manufacturing-platform-plan.md) |
+| CODEX-CN | Linux Designer v1 parity and three-platform release proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CN-linux-designer-v1-parity.md`](tasks/CODEX-CN-linux-designer-v1-parity.md) |
+| CODEX-CO | Module SDK and module-owned storage contract | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CO-module-sdk-storage-contract.md`](tasks/CODEX-CO-module-sdk-storage-contract.md) |
+| CODEX-CP | Versioned project templates and deterministic scenario engine | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CP-project-templates-scenario-engine.md`](tasks/CODEX-CP-project-templates-scenario-engine.md) |
+| CODEX-CQ | Optional equipment model and manufacturing fact/projection layer | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CQ-equipment-manufacturing-facts.md`](tasks/CODEX-CQ-equipment-manufacturing-facts.md) |
+| CODEX-CR | Server-authoritative machine command gateway and action ACLs | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CR-command-gateway-action-acl.md`](tasks/CODEX-CR-command-gateway-action-acl.md) |
+| CODEX-CS | Manufacturing component pack and interactive line layout | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CS-manufacturing-components-line-layout.md`](tasks/CODEX-CS-manufacturing-components-line-layout.md) |
+| CODEX-CT | Production monitoring, targets, machine state, and timeline module | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CT-production-state-timeline.md`](tasks/CODEX-CT-production-state-timeline.md) |
+| CODEX-CU | Alarm maturity and equipment-aware fault analytics | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CU-alarm-fault-analytics.md`](tasks/CODEX-CU-alarm-fault-analytics.md) |
+| CODEX-CV | Reproducible report definitions, rendering, and export framework | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CV-reporting-framework.md`](tasks/CODEX-CV-reporting-framework.md) |
+| CODEX-CW | Versioned downtime policy, corrections, and recalculation module | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CW-downtime-policy-recalculation.md`](tasks/CODEX-CW-downtime-policy-recalculation.md) |
+| CODEX-CX | Quality-aware hierarchical OEE module | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CX-oee-module.md`](tasks/CODEX-CX-oee-module.md) |
+| CODEX-CY | Default-bundled fictional manufacturing demo and product-ready release gate | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CY-manufacturing-demo-integration.md`](tasks/CODEX-CY-manufacturing-demo-integration.md) |
+| CODEX-CZ | Demo marketing capture pipeline and public content kit | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CZ-demo-marketing-content-kit.md`](tasks/CODEX-CZ-demo-marketing-content-kit.md) |
+| CODEX-DA | Generic Rockwell demo PLC profile, controller package, and hardware proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DA-rockwell-demo-plc-profile.md`](tasks/CODEX-DA-rockwell-demo-plc-profile.md) |
+| CODEX-DB | Omarchy Linux first public demo deployment and video proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DB-omarchy-first-demo-video.md`](tasks/CODEX-DB-omarchy-first-demo-video.md) |
+| CODEX-DC | Website positioning and shipped-versus-planned claim reconciliation | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DC-website-positioning-claims.md`](tasks/CODEX-DC-website-positioning-claims.md) |
+| CODEX-DE | Website demo hub and shipped-product visual story | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DE-website-demo-hub-visual-story.md`](tasks/CODEX-DE-website-demo-hub-visual-story.md) |
+| CODEX-DF | Website discoverability, social previews, and launch metadata | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-DF-website-discovery-social-metadata.md`](tasks/CODEX-DF-website-discovery-social-metadata.md) |
+
+### Phase 5 dependency graph
+
+```text
+v1.0 hardening + plugin SDK + performance + hardware gate
+  ├── CN  three-platform Designer proof (v1.0)
+  └── CO  module/storage contract
+        ├── CP  project templates + deterministic scenarios
+        ├── CQ  equipment + semantic facts/projections
+        │     ├── CR  machine command gateway (also depends on BF/audit)
+        │     ├── CS  manufacturing component pack + line layout
+        │     └── CT  production + state timeline
+        │           ├── CU  alarm/fault analytics
+        │           ├── CV  reporting framework
+        │           └── CW  downtime policy/recalculation
+        │                 └── CX  OEE
+        └─────────────────────────────── CY demo integration (incremental)
+                                          ├── CZ marketing capture/content kit
+                                          ├── DA Rockwell demo PLC profile + hardware proof
+                                          └── CN + CZ + DA -> DB Omarchy first-video proof
+
+DC website positioning/claim reconciliation (may proceed before the demo ships)
+  └── CY + CZ + CN -> DE website demo hub/visual story
+                        └── CZ -> DF discovery/social/launch metadata
+                              (DB required only for published-video metadata)
+```
+
+Recipes/maintenance remain planned candidates after CR/CO. Part/process data,
+SPC, energy, equipment health, traceability, Andon, and MES remain
+exploratory/deferred and intentionally have no executable board task yet.
+
 ## Phase 3 — Core SCADA features
 
 **🎉 Phase 3 code-complete.** All seven tasks merged (O, Q, S, R, P, T, U) plus the V closeout follow-up. The demo HMI now has the full SCADA stack: alarms + history + auth + alarm UI + trends + scripting + Monaco script editor with live error surfacing. Awaiting **manual-smoke validation** of the full 19-step checklist in [`apps/designer/README.md`](../../apps/designer/README.md) (covers Phase 2 and Phase 3 together) before tagging `v0.3.0`.
