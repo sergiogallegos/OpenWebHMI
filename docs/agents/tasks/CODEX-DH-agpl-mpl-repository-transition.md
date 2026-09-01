@@ -95,7 +95,7 @@ inspected, while DMG packaging failed in the local packaging environment.
 - `cargo test --workspace --all-features --locked` — passed with network-bound tests run outside the restricted sandbox.
 - `cargo doc --workspace --no-deps` and `cargo fmt --check` — passed.
 - `pnpm -r typecheck`, `pnpm -r test`, and representative Vite builds — passed.
-- `pnpm --filter designer tauri build` — `.app` produced and legal resources inspected; DMG packaging failed in the local environment.
+- `pnpm --filter designer tauri build --bundles app` — passed after the transition commit; the exact source revision and canonical legal resources were inspected in the output.
 
 **What's being fixed**
 
@@ -116,7 +116,7 @@ inspected, while DMG packaging failed in the local packaging environment.
 **Residual risk**
 
 - No attorney reviewed these project-specific policies or CLA; the maintainer explicitly accepted that risk because paid review is not currently affordable.
-- Interactive runtime/Designer visual smoke was unavailable because the in-app browser reported no installed browser. The `.app` bundle passed, but DMG packaging did not complete locally.
+- Interactive runtime/Designer visual smoke was unavailable because the in-app browser reported no installed browser. The `.app` bundle passed; a separate all-bundles attempt reached `.app` success but DMG packaging did not complete locally.
 - This review validates repository policy consistency and build behavior; it is not individualized legal advice.
 
 **Strong points (✅)**
@@ -146,6 +146,6 @@ inspected, while DMG packaging failed in the local packaging environment.
 ## Verdict
 
 **Merged with explicit validation gate.** Transition commit:
-`a8cbdbc` (temporary parent ref; backfilled immediately after commit creation). Interactive
+`549829e`. Interactive
 browser visual smoke and local DMG packaging remain unproven; neither changes
 the effective repository license map or the inspected offline `.app` resources.

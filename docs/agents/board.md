@@ -291,8 +291,8 @@ exploratory/deferred and intentionally have no executable board task yet.
 | CODEX-DC | Website positioning and shipped-versus-planned claim reconciliation; interactive browser smoke deferred | codex | `53843e5` | 4 |
 | CODEX-DG | AGPL/MPL transition specification, ownership audit, CLA, and policy gates; attorney review gates DH | codex | `53843e5` | 4 |
 | CODEX-DJ | Remove unused EPL-derived Sparkplug schema and reconcile provenance docs | codex | `53843e5` | 4 |
-| CODEX-DH | Launch AGPL product core, MPL protocol exceptions, source surfaces, notices, and CI enforcement | codex | `a8cbdbc` | 4 |
-| CODEX-DI | Publish coordinated AGPL/MPL repository and website communication; visual smoke deferred | codex | `a8cbdbc` | 4 |
+| CODEX-DH | Launch AGPL product core, MPL protocol exceptions, source surfaces, notices, and CI enforcement | codex | `549829e` | 4 |
+| CODEX-DI | Publish coordinated AGPL/MPL repository and website communication; visual smoke deferred | codex | `549829e` | 4 |
 
 ## Conventions
 

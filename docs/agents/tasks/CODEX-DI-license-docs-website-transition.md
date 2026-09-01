@@ -139,6 +139,6 @@ prior-MIT language, and removed stale uniform-MIT and brand-license claims.
 ## Verdict
 
 **Merged with explicit visual-smoke gate.** Coordinated transition commit:
-`a8cbdbc` (temporary parent ref; backfilled immediately after commit creation). Interactive
+`549829e`. Interactive
 desktop/mobile browser smoke remains unproven because no browser is available in
 this environment; source, typecheck, build, and generated-output checks passed.

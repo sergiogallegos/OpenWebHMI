@@ -3,7 +3,7 @@
 OpenWebHMI changed the license for new project revisions on 2026-09-01.
 
 - **Last MIT revision:** [`a8cbdbc`](https://github.com/sergiogallegos/OpenWebHMI/commit/a8cbdbc)
-- **First AGPL/MPL revision:** `FIRST_AGPL_COMMIT` (backfilled immediately after the transition commit)
+- **First AGPL/MPL revision:** [`549829ec2667fe4b881d19cc9d1a678520e8820b`](https://github.com/sergiogallegos/OpenWebHMI/commit/549829ec2667fe4b881d19cc9d1a678520e8820b)
 - **Product core:** `AGPL-3.0-only`
 - **Rust and TypeScript wire-protocol packages:** `MPL-2.0`
 - **Alternative commercial license:** none currently offered
