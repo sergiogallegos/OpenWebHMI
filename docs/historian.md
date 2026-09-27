@@ -1,8 +1,11 @@
 # Historian Capacity And Retention
 
-OpenWebHMI's historian is a single SQLite database managed by `crates/historian`. SQLite's published maximum database size is 281 TB, but that is a file-format ceiling, not an operational recommendation. For typical v1 deployments, disk, backup time, query latency, and retention policy are the practical limits.
-
-Source for the SQLite ceiling: <https://www.sqlite.org/limits.html>.
+OpenWebHMI's current historian is a single SQLite database managed by `crates/historian`.
+Disk use, backup time, query latency, durability and retention are the practical limits.
+The accepted [engine and capacity plan](planning/engine-and-capacity.md) defines a
+30-day selected-history target at 2,500 admitted samples/s for the Medium profile,
+independent of its 50,000 live tags. This is not a validated capability of the
+current per-sample transaction implementation.
 
 ## Schema
 
@@ -14,16 +17,17 @@ Each sample stores `tag_id`, `ts_ms`, a JSON `TagValue` string, and a quality st
 bytes_per_sample = 8 tag_id + 8 ts_ms + value_json_bytes + quality_bytes + 16..32 SQLite btree overhead
 ```
 
-For planning, use 64 bytes/sample for booleans and small integers, 72 bytes/sample for floating-point values, and 96 bytes/sample for short strings.
+Measure this overhead on the target storage layout and value distribution. The
+capacity plan uses an illustrative 64–128 bytes/sample range; strings and JSON may
+exceed it. No compression savings are assumed.
 
 ## Capacity
 
-| Scenario | Samples | Estimate | Notes |
-|---|---:|---:|---|
-| 100 tags at 1 Hz for 90 days | 777,600,000 | ~52 GB | 72 bytes/sample floating-point planning value. |
-| 1,000 tags at 1 Hz for 365 days | 31,536,000,000 | ~2.1 TB | Practical only with a storage and backup plan. |
-| 10,000 tags at 100 ms for 30 days | 25,920,000,000 | ~1.7 TB | Beyond the v1 target envelope for most deployments. |
-| 500 tags at 0.2 Hz for 365 days | 3,153,600,000 | ~212 GB | More realistic for slow process values. |
+Use the [30-day sizing table](planning/engine-and-capacity.md#thirty-day-history-sizing)
+for Edge, Standard and Medium workloads. At 2,500 samples/s, 30 days holds
+6.48 billion samples: approximately 415–829 GB before operational reserves.
+Recording every one of 50,000 tags at 1 Hz is a different workload: approximately
+8.29–16.59 TB before reserves. GB/TB are decimal, not GiB/TiB.
 
 Formula:
 
@@ -36,7 +40,12 @@ size_bytes = samples * estimated_bytes_per_sample
 
 Current implementation writes one sample per SQLite transaction through `HistorianStore::write_sample()`. That favors simple correctness over bulk ingest throughput.
 
-No committed benchmark harness existed before `CODEX-AQ`, and this sandbox blocked machine-spec introspection. Treat write-rate numbers as deployment-specific until a dedicated benchmark lands. On production hardware, measure with the actual tag mix, disk, filesystem, and backup cadence before promising a retention window.
+CODEX-DT owns the reproducible baseline/capacity harness. CODEX-DS owns batched
+ingestion, durable admission, bounded backlog, disk-pressure handling and retention
+policy; CODEX-CG owns SQL-side bounded/downsampled reads. Measure the actual tag
+mix, disk, filesystem, month-sized dataset and backup cadence before promising a
+retention window. Backend substitution is an explicit evidence-based decision,
+not part of the current implementation.
 
 ## Retention
 

@@ -6,17 +6,18 @@ This document defines what OpenWebHMI **is**, what it explicitly **is not**, and
 
 For implementation rules, see `AGENTS.md`. For the agent collaboration model, see `CLAUDE.md` and `docs/agents/README.md`.
 
-## What v1.0 ships
+## v1.0 commitments — implementation and validation required
 
 - **Single gateway** per deployment. No clustering, no federation.
-- **≤ 10,000 live tags** under one gateway.
-- **≤ 50 concurrent runtime clients** per gateway.
+- **Target: ≤ 50,000 live tags** under one gateway on the defined Medium workload. This is not a measured current capability.
+- **Target: ≤ 50 concurrent runtime clients** per gateway, with bounded active subscriptions and update delivery.
 - **Five drivers**: Rockwell EtherNet/IP (CompactLogix, ControlLogix), OPC UA (vendor-neutral), Modbus TCP/RTU (serial + TCP), MQTT (generic + Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser). Tauri desktop runtime is post-1.0.
-- **Linux + macOS + Windows** for the gateway and designer.
+- **Linux + macOS + Windows** for the gateway; browser-based HMI runtime and designer on all three platforms.
+- **Web-first designer for v1.** The existing Tauri shell is optional. Desktop packaging and future platform-native clients must consume the same versioned gateway/project contracts; they must not become prerequisites for browser authoring.
 - **Pre-1.0 hardware-validation gate**: 24-hour continuous run of `driver-rockwell` against real CompactLogix/ControlLogix hardware before the 1.0 tag.
 
-These bounds are *the* design constraint. If anything in this repo implies bigger numbers, it's wrong and should be fixed. Larger deployments are a year-2+ conversation.
+The [engine and capacity plan](docs/planning/engine-and-capacity.md) defines separate Edge, Standard and Medium workloads, 30-day selected process-history retention, hardware/resource budgets and release evidence. A live-tag limit is not a historian write-rate guarantee. The 50K target replaces the earlier 10K ceiling; greater loads need a separate scope decision.
 
 ## What OpenWebHMI is not (and won't try to be in v1.0)
 
@@ -24,7 +25,7 @@ These bounds are *the* design constraint. If anything in this repo implies bigge
 - A **safety-rated** (IEC 61508 / SIL-rated) system.
 - A **replacement for vendor PLC engineering tooling** (Studio 5000, TwinCAT, TIA Portal). OpenWebHMI consumes PLCs; it doesn't program them.
 - An **MES platform**. Recipes, OEE, batch (ISA-88), and traceability are explicit post-v1 (year-2+) scope and out of scope for the v1.0 headline.
-- An **enterprise-scale** (>10K tag, >50 client, multi-gateway) system. The envelope is set above.
+- A system above the defined **50K-tag / 50-client Medium workload**, or a multi-gateway system. The envelope is set above.
 - A **cloud SaaS**. OpenWebHMI is self-hosted by design. Hosted offerings, if they happen, are post-1.0 and additive.
 
 ## What we won't merge
@@ -55,9 +56,16 @@ These are *contracts*, not preferences. A PR that lands code violating one of th
 
 ### Architectural invariants
 
+- **Engine as a reusable library.** The gateway and an independent example host consume the same embeddable Rust engine through public APIs. No required web server, GUI, process globals or Python interpreter in the minimal engine. This is committed extraction work, not a claim that the current crates already meet it.
+- **Small deployments remain small.** Optional driver/service features and a measured Edge profile preserve low-resource headless use. Fifty thousand tags are not promised on Edge hardware.
+- **Thirty-day selected process history** is the Medium target at its specified recording rate. Alarm/audit retention is separate; loss, overload and disk exhaustion must be explicit.
+
+- **Dependency-light reusable core.** Pure domain types and rules should depend only on Rust `std`/`core`; asynchronous services may use narrowly enabled Tokio features. Serialization, databases, network transports, platform UI, and protocol implementations belong at adapter boundaries. This is a migration target, not a claim about the current dependency graph. Retain maintained security and protocol libraries rather than replacing them to meet a dependency count.
+
 - **Three languages total** — Rust, TypeScript, Python. Adding a fourth requires the kind of justification that goes in `docs/stack-rationale.md`, not a PR comment.
 - **Drivers are in-process, owned by the gateway** in v1. Out-of-process drivers are post-1.0.
-- **SQLite is v1 persistence** for project store, historian, auth, audit log, alarm journal. Pluggable backends are post-1.0.
+- **SQLite remains default v1 persistence** for project store, historian, auth, audit log and alarm journal. Extract a historian adapter interface now; additional backends remain deferred unless measured Medium-profile failures trigger an explicit design decision before release.
+- **Axum/Hyper is the planned HTTP/WebSocket transport adapter**, outside the engine. Preserve existing message contracts while replacing custom HTTP parsing.
 - **JSON over WebSocket** is the wire protocol. No Protobuf, no gRPC, no REST-first redesign in v1.
 - **One gateway per deployment.** Multi-gateway federation is post-v1.
 - **No breaking driver or protocol changes without an in-PR migration path.** The protocol is `packages/protocol-ts`; drivers implement `driver-api`. Both have versioning discipline.

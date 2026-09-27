@@ -4,8 +4,8 @@
 
 OpenWebHMI pins two toolchains:
 
-- **Rust** — version is in `rust-toolchain.toml` at the repo root. CI honors it via `dtolnay/rust-toolchain@stable` plus the toolchain file (the action reads the file when present). Current pin: see `rust-toolchain.toml`; the codebase relies on edition 2024 features (let chains, `#[expect]`).
-- **Node** — version is in `.github/workflows/ci.yml` under `actions/setup-node@v4` with `node-version`. `pnpm` is pinned via `pnpm/action-setup@v4` with an explicit `version`.
+- **Rust** — version is in `rust-toolchain.toml` at the repo root. CI installs the toolchain and components from the file with `rustup show`; it does not install a separate floating stable toolchain. Current pin: see `rust-toolchain.toml`; the codebase relies on edition 2024 features (let chains, `#[expect]`).
+- **Node** — version is in `.node-version`, consumed by `actions/setup-node`. `pnpm` is pinned in root `package.json` (`packageManager`), consumed by `pnpm/action-setup`.
 
 Local development should match both. Mismatches surface as either build errors that don't appear in CI, or — worse — green builds locally that fail in CI on different lints.
 
@@ -24,7 +24,7 @@ Codex's verification claim should include the toolchain versions used. If it doe
 ## Common drift sources
 
 - **Codex environment doesn't honor `rust-toolchain.toml`** — Codex's sandbox sometimes runs whatever stable is installed, not the pinned version. If the pinned version uses an edition-2024 feature that doesn't compile on older stable, the error will surface as a parse error, not an obvious version issue.
-- **Local Node ≠ CI Node** — pnpm 9 vs pnpm 10 changes lockfile-resolution behavior. The pinned `version: 9` is load-bearing.
+- **Local Node ≠ CI Node** — pnpm 9 vs pnpm 10 changes lockfile-resolution behavior. Use the exact `packageManager` version; major upgrades need a separate lockfile/build-script review.
 - **macOS vs Linux** — most often a tokio file-descriptor or fs-watch behavior difference; surfaces in `crates/historian` or `crates/project-store` tests under load. Three consecutive runs catches most of these.
 
 ## See also

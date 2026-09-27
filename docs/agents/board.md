@@ -4,10 +4,23 @@
 
 ## Phase 4 — 1.0 release (in progress)
 
+**Restart baseline (2026-09-27):** CODEX-DK adopts Rust 1.98.1 and supersedes CODEX-BB’s old 1.96 version direction. Do not downgrade to execute BB; its historical brief awaits disposition. DL records the accepted [engine and capacity plan](../planning/engine-and-capacity.md): 50K-tag Medium target, 30-day selected history, low-resource Edge and reusable engine. DM–DU implement the foundation; DV is optional desktop work. DT baselining starts before optimization; security fixes do not wait for extraction. All capacity budgets are unproven.
+
 **Driver scope expansion (2026-04-30).** Phase 4 now ships **four new drivers** (in addition to Rockwell from Phase 1): OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), and Beckhoff ADS. Each lands as a real driver crate + simulator harness + simulator-driven CI integration tests + wiki entry + designer manual smoke step. Real-hardware validation remains the pre-1.0 gate. Drivers are independent — they can run in parallel.
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
+| CODEX-DL | Accepted engine foundation, capacity research and restart program | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DL-accepted-engine-capacity-plan.md`](tasks/CODEX-DL-accepted-engine-capacity-plan.md) |
+| CODEX-DM | Extract pure domain and storage-independent wire schema | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DM-domain-schema-boundaries.md`](tasks/CODEX-DM-domain-schema-boundaries.md) |
+| CODEX-DN | Expose embeddable engine and prove independent public-API consumer | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DN-embeddable-engine-api.md`](tasks/CODEX-DN-embeddable-engine-api.md) |
+| CODEX-DO | Implement minimal engine and Edge Standard Medium feature profiles | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DO-minimal-runtime-profiles.md`](tasks/CODEX-DO-minimal-runtime-profiles.md) |
+| CODEX-DP | Replace custom HTTP transport with Axum Hyper adapters | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DP-axum-transport.md`](tasks/CODEX-DP-axum-transport.md) |
+| CODEX-DQ | Deliver offline browser designer and configured gateway routing | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DQ-browser-designer-delivery.md`](tasks/CODEX-DQ-browser-designer-delivery.md) |
+| CODEX-DR | Add revision-checked drafts and atomic project publishing | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DR-draft-publish-integrity.md`](tasks/CODEX-DR-draft-publish-integrity.md) |
+| CODEX-DS | Implement bounded durable historian ingestion and thirty-day retention | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DS-historian-ingest-retention.md`](tasks/CODEX-DS-historian-ingest-retention.md) |
+| CODEX-DT | Establish Edge Standard Medium capacity and resource evidence | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DT-capacity-resource-harness.md`](tasks/CODEX-DT-capacity-resource-harness.md) |
+| CODEX-DU | Upgrade frontend tool families with compatibility and footprint checks | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DU-frontend-toolchain-modernization.md`](tasks/CODEX-DU-frontend-toolchain-modernization.md) |
+| CODEX-DK | Rust 1.98.1 / TypeScript baseline and web-first architecture restart review | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DK-modernization-baseline.md`](tasks/CODEX-DK-modernization-baseline.md) |
 | CODEX-BB | Rust 1.96 toolchain bump — 1.95.0 → 1.96.0 + one assert_matches! example conversion | codex | open | 2026-05-29 claude [Opus 4.7] | [`CODEX-BB-rust-1.96-toolchain-bump.md`](tasks/CODEX-BB-rust-1.96-toolchain-bump.md) |
 | CODEX-BC | Identifier sanitization at the ProjectStore boundary — close path-traversal / arbitrary file R/W | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BC-identifier-sanitization.md`](tasks/CODEX-BC-identifier-sanitization.md) |
 | CODEX-BD | Refuse to boot without an explicit JWT signing secret — remove the hardcoded fallback | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BD-jwt-secret-boot-refusal.md`](tasks/CODEX-BD-jwt-secret-boot-refusal.md) |
@@ -159,6 +172,7 @@ does not pull post-1.0 implementation into the current release.
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
+| CODEX-DV | Package optional shared-UI desktop designer with responsiveness proof | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DV-desktop-host-performance.md`](tasks/CODEX-DV-desktop-host-performance.md) |
 | CODEX-CM | Evidence-based manufacturing platform roadmap and task program | codex | submitted | 2026-09-01 codex [gpt-5] | [`CODEX-CM-manufacturing-platform-plan.md`](tasks/CODEX-CM-manufacturing-platform-plan.md) |
 | CODEX-CN | Linux Designer v1 parity and three-platform release proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CN-linux-designer-v1-parity.md`](tasks/CODEX-CN-linux-designer-v1-parity.md) |
 | CODEX-CO | Module SDK and module-owned storage contract | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CO-module-sdk-storage-contract.md`](tasks/CODEX-CO-module-sdk-storage-contract.md) |

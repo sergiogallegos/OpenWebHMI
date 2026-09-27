@@ -216,13 +216,13 @@ impl AlarmRuntime {
         snapshot: &TagSnapshot,
         ack: AckRequest,
     ) {
-        if let Some(active) = self.active.get_mut(&definition.id) {
-            if active.state == AlarmState::Active {
-                active.state = AlarmState::Acked;
-                active.transitioned_at_ms = ack.ts_ms;
-                active.value = snapshot.value.clone();
-                active.quality = snapshot.quality;
-            }
+        if let Some(active) = self.active.get_mut(&definition.id)
+            && active.state == AlarmState::Active
+        {
+            active.state = AlarmState::Acked;
+            active.transitioned_at_ms = ack.ts_ms;
+            active.value = snapshot.value.clone();
+            active.quality = snapshot.quality;
         }
     }
 

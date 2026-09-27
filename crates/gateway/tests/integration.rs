@@ -304,10 +304,9 @@ def pressure_changed(tag):
                 message,
                 ..
             } = next_message(&mut ws, Duration::from_millis(1_000)).await
+                && event_kind == "log"
             {
-                if event_kind == "log" {
-                    return (project_id, script_id, message);
-                }
+                return (project_id, script_id, message);
             }
         }
     })

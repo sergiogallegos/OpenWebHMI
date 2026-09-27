@@ -1,10 +1,10 @@
 # OpenWebHMI — Architecture
 
-> Status: **draft v0.1** — initial architecture for v1. Subject to revision until a Phase 1 vertical slice is shipped end-to-end. Decisions captured here are *committed*; rationale lives in `wiki/architecture/` (synthesized) and PRs (specific).
+> Status: v1 design with implementation gaps. The [September 2026 architecture review](planning/2026-09-architecture-review.md) records verified code boundaries, the web-first designer direction, and the dependency-light core migration. Descriptions below are design targets unless confirmed there; they are not a feature-completion report.
 
 ## 1. Mission
 
-Open-source, web-first **SCADA / HMI** platform for small and mid-size industrial systems, of comparable capability to Inductive Automation **Ignition**, with **FactoryTalk Optix** as a secondary reference. Cross-platform desktop designer, gateway-centric runtime, plant-floor connectivity via five v1 drivers: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), and Beckhoff TwinCAT (ADS). Designed so the community can extend drivers, components, and scripting libraries without forking.
+Open-source, web-first **SCADA / HMI** platform for small and mid-size industrial systems, of comparable capability to Inductive Automation **Ignition**, with **FactoryTalk Optix** as a secondary reference. Browser-first designer with an optional desktop shell, gateway-centric runtime, plant-floor connectivity via five v1 drivers: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), and Beckhoff TwinCAT (ADS). Designed so the community can extend drivers, components, and scripting libraries without forking.
 
 **Primary v1 target:** parity with a meaningful subset of Ignition Edge / Standard, bounded by the v1.0 scope envelope below.
 
@@ -15,28 +15,28 @@ Open-source, web-first **SCADA / HMI** platform for small and mid-size industria
 | Bound | v1.0 target |
 |---|---|
 | Topology | **Single gateway per deployment** (no clustering, federation, or gateway network) |
-| Live tag count | **≤ 10,000** simultaneously subscribed/polled tags per gateway |
+| Live tag count | **Target: ≤ 50,000** active tags under the defined Medium workload; not yet certified |
 | Concurrent runtime clients | **≤ 50** browser sessions per gateway |
 | Drivers shipped | Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS); others post-1.0 |
 | Runtime surfaces | Web (browser) only; Tauri desktop runtime is post-1.0 |
-| Designer surfaces | Tauri desktop on Linux, macOS, and Windows |
+| Designer surfaces | Browser-first on Linux, macOS, and Windows; optional Tauri shell |
 | Gateway platforms | Linux, macOS, Windows; ARM Linux / Raspberry Pi deployment is documented in [`docs/deployment/raspberry-pi.md`](deployment/raspberry-pi.md) |
-| Authentication | Local users + roles + per-view ACLs; SSO/AD/LDAP post-1.0 |
+| Authentication | Local users/roles plus server-authoritative tag/action ACL target (BF); per-view ACLs alone are insufficient; SSO/AD/LDAP post-1.0 |
 
-These numbers are the design constraint. Tag-engine, WebSocket fan-out, project store, and historian implementations are sized to comfortably hit these bounds with headroom; they are *not* sized for enterprise-scale.
+These are acceptance targets, not measured implementation capabilities. The [engine and capacity plan](planning/engine-and-capacity.md) specifies change rates, history admission, 30-day retention, client subscriptions and Edge/Standard/Medium hardware budgets. No current 50K performance or low-memory claim is made.
 
 ## 2. High-level topology
 
 OpenWebHMI follows the **Ignition gateway-centric** model:
 
 - A single **Gateway** (Rust binary) is the deployment unit. It owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication.
-- Many **Designer** clients (Tauri desktop app on Linux, macOS, and Windows) connect to a gateway to author projects.
+- Many **Designer** clients (browser-first on Linux, macOS, and Windows, with an optional Tauri shell) connect to a gateway to author projects.
 - Many **HMI Runtime** clients (browser) connect to the same gateway to render projects with live tag data.
 - **Local mode** = one gateway + one client co-located on a single machine. Same code path as multi-client; just one process per role.
 
 ```
        ┌──────────────────────┐
-       │ Designer (Tauri)     │── WebSocket ──┐
+       │ Designer (Browser)   │── WebSocket ──┐
        │ React UI             │               │
        └──────────────────────┘               │
                                               ▼
@@ -80,11 +80,11 @@ OpenWebHMI follows the **Ignition gateway-centric** model:
 
 | Layer | Tech | Rationale |
 |---|---|---|
-| Gateway runtime | **Rust** + Tokio | Single static binary, predictable latency for tag I/O, zero-GC, FFI-friendly. |
+| Gateway runtime | **Rust** + Tokio | Native process with measured latency/resource targets; no Rust GC. Linkage and native dependencies vary by platform. |
 | Drivers | **Rust** (in-process plugins) | Tightest possible coupling to tag engine; reuse vendor crates (`rust-ethernet-ip`, `tokio-modbus`, etc.). |
 | Scripting | **CPython 3.11+** worker subprocesses over JSON-RPC | Familiar to plant engineers (Ignition uses Jython); subprocess isolation sidesteps GIL contention and survives script crashes. |
 | Wire protocol | **JSON over WebSocket** (v1) | Single duplex stream per client; debuggable; trivial TS interop. MessagePack/CBOR is a future optimization. |
-| Designer / IDE | **Tauri** (Rust shell) + **React + TS** | Native binary, small footprint vs Electron, ships on Linux, macOS, and Windows. React for ecosystem (Monaco, react-konva, etc.). |
+| Designer / IDE | **React + TS** in a browser; optional Tauri shell | Browser authoring is the v1 delivery target. Shared editor/project contracts preserve future desktop options. |
 | HMI runtime | **React + TS** in a browser | Single rendering surface for v1; web-only is dramatically simpler than Vision-style desktop client. |
 | Component library | **React** components, schema-driven | Same components used by designer (with adornments) and runtime (live). |
 | Persistence | **SQLite** for project store, historian, auth | Zero-ops, embedded, single-file backups. Pluggable backend (Postgres + Timescale) deferred to v2. |
@@ -96,7 +96,7 @@ OpenWebHMI follows the **Ignition gateway-centric** model:
 
 ### 4.1 Gateway (`crates/gateway`)
 
-A single Rust binary. Boot sequence:
+The gateway binary is the planned composition host for a reusable Rust engine. Current crates still require the extraction and instance-owned lifecycle work described below. Target boot sequence:
 
 1. Load `gateway.toml` config (bind address, TLS cert paths, project store path, log level).
 2. Open SQLite handles for project store, historian, auth.
@@ -129,7 +129,7 @@ The tag engine is **not** the historian. History is written by a separate compon
 
 ### 4.3 Protocol (`crates/protocol` + `packages/protocol-ts`)
 
-Wire schema shared between gateway and TS clients. Single source of truth in Rust; TS types generated via `ts-rs` (or `specta`).
+Wire schema shared between gateway and TS clients. Today the Rust and TypeScript types are hand-maintained. Generated types or shared conformance fixtures are follow-up work; no generator currently enforces parity.
 
 Message kinds (illustrative, finalized in Phase 0):
 
@@ -252,13 +252,15 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 
 ### 4.10 Designer / IDE (`apps/designer`)
 
-Tauri shell (Rust) + React UI (TS). Cross-platform: Linux, macOS, and Windows.
+React UI (TS) in the browser, with an optional Tauri shell (Rust). Browser authoring
+is the v1 delivery target across Linux, macOS, and Windows. See the restart review
+for production hosting, offline assets, and browser-security gaps.
 
 Modules:
 - **Connection** — pick gateway, log in.
 - **Project explorer** — tree of views, tags, alarms, scripts, drivers.
 - **Tag browser** — view + edit tag definitions; browse PLC tags via `Driver::browse()` and bulk-import.
-- **Visual canvas** — drag/drop components, property panel, tag binding picker. Backed by react-konva (canvas) for v2; Phase 1 ships a form-based bindings UI without canvas.
+- **Visual canvas** — drag/drop components, property panel, tag binding picker. Current implementation is form-based; visual authoring must meet interaction budgets before selecting additional canvas dependencies.
 - **Script editor** — Monaco with Python syntax + intellisense for `system.*` exposed via TS-generated stubs.
 - **Alarm config**, **driver config**, **theme editor**.
 - **Run / preview** — opens an embedded webview pointing at a test runtime.
@@ -295,7 +297,7 @@ A React SPA loaded from the gateway HTTP endpoint. On boot:
 4. Render component tree; subscribe to bound tags.
 5. As user navigates, mount/unmount views → subscribe/unsubscribe tags.
 
-Operator inputs (button click, value entry) become `tag.write` messages; gateway authorizes against role + view ACL.
+Operator inputs become `tag.write` commands. The target contract authorizes the actual tag/action on the server and separates write result from observed PLC state. The current connection-view ACL is a known gap tracked by CODEX-BF.
 
 ### 4.12 Component Library (`packages/component-library`)
 
@@ -371,7 +373,7 @@ Designer save ─▶ project.save WS ─▶ ProjectStore.commit(artifact)
 - Mobile apps / native iOS/Android runtime.
 - Redundant / failover gateways.
 - Cluster / horizontal scale (single gateway only).
-- Loads above the v1.0 envelope: > 10,000 live tags or > 50 concurrent runtime clients per gateway.
+- Loads above the v1.0 envelope: > 50,000 live tags or > 50 concurrent runtime clients per gateway.
 - MES-grade workflow engine (recipes, batch, OEE, traceability — Phase 5+, year-2 conversation).
 - Vision-style desktop runtime client (web-only in v1; Tauri-based desktop runtime is post-1.0).
 - Real-time control loops (we do supervisory control, not deterministic real-time).
@@ -401,3 +403,24 @@ These can change before 1.0 if a better identity emerges.
 ---
 
 See also: [`docs/roadmap.md`](roadmap.md), [`docs/feature-matrix.md`](feature-matrix.md), [`docs/contributing.md`](contributing.md), [`wiki/`](../wiki/).
+
+## 11. Accepted engine and delivery revision (2026-09-27)
+
+The [engine and capacity plan](planning/engine-and-capacity.md) is authoritative
+for the accepted extraction, workload profiles and release gates. Pure domain
+code uses std/core; async services use narrow Tokio features; storage, protocol,
+HTTP, drivers and Python are adapters. The gateway and an independent host must
+consume the same public Rust engine API. No process-global services or mandatory
+listeners belong in that API. Preserve the AGPL engine / MPL wire-policy boundary.
+
+Axum/Hyper replaces custom HTTP parsing behind the existing JSON/WebSocket API.
+Commands, event delivery, snapshots/gaps and read models get explicit contracts;
+this does not require distributed CQRS, event sourcing or a broker. SQLite stays
+the default while its Medium history workload is benchmarked before release.
+
+Browser and optional Tauri designers share editor logic and presentation. Host
+capabilities sit behind adapters. Draft saves use revision checks; publishing is
+a separate atomic operation with rollback, audit and a paired runtime migration.
+Until that work lands, existing saves/hot reload must not be represented as safe
+draft/publish behavior. Native packaging remains optional, and responsiveness is
+measured independently from gateway throughput.

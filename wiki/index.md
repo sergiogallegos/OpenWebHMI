@@ -16,6 +16,8 @@ Status values:
 
 ## Architecture
 
+- [architecture/engine-capacity-decision.md](architecture/engine-capacity-decision.md) — Accepted engine reuse, shared designer UI and separate Edge/50K Medium capacity rationale; implementation remains unproven. `active`
+
 - [architecture/project-store-on-disk-format.md](architecture/project-store-on-disk-format.md) — Phase 2 project-store directory layout, SQLite metadata role, versioning, and atomic artifact saves. `active`
 - [architecture/audit-log.md](architecture/audit-log.md) — SQLite-backed security audit journal, gateway hooks, administrator-only query/subscribe protocol, and remaining scale questions. `active`
 - [architecture/backup-restore.md](architecture/backup-restore.md) — `.owhmi` archive core, manifest schema, path traversal checks, historian/alarm SQLite snapshot export/import semantics, audit hooks, and gateway HTTP side-channel flow. `active`

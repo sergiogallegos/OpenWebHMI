@@ -29,14 +29,15 @@ const BLOB = `${REPO}/blob/main`;
           <a href="https://rustup.rs/" target="_blank" rel="noopener noreferrer">Install via rustup ↗</a>
         </li>
         <li>
-          <strong>Node 20+</strong> and <strong>pnpm 9+</strong>.
+          <strong>Node and pnpm</strong> versions from the repository
+          <code>.node-version</code> and <code>package.json</code>.
           <a href="https://pnpm.io/installation" target="_blank" rel="noopener noreferrer">pnpm install instructions ↗</a>
         </li>
         <li>
           <strong>Python 3.11+</strong> for the scripting host work in Phase 3.
         </li>
         <li>
-          <strong>Tauri prerequisites</strong> for the desktop designer.
+          <strong>Tauri prerequisites</strong> only for the optional desktop designer shell.
           <a href="https://tauri.app/start/prerequisites/" target="_blank" rel="noopener noreferrer">Tauri docs ↗</a>
         </li>
         <li>
@@ -132,9 +133,8 @@ cargo build --workspace</code></pre>
           Windows, plus a container image, after release validation.
         </li>
         <li>
-          <strong>Designer</strong>: Tauri release artifacts for Linux, macOS,
-          and Windows after each platform passes its installation and launch
-          evidence gate.
+          <strong>Designer</strong>: browser assets first. Optional Tauri artifacts
+          for Linux, macOS, and Windows follow platform and responsiveness validation.
         </li>
       </ul>
     </section>

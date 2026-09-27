@@ -10,6 +10,8 @@
 >
 > "Ignition" / "Optix" columns: ✅ = ships in product, ➕ = ships in extension/module, ❌ = not available, ❔ = uncertain.
 >
+> The [engine and capacity plan](planning/engine-and-capacity.md) adds a reusable engine, browser-first Designer, and unproven 50K-tag/30-day-history workload targets. Green v1 marks a commitment, not implemented or certified capability.
+>
 > This matrix is the **scope contract** for 1.0. If a feature is marked v1 here and slips, it's a roadmap conversation, not a quiet drop.
 
 ---
@@ -257,7 +259,7 @@ We are not trying to be a 1:1 Ignition clone. Some explicit divergences:
 | Scripting language | Jython 2.7 (Ignition) / C# (Optix) | **CPython 3.11+** | Modern Python, real ecosystem (numpy, pandas), no language EOL exposure. |
 | Script isolation | In-process | **Worker subprocesses** | Survives script crashes; sidesteps GIL contention. |
 | Project file format | Proprietary blob | **Directory of canonical JSON** | Diff-friendly; works with any VCS. |
-| Designer install | Java desktop app | **Tauri (Rust + web)** | Smaller download, faster startup, Mac-native. |
+| Designer delivery | Java desktop app | **Browser-first; optional Tauri shell** | Shared editor; desktop speed remains a benchmark gate. |
 | Runtime install | JVM bundle / .NET | **Single Rust binary + SQLite** | Zero-dependency deploy. |
 | Module distribution | Custom format | **crates.io / npm / PyPI** | No custom registry to maintain. |
 | Pricing | Per-server license | **Free, open source; AGPL core / MPL protocols** | No activation or per-server fee; commercial use remains permitted under the applicable licenses. |

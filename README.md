@@ -21,15 +21,17 @@
 
 ## What this is
 
-OpenWebHMI is an **open-source alternative to Inductive Automation Ignition** (with Rockwell FactoryTalk Optix as a secondary reference). Self-hosted, gateway-centric, web-first runtime, cross-platform desktop designer. Built for plant-floor SCADA and HMI on **small and mid-size industrial systems**.
+OpenWebHMI is an **open-source alternative to Inductive Automation Ignition** (with Rockwell FactoryTalk Optix as a secondary reference). Self-hosted, gateway-centric, web-first runtime and designer (optional desktop shell). Built for plant-floor SCADA and HMI on **small and mid-size industrial systems**.
 
-A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (Tauri desktop on Linux, macOS, and Windows) connect to it. Plant-floor connectivity ships **five v1 drivers** spanning the dominant protocol families: Rockwell EtherNet/IP (CompactLogix, ControlLogix) via the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate, OPC UA for vendor-neutral integration (Siemens, Schneider, Yokogawa, and many others expose OPC UA endpoints natively), Modbus TCP/RTU for serial and TCP devices, MQTT with Sparkplug B for IIoT broker patterns, and **Beckhoff TwinCAT via ADS** for symbol-based PLC, NC, and I/O access.
+A single **Rust gateway** owns the project, the tags, the drivers, the historian, the alarm engine, the scripting host, and authentication. Any number of **HMI runtime clients** (web browsers) and **designer clients** (browser-first, with an optional Tauri shell) connect to it. Plant-floor connectivity ships **five v1 drivers** spanning the dominant protocol families: Rockwell EtherNet/IP (CompactLogix, ControlLogix) via the [`rust-ethernet-ip`](https://github.com/sergiogallegos/rust-ethernet-ip) crate, OPC UA for vendor-neutral integration (Siemens, Schneider, Yokogawa, and many others expose OPC UA endpoints natively), Modbus TCP/RTU for serial and TCP devices, MQTT with Sparkplug B for IIoT broker patterns, and **Beckhoff TwinCAT via ADS** for symbol-based PLC, NC, and I/O access.
 
 ### v1.0 target scope
 
 - **Single gateway** per deployment (no clustering / federation).
-- **≤ 10,000 live tags** under one gateway.
-- **≤ 50 concurrent runtime clients** per gateway.
+- **Target: ≤ 50,000 live tags** under one gateway on the defined Medium workload; capacity is not yet validated.
+- **Target: ≤ 50 concurrent runtime clients** per gateway with bounded subscriptions.
+- **30 days of selected process history**, with separate low-resource Edge and Medium workload targets; see the [engine and capacity plan](docs/planning/engine-and-capacity.md).
+- **Reusable Rust engine:** planned public library consumed by the gateway and independent applications; extraction remains in development.
 - **Five drivers shipped**: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser); Tauri desktop runtime is post-1.0.
 - **Linux + macOS + Windows** for both the gateway and desktop Designer; Raspberry Pi 4 / 5 edge deployment is documented in [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md).
@@ -48,7 +50,7 @@ OpenWebHMI's goal is a credible open-source platform a small or mid-size plant c
 
 - **Gateway**: Rust + Tokio (single binary, embedded SQLite)
 - **Drivers**: Rust, in-process plugin model. Five v1 drivers: Rockwell EtherNet/IP (via `rust-ethernet-ip`), OPC UA (via `async-opcua`), Modbus TCP/RTU (via `tokio-modbus`), MQTT incl. Sparkplug B (via `rumqttc` + `prost`), and Beckhoff TwinCAT ADS (via `ads`).
-- **Designer / IDE**: Tauri (Rust shell) + React + TypeScript (Linux + macOS + Windows)
+- **Designer / IDE**: React + TypeScript in the browser; optional Tauri desktop shell
 - **HMI runtime**: React + TypeScript in the browser
 - **Scripting**: CPython 3.11+ worker subprocesses over JSON-RPC for crash isolation
 - **Wire protocol**: JSON over WebSocket (single duplex stream per client)
@@ -61,7 +63,7 @@ Three languages total — Rust, TypeScript, Python. Deliberately *not* five.
 | Layer | Ignition | FactoryTalk Optix | **OpenWebHMI** |
 |---|---|---|---|
 | Core / runtime | Java 17 / JVM | C++/Qt native platform + C#/.NET NetLogic[^optix-stack] | **Rust** |
-| Designer | Java/Swing | C++/Qt + web technology; C#/.NET authoring[^optix-stack] | **Tauri + React/TypeScript** |
+| Designer | Java/Swing | C++/Qt + web technology; C#/.NET authoring[^optix-stack] | **Browser-first React/TypeScript; optional Tauri** |
 | Web HMI | Perspective — React/TypeScript over Java | Web Presentation Engine — HTML5/browser | **React + TypeScript** |
 | Scripting | Jython 2.7.4 — Python 2.7 language level | C#/.NET NetLogic | **CPython 3.11+** in worker subprocesses |
 | Open source? | ❌ | ❌ | ✅ AGPL core / MPL protocols |
@@ -105,7 +107,7 @@ Full detail: [`docs/roadmap.md`](docs/roadmap.md).
 What OpenWebHMI 1.0 aims to ship that Ignition users would recognize:
 
 - Tag providers, OPC tags, memory tags, expression tags, UDTs
-- Drag/drop visual designer (Tauri, Linux + macOS + Windows)
+- Drag/drop visual designer (browser-first; optional desktop shell)
 - Web HMI runtime with live tag binding, project themes, navigation. See [`docs/theme-editor.md`](docs/theme-editor.md).
 - Raspberry Pi 4 / 5 gateway deployment guide with systemd unit and cross-compile notes. See [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md).
 - Single-widget export/import for moving configured components between projects. See [`docs/widget-export-import.md`](docs/widget-export-import.md).
@@ -123,7 +125,7 @@ What we explicitly *don't* try to be:
 - A safety-rated (IEC 61508 / SIL) system.
 - A replacement for vendor-specific PLC engineering tooling.
 - An MES platform — recipes, OEE, batch, and traceability are post-1.0 (year-2+) and explicitly out of scope for the headline. Planning notes only in [`docs/roadmap.md`](docs/roadmap.md) Phase 5+.
-- An enterprise-scale (>10K tag, >50 client, multi-gateway) system in v1.
+- Loads above the defined 50K-tag / 50-client Medium workload or multi-gateway deployments in v1.
 
 ## Building
 

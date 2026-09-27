@@ -2,12 +2,12 @@
   "name": "openwebhmi",
   "private": true,
   "version": "0.0.0",
-  "description": "Open-source SCADA/HMI platform — gateway-centric Rust runtime + Tauri designer + web HMI",
+  "description": "Open-source SCADA/HMI platform \u2014 Rust gateway + web designer + web HMI",
   "license": "AGPL-3.0-only",
   "repository": "github:sergiogallegos/OpenWebHMI",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@9.15.9",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "build": "pnpm -r build",

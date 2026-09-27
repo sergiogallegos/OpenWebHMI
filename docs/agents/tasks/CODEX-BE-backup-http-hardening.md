@@ -90,6 +90,10 @@ An unauthenticated POST to the backup endpoint with an oversized `Content-Length
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+Retain this immediate security fix; do not wait for DP Axum migration. DP must port these regression contracts to the maintained server framework with TLS parity and header-first auth.
+
 ## Claude review
 
 ## Verdict

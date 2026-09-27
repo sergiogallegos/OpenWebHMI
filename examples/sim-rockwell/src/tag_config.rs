@@ -130,7 +130,7 @@ pub fn update_dynamic_tags(tags: &mut TagMap, started_at: Instant) {
             }
             Behavior::Toggle { every } => {
                 let ticks = elapsed.as_millis() / every.as_millis().max(1);
-                tag.value = SimValue::Bool(ticks % 2 == 0);
+                tag.value = SimValue::Bool(ticks.is_multiple_of(2));
             }
         }
     }

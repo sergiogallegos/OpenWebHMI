@@ -52,6 +52,10 @@ gateway, open/edit/save a project, and preview the browser runtime.
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+The accepted browser-first direction supersedes the desktop-packaging requirement as a v1 gate. CN now supplies browser authoring evidence across supported OS/browser combinations alongside DQ/CK. Optional Tauri installers and interaction budgets are owned by Phase 5 DV; browser parity cannot depend on their completion. Preserve the original brief as historical context.
+
 ## Claude review
 
 ## Verdict

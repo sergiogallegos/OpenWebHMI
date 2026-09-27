@@ -141,16 +141,16 @@ async fn maybe_write(
     state: &mut FilterState,
     snapshot: TagSnapshot,
 ) {
-    if let Some(last_ts) = state.last_logged_ts {
-        if snapshot.ts.saturating_sub(last_ts) < config.rate_ms {
-            return;
-        }
+    if let Some(last_ts) = state.last_logged_ts
+        && snapshot.ts.saturating_sub(last_ts) < config.rate_ms
+    {
+        return;
     }
     if let Some(value) = numeric_value(&snapshot.value) {
-        if let Some(last) = state.last_numeric {
-            if (value - last).abs() < config.deadband {
-                return;
-            }
+        if let Some(last) = state.last_numeric
+            && (value - last).abs() < config.deadband
+        {
+            return;
         }
         state.last_numeric = Some(value);
     }

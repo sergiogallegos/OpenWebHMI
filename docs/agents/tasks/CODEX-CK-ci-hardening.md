@@ -110,6 +110,10 @@ CI builds and tests the Rust workspace on Linux, macOS, and Windows; the clippy 
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+Extend the DK pin/all-feature changes with independent minimal/feature builds (DO), engine external-consumer proof (DN), OS evidence and dependency/security gates. Browser builds are primary; desktop packaging belongs to optional DV.
+
 ## Claude review
 
 ## Verdict

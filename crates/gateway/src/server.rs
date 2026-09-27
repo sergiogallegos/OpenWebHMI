@@ -311,7 +311,10 @@ async fn serve_inner_with_shutdown(
 ///
 /// Cancel-safe: dropping this future closes the WebSocket; when the shutdown
 /// token fires normally, the writer attempts a 1001 close frame first.
-#[allow(clippy::result_large_err)]
+#[expect(
+    clippy::result_large_err,
+    reason = "WebSocket handshake callback uses the upstream HTTP response error type"
+)]
 pub async fn handle_connection<S>(
     stream: S,
     peer_addr: SocketAddr,
@@ -327,10 +330,10 @@ where
     let token = Arc::new(Mutex::new(None::<String>));
     let token_for_callback = token.clone();
     let ws = accept_hdr_async(stream, move |request: &Request, response: Response| {
-        if let Some(value) = query_token(request.uri().query()) {
-            if let Ok(mut token) = token_for_callback.lock() {
-                *token = Some(value.to_string());
-            }
+        if let Some(value) = query_token(request.uri().query())
+            && let Ok(mut token) = token_for_callback.lock()
+        {
+            *token = Some(value.to_string());
         }
         Ok(response)
     })

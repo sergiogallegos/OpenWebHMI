@@ -4,10 +4,9 @@ Form-based Phase 2 designer for authoring view JSON through the gateway. This is
 
 ## Prerequisites
 
-- Node 20+
-- pnpm 9+
-- Rust stable from `rust-toolchain.toml`
-- Tauri v2 platform prerequisites for your OS: <https://v2.tauri.app/start/prerequisites/>
+- Node from the root `.node-version` and pnpm from the root `package.json`.
+- Rust from `rust-toolchain.toml` to build the gateway or optional desktop shell.
+- Tauri v2 platform prerequisites only for desktop builds: <https://v2.tauri.app/start/prerequisites/>
 - Python 3.11+ on `PATH` for project scripts (`OPENWEBHMI_PYTHON` can point at a specific interpreter). `numpy` and `pandas` are recommended optional packages for future scripting work.
 
 ## Run
@@ -24,7 +23,18 @@ For the desktop shell:
 pnpm --filter @openwebhmi/designer tauri dev
 ```
 
+`pnpm --filter @openwebhmi/designer build` produces browser assets in `dist/`.
+`pnpm --filter @openwebhmi/designer preview` serves them for local verification.
+`pnpm --filter @openwebhmi/designer build:desktop` packages the optional desktop shell.
+Production HTTPS hosting, same-origin gateway routing, offline editor assets, and
+browser security validation remain release work; Vite preview is not a production server.
+
 ## Manual Smoke
+
+Browser-build gate: serve the built designer, connect to a gateway, load/save a
+view, and open the Python editor with internet access disabled. Repeat on current
+Chrome/Edge, Firefox, and Safari. Verify no third-party requests and record failures;
+the build-script change alone does not prove offline editor operation.
 
 1. Start `examples/sim-rockwell` and the gateway with `examples/projects/phase1-demo/project.toml`.
 2. Start `apps/runtime-web` on `http://localhost:5173`.

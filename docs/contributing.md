@@ -146,9 +146,9 @@ A PR is ready when:
 ### 4.1 Prerequisites
 
 - **Rust** stable (pinned in `rust-toolchain.toml`)
-- **Node** 20+ and **pnpm** 9+
+- **Node** from `.node-version` and **pnpm** from `package.json`
 - **Python** 3.11+ (for scripting host work; not needed for gateway core)
-- **Tauri prerequisites** (see https://tauri.app/start/prerequisites/) for designer work
+- **Tauri prerequisites** (see https://tauri.app/start/prerequisites/) for optional desktop-shell work
 
 ### 4.2 First-time setup
 

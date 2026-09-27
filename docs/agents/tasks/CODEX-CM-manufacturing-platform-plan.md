@@ -108,6 +108,10 @@ Gateway, Linux Designer, browser runtime, real Rockwell profile, offline profile
 and honest disconnect behavior. Omarchy is explicitly a first showcase target,
 not a core dependency or exclusive supported distribution.
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+The accepted engine/capacity plan is the prerequisite foundation for this post-v1 manufacturing plan. Browser-first CN proof replaces mandatory desktop installers; DV owns optional native packaging. Manufacturing scope stays post-v1.
+
 ## Claude review
 
 ## Verdict

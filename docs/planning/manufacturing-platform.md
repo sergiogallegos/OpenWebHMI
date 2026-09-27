@@ -10,6 +10,8 @@ on that foundation. A basic deployment must remain a single gateway with tags,
 alarms, trends, scripts, and browser views; manufacturing capabilities are
 optional modules that consume stable platform services.
 
+Foundation prerequisite: the accepted [engine and capacity plan](engine-and-capacity.md) owns the reusable engine, 50K-tag Medium target, Edge footprint and 30-day selected history. Manufacturing modules must consume those services without making their dependencies mandatory for a basic gateway.
+
 Related evidence and delivery plans:
 
 - [`reference-capability-analysis.md`](reference-capability-analysis.md) —

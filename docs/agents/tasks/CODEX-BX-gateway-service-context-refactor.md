@@ -90,6 +90,10 @@ Historian, alarm journal, alarm engine, script host, and audit log are carried o
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+This service-context refactor is a prerequisite for DN public engine embedding. Instance-owned paths, stores, tasks and cancellation must permit two hosts in one process. Keep CLI, global tracing initialization and HTTP outside the public engine API.
+
 ## Claude review
 
 ## Verdict

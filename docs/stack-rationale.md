@@ -1,5 +1,7 @@
 # OpenWebHMI — Stack Rationale
 
+> Current direction: [web-first designer and dependency-light core](planning/2026-09-architecture-review.md). Named UI libraries below describe earlier options, not an approved dependency list or an inventory of installed packages.
+
 > Why **Rust + Python (CPython 3.11+) + TypeScript** for an Ignition-class open-source SCADA/HMI platform — and why the combination matters.
 
 This document is the substantive answer to "why not Java? why not C#? why not all-Rust?". It compares OpenWebHMI's stack against Ignition and Optix, lays out the reasoning per-language, and is honest about tradeoffs.
@@ -9,7 +11,7 @@ This document is the substantive answer to "why not Java? why not C#? why not al
 | Layer | **Inductive Automation Ignition** | **Rockwell FactoryTalk Optix** | **OpenWebHMI** |
 |---|---|---|---|
 | Core / runtime | **Java 17 / JVM** | **C++/Qt native platform + C#/.NET NetLogic**[^optix-stack] | **Rust** |
-| Designer / IDE | **Java/Swing** | **C++/Qt + web technology; C#/.NET authoring**[^optix-stack] | **Tauri (Rust shell) + React + TypeScript** |
+| Designer / IDE | **Java/Swing** | **C++/Qt + web technology; C#/.NET authoring**[^optix-stack] | **Browser-first React + TypeScript; optional Tauri shell** |
 | Web HMI runtime | **Perspective** — React/TypeScript over Java backend | **Web Presentation Engine** — HTML5/browser | **React + TypeScript** |
 | Desktop HMI runtime | **Vision** — Java/Swing | **Native Presentation Engine** — Qt-based | post-1.0 (Tauri reuse) |
 | Scripting | **Jython 2.7.4** — Python 2.7 language level | **C#/.NET NetLogic** | **CPython 3.11+** in worker subprocesses |
@@ -57,7 +59,9 @@ What Rust gives us specifically over Java/C# for this domain:
 | Plugin distribution | crates.io (versioned, semver-checked) vs proprietary `.modl` |
 | Driver crate code reuse | We use upstream `rust-ethernet-ip` directly, no wrapper-of-wrapper |
 
-Rust **codes denser** than Java for equivalent functionality — typically 30–50% fewer lines, because there's no `getX()/setX()` boilerplate, no `Optional<>` ceremony, exhaustive pattern matching. This is partly why our [scale-estimates](scale-estimates.md) target ~3.1M LOC instead of Ignition's ~3M+.
+Language choice does not establish lower memory, faster startup or fewer defects.
+The [engine and capacity plan](planning/engine-and-capacity.md) requires measured
+resource and latency evidence instead of source-line-count comparisons.
 
 ## Why TypeScript (designer UI, web runtime, component library, protocol package)
 
@@ -71,7 +75,7 @@ The UI is half the platform's surface. Both the designer (authoring HMIs) and th
 
 ## Why Python (scripting host) — and why this is the biggest differentiator
 
-This is where OpenWebHMI is meaningfully *better*, not just *equivalent*.
+Modern CPython package compatibility is a useful differentiation; scripting API completeness and operational behavior still require validation.
 
 ### What Ignition and Optix can do today
 

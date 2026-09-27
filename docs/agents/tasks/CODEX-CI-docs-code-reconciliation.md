@@ -110,6 +110,10 @@ Docs only. For each item below, verify the cited code first, then edit the doc s
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+Use the accepted engine/capacity plan as the target source of truth. Report 50K/30-day/Edge as targets until measured; do not infer five integrated drivers from five crates or native GUI speed from Tauri. Preserve shipped-versus-planned distinctions.
+
 ## Claude review
 
 ## Verdict

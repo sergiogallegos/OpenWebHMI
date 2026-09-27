@@ -1,8 +1,32 @@
 # OpenWebHMI — Roadmap
 
+> September 2026 restart: browser authoring is the v1 designer target; Tauri is optional. See the [architecture review and ordered migration](planning/2026-09-architecture-review.md). Earlier phase descriptions below record the original desktop-first plan.
+
 > Phased plan to **OpenWebHMI 1.0**: an Ignition-class open-source SCADA/HMI platform. Each phase has a single, testable exit criterion. **Until physical PLC hardware is available to the project, phases 1 through 3 exit on a documented EtherNet/IP simulator** (see Phase 1). Real-hardware validation is a hard gate before tagging 1.0 — see [Real-hardware validation gate](#real-hardware-validation-gate-pre-10).
 
 This is a **plan**, not a contract. Sequencing reflects what unlocks the next phase, not what would feel completion-shaped to ship in isolation. See [`docs/architecture.md`](architecture.md) for the system being built.
+
+## Accepted restart program (2026-09-27)
+
+The [engine and capacity plan](planning/engine-and-capacity.md) replaces the old
+10K ceiling with a **50K-tag / 50-client Medium target**, 30-day selected history,
+and a separate low-resource Edge profile. These are unproven release targets.
+The reusable Rust engine is a first-class deliverable; the gateway must be its
+consumer rather than the only usable host.
+
+Delivery order: baseline/research (DK/DL); measurement harness (DT); existing
+security and driver fixes; schema/domain extraction (DM) and service context (BX);
+engine API (DN); minimal feature profiles (DO); Axum transport (DP); browser
+delivery (DQ) and safe publishing (DR); historian ingestion/retention (DS with CG);
+frontend upgrades (DU); final capacity and platform proof (DT/CK/CN). Desktop
+packaging/performance (DV) follows as optional Phase 5 work. Existing Phase 0–4
+sections below describe the original feature ladder, not evidence that this
+restart program is complete.
+
+Release requires a second engine consumer, actual Edge hardware, three-platform
+gateway/browser evidence, Medium load and month-sized historian tests, backup
+restore, a mixed-load soak and the existing 24-hour Rockwell hardware gate.
+Manufacturing expansion remains behind these foundation gates.
 
 ---
 

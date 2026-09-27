@@ -85,11 +85,10 @@ impl Driver for MockDriver {
             .failure_mode
             .lock()
             .map_err(|_| DriverError::Other(anyhow::anyhow!("mock failure lock poisoned")))?
+            && *remaining > 0
         {
-            if *remaining > 0 {
-                *remaining -= 1;
-                return Err(DriverError::NotConnected);
-            }
+            *remaining -= 1;
+            return Err(DriverError::NotConnected);
         }
 
         self.values

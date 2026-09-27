@@ -96,6 +96,10 @@ A 300-tag view refreshing at 500 ms drives roughly 600 `tag.update` frames/secon
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+Use DT bounded browser workloads and accepted input/render latency budgets. Keep visible subscriptions granular, recover state after gaps, and isolate widget failures. Measure actual update-to-screen latency rather than treating React/Vite version changes as performance proof.
+
 ## Claude review
 
 ## Verdict

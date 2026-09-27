@@ -184,24 +184,22 @@ fn subscription_filters(config: &MqttConfig) -> HashSet<String> {
     let mut filters = HashSet::new();
     for topic in &config.topics {
         filters.insert(topic.topic.clone().unwrap_or_else(|| topic.address.clone()));
-        if matches!(&topic.payload_type, PayloadType::SparkplugMetric) {
-            if let Ok(parsed) = MqttAddress::parse(&topic.address) {
-                if let MqttAddressKind::Sparkplug {
-                    group_id,
-                    edge_node_id,
-                    device_id,
-                    ..
-                } = parsed.kind
-                {
-                    filters.insert(format!("spB/v1.0/{group_id}/NBIRTH/{edge_node_id}"));
-                    filters.insert(format!(
-                        "spB/v1.0/{group_id}/DBIRTH/{edge_node_id}/{device_id}"
-                    ));
-                    filters.insert(format!(
-                        "spB/v1.0/{group_id}/DDATA/{edge_node_id}/{device_id}"
-                    ));
-                }
-            }
+        if matches!(&topic.payload_type, PayloadType::SparkplugMetric)
+            && let Ok(parsed) = MqttAddress::parse(&topic.address)
+            && let MqttAddressKind::Sparkplug {
+                group_id,
+                edge_node_id,
+                device_id,
+                ..
+            } = parsed.kind
+        {
+            filters.insert(format!("spB/v1.0/{group_id}/NBIRTH/{edge_node_id}"));
+            filters.insert(format!(
+                "spB/v1.0/{group_id}/DBIRTH/{edge_node_id}/{device_id}"
+            ));
+            filters.insert(format!(
+                "spB/v1.0/{group_id}/DDATA/{edge_node_id}/{device_id}"
+            ));
         }
     }
     filters
@@ -220,24 +218,23 @@ fn topic_mappings(config: &MqttConfig) -> DriverResult<HashMap<String, Vec<Topic
                 address: topic.address.clone(),
                 payload_type: topic.payload_type.clone(),
             });
-        if matches!(&topic.payload_type, PayloadType::SparkplugMetric) {
-            if let MqttAddressKind::Sparkplug {
+        if matches!(&topic.payload_type, PayloadType::SparkplugMetric)
+            && let MqttAddressKind::Sparkplug {
                 group_id,
                 edge_node_id,
                 device_id,
                 ..
             } = parsed.kind
-            {
-                mappings
-                    .entry(format!(
-                        "spB/v1.0/{group_id}/DDATA/{edge_node_id}/{device_id}"
-                    ))
-                    .or_default()
-                    .push(TopicMapping {
-                        address: topic.address.clone(),
-                        payload_type: topic.payload_type.clone(),
-                    });
-            }
+        {
+            mappings
+                .entry(format!(
+                    "spB/v1.0/{group_id}/DDATA/{edge_node_id}/{device_id}"
+                ))
+                .or_default()
+                .push(TopicMapping {
+                    address: topic.address.clone(),
+                    payload_type: topic.payload_type.clone(),
+                });
         }
     }
     Ok(mappings)

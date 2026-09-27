@@ -97,6 +97,10 @@ Publishes from concurrent drivers no longer serialize on one global lock. Never-
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+Use DT measurements and the accepted 50K Medium workload before choosing sharding/coalescing. No assumption that every client consumes every tag at source rate. Keep alarm/history/command delivery distinct from display coalescing, and prove slot reclamation and snapshot recovery.
+
 ## Claude review
 
 ## Verdict

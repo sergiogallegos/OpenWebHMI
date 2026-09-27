@@ -4,7 +4,7 @@ Rust-specific rules for the `crates/` workspace. Loaded automatically by Codex a
 
 ## Toolchain
 
-Pinned by `rust-toolchain.toml`: Rust 1.95.0, edition 2024. Do not bump in a non-toolchain PR. Edition migrations are their own task (precedent: CODEX-AG).
+Pinned by `rust-toolchain.toml`: Rust 1.98.1, edition 2024. Do not bump in a non-toolchain PR. Edition migrations are their own task (precedent: CODEX-AG).
 
 ## Production-code prohibitions
 

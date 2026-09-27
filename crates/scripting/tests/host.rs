@@ -47,10 +47,10 @@ async fn wait_ready(events: &mut tokio::sync::broadcast::Receiver<ScriptEvent>) 
 async fn wait_tag(store: &TagStore, path: &str, expected: TagValue) {
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
-        if let Some(snapshot) = store.get(path) {
-            if snapshot.value == expected {
-                return;
-            }
+        if let Some(snapshot) = store.get(path)
+            && snapshot.value == expected
+        {
+            return;
         }
         assert!(Instant::now() < deadline, "timed out waiting for {path}");
         sleep(Duration::from_millis(25)).await;
@@ -168,10 +168,10 @@ def pressure_changed(tag):
     store.publish("rockwell-1/Pressure", TagValue::Int(1), Quality::Good);
     timeout(Duration::from_secs(5), async {
         loop {
-            if let Ok(ScriptEvent::Error { message, .. }) = events.recv().await {
-                if message.contains("timed out") {
-                    return;
-                }
+            if let Ok(ScriptEvent::Error { message, .. }) = events.recv().await
+                && message.contains("timed out")
+            {
+                return;
             }
         }
     })

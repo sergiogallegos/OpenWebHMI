@@ -1,16 +1,16 @@
 # Raspberry Pi Deployment
 
-This guide covers a manual OpenWebHMI gateway deployment on Raspberry Pi 4 or Raspberry Pi 5 running 64-bit Raspberry Pi OS Bookworm. Design projects on a desktop with the Tauri designer, then deploy the gateway and optional runtime web bundle to the Pi.
+This guide covers a manual OpenWebHMI gateway deployment on Raspberry Pi 4 or Raspberry Pi 5 running 64-bit Raspberry Pi OS Bookworm. The target authoring workflow is the browser designer, with an optional desktop shell. Deploy the gateway and static web assets to the Pi using a documented hosting configuration.
 
 ## Verification Status
 
 Local verification on 2026-05-25 used Rust `1.95.0` from `rust-toolchain.toml` on an Apple Silicon development host. `rustup target add aarch64-unknown-linux-gnu` succeeded after network approval. A direct `cargo build -p openwebhmi-gateway --release --target aarch64-unknown-linux-gnu --locked` reached native C dependencies and failed because `aarch64-linux-gnu-gcc` is not installed on this host. A follow-up attempt with `zig cc -target aarch64-linux-gnu` failed because `cc-rs` also passed `--target=aarch64-unknown-linux-gnu`, which this Zig invocation did not accept.
 
-No real Raspberry Pi hardware smoke was performed in this environment. Treat the native Pi build path below as the verified deployment path to validate on the target Pi, and treat the cross-compile path as the supported shape once a Linux aarch64 cross C toolchain or `cross` is installed.
+No real Raspberry Pi hardware smoke was performed in this environment. Treat the native Pi build path below as an unverified procedure to validate on the target Pi, and treat the cross-compile path as the supported shape once a Linux aarch64 cross C toolchain or `cross` is installed.
 
 ## Hardware
 
-Use a Pi 4 or Pi 5 with 64-bit ARM support. A 4 GB board is the recommended floor for gateway plus local runtime hosting. A 2 GB board can run a headless gateway for small projects, but leave the browser/runtime on a separate client. Use wired Ethernet for production cells.
+Use a Pi 4 or Pi 5 with 64-bit ARM support. A 4 GB board is the recommended floor for gateway plus local runtime hosting. A 2 GB board is a candidate for a headless small-project deployment with a remote browser, not a tested capacity claim. The new 1 GB Edge target is defined in [engine and capacity](../planning/engine-and-capacity.md) and requires feature-profile implementation and real hardware proof. Use wired Ethernet for production cells.
 
 Use SSD storage for production historian or audit-log workloads. SD cards are acceptable for evaluation, but historian writes and audit logs create sustained small SQLite writes; SD-card endurance becomes the limiting factor before CPU or memory.
 
@@ -116,7 +116,7 @@ pnpm --filter @openwebhmi/runtime-web build
 
 Point the runtime at the Pi gateway URL, for example `ws://openwebhmi-pi.local:8080` for local testing or a TLS-terminated `wss://` endpoint in production.
 
-The gateway does not make the Tauri designer a Pi app. The designer remains a desktop authoring tool; publish project files to the Pi after authoring.
+The gateway does not require the desktop shell. Browser authoring is the accepted direction; production hosting, safe publishing and offline assets remain tracked implementation work.
 
 ## Networking And TLS
 

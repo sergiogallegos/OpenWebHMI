@@ -88,13 +88,15 @@ const BLOB = `${REPO}/blob/main`;
   <section class="container section">
     <h2>v1.0 scope</h2>
     <p class="muted">
-      Concrete bounds. If anything in the project implies bigger numbers,
-      it's wrong and gets fixed.
+      Engineering targets, not certified capacity. Workload, hardware, history
+      recording rate and client subscriptions determine the supported deployment.
     </p>
     <ul class="scope-list">
       <li><strong>Single gateway</strong> per deployment</li>
-      <li><strong>≤ 10,000</strong> live tags per gateway</li>
-      <li><strong>≤ 50</strong> concurrent runtime clients per gateway</li>
+      <li><strong>Target: ≤ 50,000</strong> live tags per gateway; validation pending</li>
+      <li><strong>Target: 30 days</strong> of selected process history; recording-rate and storage limits apply</li>
+      <li><strong>Separate Edge profile</strong> for low-resource headless deployments; validation pending</li>
+      <li><strong>Target: ≤ 50</strong> concurrent runtime clients with bounded subscriptions</li>
       <li><strong>Five v1 driver targets:</strong> Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff ADS</li>
       <li><strong>Web-only runtime</strong>; Tauri desktop runtime is post-1.0</li>
       <li><strong>Linux, macOS, Windows</strong> for gateway and designer</li>
@@ -124,7 +126,7 @@ const BLOB = `${REPO}/blob/main`;
             <td>Designer</td>
             <td>Java/Swing</td>
             <td>C++/Qt + web technology; C#/.NET authoring*</td>
-            <td><strong>Tauri + React/TypeScript</strong></td>
+            <td><strong>Browser-first React/TypeScript; optional Tauri</strong></td>
           </tr>
           <tr>
             <td>Web HMI</td>
@@ -298,7 +300,7 @@ const BLOB = `${REPO}/blob/main`;
       <li>A safety-rated (IEC 61508 / SIL) system.</li>
       <li>A replacement for vendor-specific PLC engineering tooling.</li>
       <li>An MES platform — optional manufacturing modules are post-1.0 direction, not a 1.0 promise.</li>
-      <li>An enterprise-scale (&gt;10K tag, &gt;50 client, multi-gateway) system in v1.</li>
+      <li>Loads above the defined 50K-tag / 50-client Medium workload or multi-gateway deployments in v1.</li>
     </ul>
   </section>
 

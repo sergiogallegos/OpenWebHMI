@@ -117,12 +117,10 @@ async fn assert_status(
     while tokio::time::Instant::now() < deadline {
         if let ServerMessage::TagUpdate { path, value, .. } =
             next_message(ws, Duration::from_millis(750)).await
+            && path.as_str() == "system/drivers/rockwell-1/status"
+            && matches!(value, openwebhmi_protocol::TagValue::String(value) if value == expected)
         {
-            if path.as_str() == "system/drivers/rockwell-1/status"
-                && matches!(value, openwebhmi_protocol::TagValue::String(value) if value == expected)
-            {
-                return;
-            }
+            return;
         }
     }
     panic!("status did not reach {expected}");

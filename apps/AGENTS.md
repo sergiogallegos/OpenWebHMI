@@ -13,7 +13,7 @@ TypeScript application rules for `apps/{designer,runtime-web,website}`. Loaded a
 ## Per-app responsibilities
 
 - **`apps/runtime-web`** — browser HMI runtime. Loads views from the gateway, renders via `packages/component-library`, holds the WebSocket connection. No designer code. No build-time view authoring.
-- **`apps/designer`** — Tauri desktop designer. Holds the project explorer, view editor, script editor (Monaco), driver config UI. Talks to a local or remote gateway via the same protocol as the runtime. No runtime-only concerns leak in.
+- **`apps/designer`** — browser-first designer with an optional Tauri shell. Holds the project explorer, view editor, script editor (Monaco), driver config UI. Talks to a local or remote gateway via the same protocol as the runtime. No runtime-only concerns leak in. Browser authoring must not import desktop APIs directly.
 - **`apps/website`** — public marketing + docs (`openwebhmi.com`). Astro. No runtime code. Builds independently of the rest of the workspace.
 
 ## React conventions
@@ -37,13 +37,13 @@ TypeScript application rules for `apps/{designer,runtime-web,website}`. Loaded a
 
 ## Runtime-specific gotchas
 
-- **No blocking work on the WebSocket thread.** Tag rendering must stay smooth at 50 concurrent clients × 10K tags. Profile before adding work to the tag update path.
+- **No blocking work on the WebSocket thread.** Use the bounded client subscriptions and 50K-tag Medium workload in `docs/planning/engine-and-capacity.md`; do not assume every client subscribes to every tag. Profile before adding work to the tag update path.
 - **Quality propagation matters.** When a driver goes bad → good → bad, the component shows it. The `Quality` enum is part of the protocol; don't drop it on the way to render.
 
 ## Build & test
 
 - `pnpm -r typecheck` and `pnpm -r test` must pass before submission.
-- `apps/designer` has `pnpm build:vite` and `pnpm build` (Tauri); both are part of the validation matrix for designer changes.
+- `apps/designer` has `pnpm build` / `pnpm build:vite` for the browser and `pnpm build:desktop` for Tauri. Desktop packaging is additionally required when changing the shell or native capabilities.
 - `apps/website` builds standalone — its failures should not block runtime/designer work.
 - Vitest tests use deterministic time (`vi.useFakeTimers()` + `vi.advanceTimersByTime()`); no `setTimeout`-based waits.
 

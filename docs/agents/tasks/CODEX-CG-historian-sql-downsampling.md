@@ -89,6 +89,10 @@ last-update: 2026-07-12 claude [Fable 5]
 
 ## Codex log
 
+### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
+
+Coordinate with DS storage ingestion/retention and DT month-sized capacity evidence. Bounded SQL reads/downsampling must satisfy the defined trend workload while ingest continues; 30-day history is not proven by a small in-memory fixture.
+
 ## Claude review
 
 ## Verdict

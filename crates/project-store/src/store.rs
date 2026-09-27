@@ -390,10 +390,10 @@ pub fn validate_project(project: &Project) -> anyhow::Result<()> {
             bail!("script '{}' path cannot be empty", script.id);
         }
         for trigger in &script.triggers {
-            if let ScriptTriggerConfig::OnTagChange { path } = trigger {
-                if !tag_paths.contains(path.as_str()) {
-                    bail!("script '{}' references unknown tag '{}'", script.id, path);
-                }
+            if let ScriptTriggerConfig::OnTagChange { path } = trigger
+                && !tag_paths.contains(path.as_str())
+            {
+                bail!("script '{}' references unknown tag '{}'", script.id, path);
             }
         }
     }

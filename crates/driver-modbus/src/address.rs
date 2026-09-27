@@ -288,7 +288,9 @@ impl ModbusAddress {
             (DataType::F64, TagValue::Real(value)) => Ok(value
                 .to_bits()
                 .to_be_bytes()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
                 .collect()),
             (DataType::String, TagValue::String(value)) => {
@@ -297,7 +299,9 @@ impl ModbusAddress {
                     bytes.push(0);
                 }
                 Ok(bytes
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
                     .collect())
             }

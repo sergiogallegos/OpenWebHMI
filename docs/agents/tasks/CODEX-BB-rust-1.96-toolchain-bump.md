@@ -106,6 +106,13 @@ last-update: 2026-05-29 claude [Opus 4.7]
 
 ## Codex log
 
+### 2026-09-27 13:55 codex [GPT-6]
+
+Maintainer's direct 2026-09-27 request for Rust 1.98.1 supersedes this brief's 1.96
+version direction. CODEX-DK contains the updated baseline and validation. Do not
+apply this brief as a downgrade. Its example assert_matches conversion was not
+performed; this task remains open pending explicit disposition, not falsely closed.
+
 ## Claude review
 
 ## Verdict

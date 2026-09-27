@@ -45,7 +45,7 @@ scripts/            local dev + maintenance scripts
 
 ## Commands
 
-Rust toolchain is pinned by `rust-toolchain.toml` (currently 1.95, edition 2024). Node version is pinned in `.github/workflows/ci.yml`. Package manager is **pnpm** — never `npm` or `yarn` in this repo.
+Rust toolchain is pinned by `rust-toolchain.toml` (currently 1.98.1, edition 2024). Node version is pinned in `.node-version` and consumed by CI. Package manager is **pnpm** — never `npm` or `yarn` in this repo.
 
 Full validation matrix (debug builds; `--release` only when reproducing a perf issue):
 
@@ -83,6 +83,8 @@ For known-flaky integration tests, three consecutive green runs is the bar befor
 - **No hardcoded ports.** Bind to `127.0.0.1:0` and read the assigned port back from the listener.
 
 ## Dependencies
+
+- **Reusable engine boundaries:** pure domain code targets std/core only, asynchronous services narrowly enabled Tokio, and serialization/storage/transport/driver libraries remain adapters. Do not confuse direct dependency counts with the transitive graph. See `docs/planning/engine-and-capacity.md` for accepted build profiles and budgets.
 
 - **Never `cargo update` all dependencies.** Use `cargo update --precise <crate>@<version>` when a specific bump is needed. Lockfile drift across unrelated deps hides supply-chain regressions and inflates review surface.
 - **`=`-pinned workspace versions stay pinned** until the task is explicitly a version bump. Current set: `tokio-modbus`, `async-opcua`, `rumqttc`, `rumqttd`, `prost`, `jsonpath-rust`, `ads`. Pinning is load-bearing.
