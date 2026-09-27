@@ -76,6 +76,13 @@ unchanged. Engine extraction, 50K capacity, low-resource operation, desktop spee
 Linux/Windows execution and real PLC soak remain unproven. Ready for the requested
 progress commit/push; independent task review remains pending.
 
+### 2026-09-27 14:28 codex [GPT-6]
+
+Committed at `5f03604` and successfully pushed to `origin/main` under explicit
+maintainer instruction (remote advanced from `373be6e` to `5f03604`). This supersedes
+the earlier uncommitted/no-push record. Status remains submitted: publishing progress
+is not an independent review verdict or proof of the open implementation targets.
+
 ## Claude review
 
 ## Verdict
