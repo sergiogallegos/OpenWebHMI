@@ -71,17 +71,34 @@ const BLOB = `${REPO}/blob/main`;
   </section>
 
   <section class="container section">
+    <span class="badge">Planned for v1</span>
+    <h2>Build visually. Bring your favorite coding agent.</h2>
+    <p>
+      Author your SCADA/HMI in the Designer, or use an external coding agent to
+      help create screens, bindings, configuration, and Python scripts. The goal
+      is one open project you can edit from either workflow, then preview and
+      review in the browser Designer before publishing.
+    </p>
+    <p class="muted">
+      No required AI provider or AI subscription to use the Designer. Portable
+      project files, terminal tools, and conflict-aware editing are planned;
+      the supported agent workflow is not available yet.
+      <a href={`${BLOB}/docs/planning/agent-authoring.md`}>Read the authoring plan →</a>
+    </p>
+  </section>
+
+  <section class="container section">
     <h2>Why another platform?</h2>
     <p>
       Industrial automation has been locked behind closed source tooling and
       expensive gateway licensing for decades. Tools like
       Inductive Automation Ignition and Rockwell FactoryTalk Optix are
-      excellent, but there is no equivalent open-source platform a small or
-      mid-size plant could actually run. OpenWebHMI's goal is to change that.
+      established choices. OpenWebHMI aims to offer small and mid-size plants
+      an open-source, self-hosted alternative with open project authoring.
     </p>
     <p>
-      AI-assisted development makes the timeline plausible in a way it
-      wasn't five years ago.
+      Engineers should be able to choose visual editing, terminal tools, or
+      help from their own coding agent, while keeping control of what is published.
     </p>
   </section>
 

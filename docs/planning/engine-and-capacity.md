@@ -200,6 +200,15 @@ network conditions, client memory and startup definitions. Runtime and Designer
 processes are measured separately from the gateway. Revisit rendering choices if
 measurements fail before considering a separate native UI rewrite.
 
+## Open authoring extension
+
+The [agent authoring plan](agent-authoring.md) extends browser-first delivery: the
+Designer and external editors/agents share portable project source, offline schemas
+and validation, CLI access, revision-aware synchronization and explicit publishing.
+DW records the direction; DX/DY/DZ implement the project contract, CLI and Designer
+reconciliation alongside DQ/DR. Authoring tooling is optional on deployed gateways
+and adds no model SDK or AI service to the minimal engine.
+
 ## Implementation sequence and ownership
 
 | Stage | Existing work retained | New task | Exit evidence |

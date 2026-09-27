@@ -14,6 +14,7 @@ For implementation rules, see `AGENTS.md`. For the agent collaboration model, se
 - **Five drivers**: Rockwell EtherNet/IP (CompactLogix, ControlLogix), OPC UA (vendor-neutral), Modbus TCP/RTU (serial + TCP), MQTT (generic + Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser). Tauri desktop runtime is post-1.0.
 - **Linux + macOS + Windows** for the gateway; browser-based HMI runtime and designer on all three platforms.
+- **Open, agent-ready authoring for v1.** Engineers, external editors and terminal agents author the same versioned text project. Offline schemas/CLI validation, visual preview and conflict-aware draft synchronization are required. Publishing is an explicit authorized action; editing source never implicitly deploys or writes to PLCs. See the [agent authoring plan](docs/planning/agent-authoring.md); these capabilities remain implementation work.
 - **Web-first designer for v1.** The existing Tauri shell is optional. Desktop packaging and future platform-native clients must consume the same versioned gateway/project contracts; they must not become prerequisites for browser authoring.
 - **Pre-1.0 hardware-validation gate**: 24-hour continuous run of `driver-rockwell` against real CompactLogix/ControlLogix hardware before the 1.0 tag.
 

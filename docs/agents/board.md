@@ -6,10 +6,16 @@
 
 **Restart baseline (2026-09-27):** CODEX-DK adopts Rust 1.98.1 and supersedes CODEX-BB’s old 1.96 version direction. Do not downgrade to execute BB; its historical brief awaits disposition. DL records the accepted [engine and capacity plan](../planning/engine-and-capacity.md): 50K-tag Medium target, 30-day selected history, low-resource Edge and reusable engine. DM–DU implement the foundation; DV is optional desktop work. DT baselining starts before optimization; security fixes do not wait for extraction. All capacity budgets are unproven.
 
+**Open authoring (2026-09-27):** [DW–DZ](../planning/agent-authoring.md) add portable project source, offline schemas/CLI and conflict-aware external-agent editing. DR remains the shared publish authority; no source edit implicitly changes production. Implementation is pending.
+
 **Driver scope expansion (2026-04-30).** Phase 4 now ships **four new drivers** (in addition to Rockwell from Phase 1): OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), and Beckhoff ADS. Each lands as a real driver crate + simulator harness + simulator-driven CI integration tests + wiki entry + designer manual smoke step. Real-hardware validation remains the pre-1.0 gate. Drivers are independent — they can run in parallel.
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
+| CODEX-DW | Record open project and agent-assisted Designer architecture | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DW-agent-authoring-direction.md`](tasks/CODEX-DW-agent-authoring-direction.md) |
+| CODEX-DX | Define portable project source and offline schema contract | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DX-portable-project-contract.md`](tasks/CODEX-DX-portable-project-contract.md) |
+| CODEX-DY | Add headless project CLI and local browser preview service | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DY-project-cli-authoring.md`](tasks/CODEX-DY-project-cli-authoring.md) |
+| CODEX-DZ | Synchronize Designer drafts with external project edits | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DZ-designer-external-edits.md`](tasks/CODEX-DZ-designer-external-edits.md) |
 | CODEX-DL | Accepted engine foundation, capacity research and restart program | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DL-accepted-engine-capacity-plan.md`](tasks/CODEX-DL-accepted-engine-capacity-plan.md) |
 | CODEX-DM | Extract pure domain and storage-independent wire schema | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DM-domain-schema-boundaries.md`](tasks/CODEX-DM-domain-schema-boundaries.md) |
 | CODEX-DN | Expose embeddable engine and prove independent public-API consumer | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DN-embeddable-engine-api.md`](tasks/CODEX-DN-embeddable-engine-api.md) |

@@ -16,6 +16,8 @@ Status values:
 
 ## Architecture
 
+- [architecture/agent-authoring.md](architecture/agent-authoring.md) — Shared source for visual and terminal-agent editing; watcher/revision boundary and explicit publication. `active`
+
 - [architecture/engine-capacity-decision.md](architecture/engine-capacity-decision.md) — Accepted engine reuse, shared designer UI and separate Edge/50K Medium capacity rationale; implementation remains unproven. `active`
 
 - [architecture/project-store-on-disk-format.md](architecture/project-store-on-disk-format.md) — Phase 2 project-store directory layout, SQLite metadata role, versioning, and atomic artifact saves. `active`

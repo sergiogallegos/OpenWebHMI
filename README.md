@@ -27,6 +27,12 @@ A single **Rust gateway** owns the project, the tags, the drivers, the historian
 
 ### v1.0 target scope
 
+**Build visually. Bring your favorite coding agent.** Planned authoring tools let
+engineers use the Designer or an external agent to create layouts, bindings,
+configuration and Python scripts in the same open project, then review and publish
+explicitly. No AI provider is required. The [supported agent workflow](docs/planning/agent-authoring.md)
+is planned, not available yet.
+
 - **Single gateway** per deployment (no clustering / federation).
 - **Target: ≤ 50,000 live tags** under one gateway on the defined Medium workload; capacity is not yet validated.
 - **Target: ≤ 50 concurrent runtime clients** per gateway with bounded subscriptions.
@@ -34,7 +40,7 @@ A single **Rust gateway** owns the project, the tags, the drivers, the historian
 - **Reusable Rust engine:** planned public library consumed by the gateway and independent applications; extraction remains in development.
 - **Five drivers shipped**: Rockwell EtherNet/IP, OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser); Tauri desktop runtime is post-1.0.
-- **Linux + macOS + Windows** for both the gateway and desktop Designer; Raspberry Pi 4 / 5 edge deployment is documented in [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md).
+- **Linux + macOS + Windows** for the gateway and browser Designer; Raspberry Pi 4 / 5 edge deployment is documented in [`docs/deployment/raspberry-pi.md`](docs/deployment/raspberry-pi.md).
 
 These bounds are *the* design constraint. If anything in this repo implies bigger numbers, it's wrong and should be fixed. Larger deployments are a year-2+ conversation, not a v1.0 promise.
 
@@ -51,6 +57,7 @@ OpenWebHMI's goal is a credible open-source platform a small or mid-size plant c
 - **Gateway**: Rust + Tokio (single binary, embedded SQLite)
 - **Drivers**: Rust, in-process plugin model. Five v1 drivers: Rockwell EtherNet/IP (via `rust-ethernet-ip`), OPC UA (via `async-opcua`), Modbus TCP/RTU (via `tokio-modbus`), MQTT incl. Sparkplug B (via `rumqttc` + `prost`), and Beckhoff TwinCAT ADS (via `ads`).
 - **Designer / IDE**: React + TypeScript in the browser; optional Tauri desktop shell
+- **Open authoring target**: shared text projects for visual editing, terminal tools and external agents, with offline validation and explicit publishing. [Plan and implementation tasks](docs/planning/agent-authoring.md); not implemented yet.
 - **HMI runtime**: React + TypeScript in the browser
 - **Scripting**: CPython 3.11+ worker subprocesses over JSON-RPC for crash isolation
 - **Wire protocol**: JSON over WebSocket (single duplex stream per client)

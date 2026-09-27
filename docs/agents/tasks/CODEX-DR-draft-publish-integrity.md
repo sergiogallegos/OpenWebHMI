@@ -52,6 +52,15 @@ explicit paired migration. Do not claim a performance gain without measurement.
 
 ## Codex log
 
+### 2026-09-27 15:32 codex [GPT-6] — open authoring scope addendum
+
+The [agent authoring plan](../../planning/agent-authoring.md) adds external editors
+and terminal agents as peer authoring clients. DX owns portable source/offline
+schemas, DY the CLI/local service, DZ reconciliation and conflicts. Coordinate
+shared format/validation with DM and browser delivery with DQ; DR remains the only
+publication authority for both CLI and Designer. Original brief/status preserved;
+no external-edit feature is implemented by this addendum.
+
 ## Claude review
 
 ## Verdict

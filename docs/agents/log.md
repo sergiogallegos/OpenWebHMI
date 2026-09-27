@@ -339,3 +339,11 @@ Use `--` for task-id when the event is project-wide (protocol bootstrap, etc).
 2026-09-27 14:27  codex [GPT-6]  CODEX-DL  Validation passed: agent/license checks, 53 new local links, storage arithmetic, frontend typecheck/build and three 128-test runs. DK Rust validation retained; hardware/browser/capacity proof remains open. Prepared for maintainer-requested commit/push.
 2026-09-27 14:28  codex [GPT-6]  CODEX-DK  Progress committed at 5f03604 and pushed successfully to origin/main by explicit maintainer request. Submitted status retained; independent review and documented capability gates remain pending.
 2026-09-27 14:28  codex [GPT-6]  CODEX-DL  Progress committed at 5f03604 and pushed successfully to origin/main by explicit maintainer request. Submitted status retained; independent review and documented capability gates remain pending.
+2026-09-27 15:32  codex [GPT-6]  CODEX-DW  Submitted architecture plan: Record open project and agent-assisted Designer architecture. No CLI or external-edit synchronization shipped.
+2026-09-27 15:32  codex [GPT-6]  CODEX-DX  Opened implementation brief: Define portable project source and offline schema contract. No CLI or external-edit synchronization shipped.
+2026-09-27 15:32  codex [GPT-6]  CODEX-DY  Opened implementation brief: Add headless project CLI and local browser preview service. No CLI or external-edit synchronization shipped.
+2026-09-27 15:32  codex [GPT-6]  CODEX-DZ  Opened implementation brief: Synchronize Designer drafts with external project edits. No CLI or external-edit synchronization shipped.
+2026-09-27 15:32  codex [GPT-6]  CODEX-DR  Appended external-authoring scope coordination; original brief and status preserved.
+2026-09-27 15:32  codex [GPT-6]  CODEX-DQ  Appended external-authoring scope coordination; original brief and status preserved.
+2026-09-27 15:32  codex [GPT-6]  CODEX-DM  Appended external-authoring scope coordination; original brief and status preserved.
+2026-09-27 15:34  codex [GPT-6]  CODEX-DW  Added planned agent-authoring positioning to README/website. Agent/license/link/diff checks and frontend typecheck/build plus three 128-test runs passed; interactive browser/agent workflow and deployment remain unperformed.

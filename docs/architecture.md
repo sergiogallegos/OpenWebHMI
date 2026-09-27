@@ -234,10 +234,10 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 
 - A **project** is the unit of authoring and deployment.
 - Contents: views (HMI screen tree), tag definitions, alarm configs, driver configs, scripts, themes, assets (images, fonts).
-- On-disk format: a directory of canonical JSON files (one per artifact) under `<project-store-root>/<project-id>/`. Diff-friendly. Optionally `git init` for project-level history.
+- Current source format: `project.toml`, JSON artifacts, Python source and assets under `<project-store-root>/<project-id>/`. The target is a portable, versioned authoring directory; see the [agent authoring contract](planning/agent-authoring.md). Git is optional.
 - Indexed by SQLite for fast metadata lookup.
-- Versioning: every save increments project version; clients receive `project.changed` and reload affected views.
-- Hot reload: granular by artifact (changing one view does not reload the whole project).
+- Current saves increment metadata versions and broadcast changes. Direct external file edits do not enter that save/event path.
+- Target: validated source changes update a draft and Designer preview; runtime changes only on explicit atomic publication. File reconciliation, conflict handling and safe publication remain pending (DX/DY/DZ/DR).
 - Export/import: `.owhmi` archive (zipped project directory) for moving between gateways.
 
 ### 4.9 Auth (`crates/auth`)
@@ -263,7 +263,8 @@ Modules:
 - **Visual canvas** — drag/drop components, property panel, tag binding picker. Current implementation is form-based; visual authoring must meet interaction budgets before selecting additional canvas dependencies.
 - **Script editor** — Monaco with Python syntax + intellisense for `system.*` exposed via TS-generated stubs.
 - **Alarm config**, **driver config**, **theme editor**.
-- **Run / preview** — opens an embedded webview pointing at a test runtime.
+- **Run / preview** — shares the web renderer with synthetic/recorded data; target preview has no implicit script execution, device connection or PLC writes.
+- **External authoring** — a project explorer, visual layout, scripts and configuration over the same portable source used by terminal agents. Offline CLI validation and local development service bridge filesystem edits to the browser; dirty editor conflicts preserve both versions. This is planned in DX/DY/DZ.
 
 The designer talks to the gateway over the **same WebSocket protocol** as the runtime, just with `Designer` role privileges (write-project, run-tests, etc.).
 
@@ -333,17 +334,24 @@ Click ─▶ tag.write WS message ─▶ Gateway authorizes (role + ACL)
                           PLC echoes / next poll → §5.1 propagates new value
 ```
 
-### 5.3 Project change (designer → all clients)
+### 5.3 Project change (accepted target; implementation pending)
 
 ```
-Designer save ─▶ project.save WS ─▶ ProjectStore.commit(artifact)
-                                     │
-                                     ├─▶ version++
-                                     └─▶ broadcast project.changed
-                                          │
-                                          ▼
-                                  HMI clients reload affected views
+Designer / terminal editor / agent
+             │
+             ▼
+versioned source → validate + reconcile against base revision
+                              │
+                    accepted draft → Designer preview
+                              │
+                    explicit authorized publish
+                              │
+                    immutable published revision → runtime
 ```
+
+Current save/change events do not provide this draft boundary. DR owns publication;
+DX/DY/DZ own portable source, CLI and external-edit synchronization. See the
+[authoring contract](planning/agent-authoring.md) for local/remote flows and conflicts.
 
 ## 6. Failure modes & resilience
 
@@ -388,7 +396,7 @@ Tracked in `wiki/architecture/` as they arise. Initial list:
 - Tag-write authorization: per-tag ACLs vs view-only ACLs.
 - Project versioning: own metadata vs delegate to git from day one.
 - Component plugin trust: signed packages vs informal allowlist.
-- Designer ↔ gateway disconnected editing: should the designer support local-only project editing without a live gateway?
+- Disconnected source editing/validation is accepted in the [agent authoring plan](planning/agent-authoring.md). Local preview and revision-checked remote submission need DX/DY/DZ/DR implementation; browser filesystem APIs are not required.
 - Multi-tenant gateway: should one gateway host multiple isolated projects, or is one-gateway-per-project the model?
 
 ## 10. Naming
@@ -424,3 +432,8 @@ a separate atomic operation with rollback, audit and a paired runtime migration.
 Until that work lands, existing saves/hot reload must not be represented as safe
 draft/publish behavior. Native packaging remains optional, and responsiveness is
 measured independently from gateway throughput.
+
+The Designer and external terminal agents are peer authoring clients of a documented
+project contract. DX/DY/DZ add portable source, offline validation, a thin Rust CLI
+and conflict-aware draft synchronization; DR remains the publication authority.
+No mandatory AI provider, model SDK or MCP server belongs in the engine or gateway.

@@ -28,6 +28,13 @@ gateway/browser evidence, Medium load and month-sized historian tests, backup
 restore, a mixed-load soak and the existing 24-hour Rockwell hardware gate.
 Manufacturing expansion remains behind these foundation gates.
 
+Agent-assisted authoring is a v1 requirement: [open authoring plan](planning/agent-authoring.md).
+DW records the decision; DX defines portable project source and offline schemas;
+DY adds terminal scaffolding/validation and the local browser preview service; DZ
+adds external-edit reconciliation and conflicts. DR owns shared publication for
+both CLI and Designer. An end-to-end terminal-to-Designer fixture is a release
+gate. Built-in AI chat and optional MCP integration are deferred.
+
 ---
 
 ## Phase 0 — Foundations (target: ~1 month)
