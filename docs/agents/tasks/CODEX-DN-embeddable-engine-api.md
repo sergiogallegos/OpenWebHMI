@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DN — Expose embeddable engine and prove independent public-API consumer
@@ -51,6 +51,13 @@ Cargo dependency update. Preserve existing project/wire compatibility or ship an
 explicit paired migration. Do not claim a performance gain without measurement.
 
 ## Codex log
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+The second out-of-workspace host remains an architectural acceptance test of internal modularity and replaceable composition. It is not a new third-party product SDK commitment. Preserve public-API compatibility and AGPL-compliant reuse; no licensing change.
 
 ## Claude review
 

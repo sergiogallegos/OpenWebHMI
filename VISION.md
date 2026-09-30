@@ -15,7 +15,8 @@ For implementation rules, see `AGENTS.md`. For the agent collaboration model, se
 - **Web-only runtime** (browser). Tauri desktop runtime is post-1.0.
 - **Linux + macOS + Windows** for the gateway; browser-based HMI runtime and designer on all three platforms.
 - **Open, agent-ready authoring for v1.** Engineers, external editors and terminal agents author the same versioned text project. Offline schemas/CLI validation, visual preview and conflict-aware draft synchronization are required. Publishing is an explicit authorized action; editing source never implicitly deploys or writes to PLCs. See the [agent authoring plan](docs/planning/agent-authoring.md); these capabilities remain implementation work.
-- **Web-first designer for v1.** The existing Tauri shell is optional. Desktop packaging and future platform-native clients must consume the same versioned gateway/project contracts; they must not become prerequisites for browser authoring.
+- **Web-first designer for v1.** The existing Tauri shell is optional. Desktop packaging and future platform-native clients must consume the same versioned gateway/project contracts; they must not become prerequisites for browser authoring. Measure Tauri host performance on macOS, Windows and Linux before deciding whether an optional OS-native UI is justified.
+- **Project engineering and deployment.** Git-ready text source supports manual and optional terminal-agent editing of the same project. Optional CPython application scripts provide bounded jobs and basic PDF/CSV exports; managed environments, target-aware publishing and offline project packages are planned v1 gates. Database connectors and ML remain deferred. See the [project engineering plan](docs/planning/project-engineering.md).
 - **Pre-1.0 hardware-validation gate**: 24-hour continuous run of `driver-rockwell` against real CompactLogix/ControlLogix hardware before the 1.0 tag.
 
 The [engine and capacity plan](docs/planning/engine-and-capacity.md) defines separate Edge, Standard and Medium workloads, 30-day selected process-history retention, hardware/resource budgets and release evidence. A live-tag limit is not a historian write-rate guarantee. The 50K target replaces the earlier 10K ceiling; greater loads need a separate scope decision.
@@ -57,7 +58,7 @@ These are *contracts*, not preferences. A PR that lands code violating one of th
 
 ### Architectural invariants
 
-- **Engine as a reusable library.** The gateway and an independent example host consume the same embeddable Rust engine through public APIs. No required web server, GUI, process globals or Python interpreter in the minimal engine. This is committed extraction work, not a claim that the current crates already meet it.
+- **Engine as a reusable library for internal modularity.** The gateway and an independent example host consume the same embeddable Rust engine through public APIs. No required web server, GUI, process globals or Python interpreter in the minimal engine. This is committed extraction work, not a claim that the current crates already meet it. The independent host proves replaceable composition; a third-party product SDK is not a v1 goal. AGPL-compliant reuse by other projects remains permitted.
 - **Small deployments remain small.** Optional driver/service features and a measured Edge profile preserve low-resource headless use. Fifty thousand tags are not promised on Edge hardware.
 - **Thirty-day selected process history** is the Medium target at its specified recording rate. Alarm/audit retention is separate; loss, overload and disk exhaustion must be explicit.
 

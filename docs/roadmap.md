@@ -35,6 +35,16 @@ adds external-edit reconciliation and conflicts. DR owns shared publication for
 both CLI and Designer. An end-to-end terminal-to-Designer fixture is a release
 gate. Built-in AI chat and optional MCP integration are deferred.
 
+The [project engineering plan](planning/project-engineering.md) (2026-09-29) adds
+Git-ready manual/terminal-agent workflows, optional bounded Python jobs and basic
+PDF/CSV artifacts (EB), reproducible Python environments (EC), and target-aware
+publish/offline transfer (ED around DR). CL retains existing scripting API/trigger
+ownership; EF owns the paired custom component authoring/package contract;
+EE named local database scripting is Phase 5. These are implementation
+gates, not shipped capabilities. Engine extraction serves internal modularity;
+AGPL-compliant reuse is accepted. DV measures Tauri on all three OSes before any
+optional native-UI decision.
+
 ---
 
 ## Phase 0 — Foundations (target: ~1 month)
@@ -88,9 +98,9 @@ Deliverables:
 - **Tag browser** wired to live PLC tag introspection (Phase 1's `Driver::browse` if available, otherwise a manual import form).
 - **Form-based view editor**: views are authored as structured artifacts (component tree edited via property panels), not by drag/drop. Adding a component is a "+ Add" button that spawns the component with default props at a default position; positioning is via numeric x/y/width/height fields in the property panel.
 - **Property panel**: every component prop editable; tag-binding picker for bindable props.
-- **Project save/load** to gateway. Versioning: each save bumps version; clients receive `project.changed`; runtime hot-reloads.
+- **Project save/load**: authoring saves update revision-checked drafts; runtime changes only on explicit atomic publication (DR). The original save/hot-reload behavior requires migration.
 - **Component library v1, essentials only (6 components):** `Label, ValueDisplay, NumericInput, Indicator, Image, Container`.
-- **Designer preview**: launches an embedded webview against the current saved project.
+- **Designer preview**: browser preview of a validated draft with simulated data; explicit script testing is separate. Optional Tauri shares this renderer.
 
 ### Stretch deliverables (allowed to slip into Phase 4 if time-pressured)
 
@@ -128,8 +138,8 @@ Deliverables:
   - TLS via rustls (cert paths in gateway config).
 - **Scripting (CPython worker subprocesses):**
   - Worker subprocess pool, JSON-RPC IPC.
-  - Triggers: `on_tag_change`, `on_timer`, `on_alarm`, `on_button_click`.
-  - `system.tag.*`, `system.alarm.*`, `system.db.*`, `system.util.*` libraries.
+  - Tag-change, timer and alarm handlers tracked by CL; UI-invoked job lifecycle by EB.
+  - Explicit supported `system.tag`, `system.alarm`, `system.util` APIs. Named database/HTTP connectors are post-v1; unsupported APIs must not appear as working completions.
   - Script editor in designer (Monaco + Python syntax + auto-completion stubs for `system.*`).
   - Per-script resource limits.
 
@@ -156,11 +166,11 @@ Deliverables:
   - SDK docs page (`wiki/sdk/`).
 - **Backup / restore:** project export to `.owhmi` archive; gateway-level backup including historian + alarm history.
 - **Audit log:** every project change, alarm ack, manual tag write recorded with `(user, ts, action, target)`.
-- **Reporting (lightweight):** scripted report generation to PDF/CSV via Python.
+- **Reporting (lightweight):** bounded Python PDF/CSV jobs with authenticated downloads (EB), prepared optional environments (EC), and target-aware project export/publish (ED/DR). No ML platform or unrestricted access to internal gateway databases.
 - **Docs site:** `docs.openwebhmi.org` (or repo-wiki for now) covering: install, designer tutorial, scripting tutorial, plugin authoring, deployment.
 - **Performance baseline:** documented results for 1k / 5k live tag scenarios.
 
-**Exit criterion:** tagged `1.0.0` release on GitHub. The full Ignition Edge analog: gateway, designer, runtime, alarms, history, scripting, two real drivers, plugin SDK, docs. A community contributor can submit a driver or component without core-team hand-holding.
+**Exit criterion:** tagged `1.0.0` release on GitHub. The full Ignition Edge analog: gateway, designer, runtime, alarms, history, scripting, five real drivers, plugin SDK, docs. A community contributor can submit a driver or component without core-team hand-holding.
 
 ### Real-hardware validation gate (pre-1.0)
 
@@ -196,6 +206,12 @@ built-in starter project is specified in
 - versioned downtime/loss policy, reason capture, corrections, and recalculation;
 - OEE only after equipment boundaries, targets/planned time, production,
   downtime policy, and data-quality contracts are proven.
+
+### Optional engineering services
+
+- DV: Tauri desktop adapters with three-platform performance proof; native UI is an optional evidence-driven follow-up.
+- EE: named project-owned SQLite scripting, then separately scoped external connectors.
+- ML and model-serving infrastructure remain deferred; ordinary application scripts and reports do not depend on them.
 
 ### Later — exploratory or deferred
 

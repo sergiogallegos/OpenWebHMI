@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DX — Define portable project source and offline schema contract
@@ -48,6 +48,13 @@ SQLite editing API, license change or broad dependency updates. Do not claim
 planned features are implemented. Keep optional authoring tools out of Edge runtime.
 
 ## Codex log
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Specify Git-ready source for all supported layouts, actions, tags, drivers, alarms, themes, scripts and deployment requirements. Keep binary assets ordinary files; exclude secrets/history/caches/venvs/build output. TOML/JSON/Python remain base formats; custom TS/TSX/CSS packages use EF, not arbitrary executable view properties or XML. Coordinate script/dependency metadata with EB/EC and target manifests with ED.
 
 ## Claude review
 

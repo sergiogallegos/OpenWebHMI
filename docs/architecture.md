@@ -216,19 +216,19 @@ Any of those will terminate the gateway process. **In-process restart-on-Rust-pa
 - Runs **CPython 3.11+** in a pool of managed **worker subprocesses**; the gateway does not embed the interpreter.
 - Why subprocesses, not in-process: GIL contention would bottleneck many concurrent scripts; a script that segfaults a C extension would otherwise crash the gateway. Subprocess restart is cheap and keeps the gateway alive.
 - IPC: stdin/stdout JSON-RPC between gateway and worker.
-- Triggers: `on_tag_change(tag)`, `on_timer(interval)`, `on_alarm(alarm)`, `on_button_click(button)`, `on_view_open(view)`, `on_view_close(view)`.
-- Standard library exposed to scripts:
+- Current documented working trigger: `on_tag_change`. CL owns timer/alarm completion; EB owns explicit UI-invoked jobs. View-open/close Python hooks remain deferred. Unsupported triggers must be reported explicitly.
+- Candidate API illustration, not the shipped surface. CL owns the supported/deferred table; database and HTTP adapters are post-v1:
   ```python
   system.tag.read(path)        # → TagValue
   system.tag.write(path, val)
   system.tag.subscribe(path, callback)
   system.alarm.ack(alarm_id, note)
-  system.db.query(sql, params) # gateway-managed connection pool
+  system.db.query(sql, params) # deferred: named project-owned connection, not internal DB
   system.http.get/post(...)
   system.util.now() / .log() / .send_message()
   ```
-- Script source lives in the project; runs with the project's permissions, not the operator's.
-- Resource limits per script: CPU ms budget, memory ceiling, network egress allowlist (Phase 3 hardening).
+- Script source lives in the project. Target: explicit script grants; UI-triggered jobs are additionally constrained by the authenticated caller, while scheduled jobs use an explicit service identity. No client-supplied identity or implicit elevation.
+- Execution limits remain implementation work: bounded event/job queues, timeouts, cancellation and per-OS resource enforcement with documented limits. Subprocesses are not a security sandbox. EB owns jobs/report artifacts; EC owns optional reproducible environments. See the [project engineering plan](planning/project-engineering.md).
 
 ### 4.8 Project Store (`crates/project-store`)
 
@@ -394,7 +394,7 @@ DX/DY/DZ own portable source, CLI and external-edit synchronization. See the
 Tracked in `wiki/architecture/` as they arise. Initial list:
 
 - Tag-write authorization: per-tag ACLs vs view-only ACLs.
-- Project versioning: own metadata vs delegate to git from day one.
+- Git is optional source collaboration; gateway publication metadata remains authoritative (DX/DR).
 - Component plugin trust: signed packages vs informal allowlist.
 - Disconnected source editing/validation is accepted in the [agent authoring plan](planning/agent-authoring.md). Local preview and revision-checked remote submission need DX/DY/DZ/DR implementation; browser filesystem APIs are not required.
 - Multi-tenant gateway: should one gateway host multiple isolated projects, or is one-gateway-per-project the model?
@@ -437,3 +437,31 @@ The Designer and external terminal agents are peer authoring clients of a docume
 project contract. DX/DY/DZ add portable source, offline validation, a thin Rust CLI
 and conflict-aware draft synchronization; DR remains the publication authority.
 No mandatory AI provider, model SDK or MCP server belongs in the engine or gateway.
+
+## 12. Project engineering revision (2026-09-29)
+
+The [project engineering plan](planning/project-engineering.md) owns the shared
+Designer/terminal workflow, application scripting and deployment contracts.
+Engine extraction primarily supports internal modularity and replaceable adapters;
+the independent host remains proof. AGPL-compliant reuse is accepted without a
+third-party product SDK commitment. Pure domain code targets std/core only.
+
+All supported authoring configuration is text, with binary assets referenced by
+relative path. DX/DY scaffold a Git-ready directory; DZ preserves valid external
+edits and detects concurrent conflicts. Ordinary interface behavior uses bindings
+and built-in actions. Custom TS components and scoped CSS follow one paired
+Designer/runtime contract; arbitrary HTML/JS view execution and XML are not added.
+
+Optional CPython services run bounded event handlers and longer UI-invoked jobs.
+PDF/CSV artifacts have authenticated download/expiry; EC prepares pinned environments
+explicitly per target. Python is absent from minimal builds and never executes on
+project open or passive preview. Named local database access is Phase 5 (EE).
+
+ED supplies target profiles, compatibility/dependency preflight, offline packages,
+setup guidance and post-publish readiness. DR alone controls atomic activation and
+rollback. Gateway installation/upgrades remain distinct from project publication;
+remote OS provisioning is deferred. Agents use the same commands and permissions.
+
+DV evaluates shared Tauri UI performance independently on macOS, Windows and Linux.
+Native UI remains an optional scoped follow-up after measured optimization, with
+unchanged engine/project contracts and continued browser support.

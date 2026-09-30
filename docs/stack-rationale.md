@@ -77,44 +77,30 @@ The UI is half the platform's surface. Both the designer (authoring HMIs) and th
 
 Modern CPython package compatibility is a useful differentiation; scripting API completeness and operational behavior still require validation.
 
-### What Ignition and Optix can do today
+Python is an optional application scripting layer for event handlers, transformations,
+small workflows, PDF reports and CSV exports. It is not the primary mechanism for
+simple UI behavior or a commitment to an embedded ML platform. CPython workers can
+use compatible installed packages; package compatibility does not establish a
+supported application workflow or resource-isolation guarantee.
 
-- **Ignition** ships **Jython 2.7.4** — Python implemented on the JVM at the Python 2.7 language level (released in 2010 and EOL'd by upstream Python in 2020). It can call Java libraries but cannot use the normal modern CPython native-extension ecosystem.
-- **Optix** uses **C#/.NET NetLogic**. It is powerful and supports NuGet packages, but it is a different ecosystem from the Python tools commonly used for plant data analysis and machine learning.
+The [project engineering plan](planning/project-engineering.md) defines bounded
+worker jobs, explicit script tests, authenticated result downloads and managed
+per-project environments. These remain implementation tasks. Environments are
+prepared explicitly from versioned dependency metadata for each target; opening a
+project never installs packages. Existing v1 code does not automatically provision
+per-project virtual environments.
 
-Neither has access to the modern Python data/AI/ML ecosystem **inside** the platform's scripting layer. Anything beyond basic logic gets pushed to an external service over REST.
+Bindings and built-in actions handle normal interface behavior. Custom components
+use TypeScript through the paired Designer/runtime SDK. An optional terminal agent
+edits the same text project and Python sources that the Designer opens; no built-in
+AI provider, Python Designer-plugin system or mandatory model SDK is required.
+Offline project schema validation and migration remain shared Rust services;
+optional user-authored Python tools execute only when explicitly invoked.
 
-### What OpenWebHMI does
-
-We run **CPython 3.11+** in managed **worker subprocesses** and communicate with them over JSON-RPC. The gateway never embeds the interpreter in-process. That decision unlocks:
-
-- **The normal CPython package ecosystem.** Packages such as `numpy`, `pandas`, `scikit-learn`, `torch`, and `xgboost` can run in workers when compatible wheels are installed. The JSON-RPC process boundary is deliberate isolation, not a compatibility bridge.
-- **Real predictive maintenance in-platform.** Capture historian data → train a model in a Python script → deploy as a script that consumes live tag updates and writes derived prediction tags. The whole loop fits inside the gateway. With Ignition this is "stand up an external service, call it over REST, hope the latency is OK". With us it's:
-  ```python
-  # scripts/predictive/motor_health.py
-  import joblib
-  model = joblib.load("/projects/recipe-3/motor_model.pkl")
-  
-  def on_tag_change(tag):
-      if tag.path == "rockwell-1/Motor1.Vibration":
-          features = system.tag.read_history("rockwell-1/Motor1.*", lookback="10m")
-          score = model.predict(features.to_numpy())[0]
-          system.tag.write("derived/Motor1.HealthScore", float(score))
-  ```
-- **AI-assisted authoring in the designer.** The designer can call OpenAI, Anthropic, or a local model (Ollama, llama.cpp) from a Python plugin script. Auto-generate views from a tag list, suggest alarm conditions from natural language, propose tag bindings — all without leaving the designer. This is a serious feature differentiator: nobody else's plant-floor IDE has this.
-- **Data science workflows in-platform.** Ad-hoc historian queries, anomaly detection on running data, time-series forecasting — Python is *the* language for this. Plant engineers already write Python notebooks; now they don't context-switch.
-- **Modern Python packaging.** `pip install`, `uv`, `poetry`, `requirements.txt` — pick your tooling. A project bundles its `requirements.txt`; the gateway provisions a virtualenv per project. Versioning is solved.
-- **Scripts crash-safely.** A numpy segfault, a torch CUDA error, an FFI abort in a C extension — none of it crashes the gateway, because scripts are subprocess-isolated. Ignition can't safely embed numpy because Jython doesn't support C extensions and the JVM share-everything model means a crash is fatal.
-
-### Why Python *also* works as a designer extension language
-
-The Tauri designer is Rust + TypeScript at its core, but plugins / extensions / migrators can be Python:
-
-- **Project file linters and validators** — "warn if any tag has no description", "fail if any view has > 50 components" — trivial Python scripts living next to a project.
-- **Schema migrators** — moving a project from `schema_version: 1` to `schema_version: 2` is a Python script that walks the JSON tree.
-- **Code generators** — "generate scaffold views for every UDT in the tag list" — Python script in the designer.
-- **AI-assisted authoring (again)** — designer plugins in Python can call LLMs to suggest scripts, fill in component bindings from tag names, refactor view hierarchies.
-- **Faster contribution path than writing Tauri-side Rust.** A community contributor with Python skills can write a useful designer extension in an afternoon; doing it in Rust is a project.
+Ignition documents Jython/Python 2.7 scripting; OpenWebHMI's CPython choice opens a
+different package ecosystem. This is not a claim that competing products cannot
+perform advanced logic or that OpenWebHMI has already shipped equivalent features.
+See [Ignition scripting libraries](https://www.docs.inductiveautomation.com/docs/8.3/platform/scripting/python-scripting/libraries).
 
 ### What we give up by choosing Python over Jython/C#
 
@@ -124,7 +110,7 @@ Honest tradeoffs:
 |---|---|
 | **No first-class Java interop** | Ignition can call any Java library directly from Jython. We can't — interop is via Rust FFI or shelling out. For most modern needs, Python's own ecosystem covers it; for legacy-Java-shop integrations, this is friction. |
 | **No first-class .NET interop** | Same shape, Optix-side. |
-| **Subprocess overhead per script invocation** | A few-ms cost vs in-process Jython. Negligible for tag-change handlers; visible if you fire 1000 tiny scripts/sec. We mitigate with a worker pool. |
+| **Subprocess overhead per script invocation** | IPC and scheduling overhead must be measured under the selected event rate; bounded worker pools do not eliminate that cost. |
 | **Python packaging is genuinely complex** | `requirements.txt` + virtualenvs + native wheels for arm64 vs x86_64 is real work. Jython users don't deal with this. We accept the complexity for the ecosystem benefit. |
 
 ## What about all-Rust scripting?

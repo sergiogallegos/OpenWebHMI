@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-07-12
-last-update: 2026-07-12 claude [Fable 5]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-CL — Scripting system.* library gap
@@ -120,6 +120,13 @@ Per-item; only for the items decided "implement". For each implemented method/tr
 - **Test-validity discipline.** Run each new test against the unmodified code first and confirm it fails. An `alarm.ack` test that passes before the ack is wired is testing nothing.
 
 ## Codex log
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+The new plan retains CL ownership of existing system.* and timer/alarm trigger completeness. EB owns UI-invoked jobs, execution budgets and report artifacts; coordinate trigger/API tables with EB/CI. Database access is explicitly deferred to EE (Phase 5), HTTP connectors and view-open/close Python hooks remain deferred. This supersedes assumptions that all candidate APIs are v1 commitments; no stub may advertise support.
 
 ## Claude review
 

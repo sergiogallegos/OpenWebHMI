@@ -8,21 +8,35 @@
 
 **Open authoring (2026-09-27):** [DW–DZ](../planning/agent-authoring.md) add portable project source, offline schemas/CLI and conflict-aware external-agent editing. DR remains the shared publish authority; no source edit implicitly changes production. Implementation is pending.
 
+**Project engineering (2026-09-29):** [EA plan](../planning/project-engineering.md)
+clarifies internal engine modularity with AGPL-compliant reuse, Git-ready external
+agent/Designer editing and measured Tauri hosts. EB adds bounded application jobs
+and PDF/CSV artifacts; EC manages optional Python environments; ED adds target-aware
+publish/offline transfer around DR. CL/CI retain existing API/docs ownership;
+DX/DY/DZ and EF integrate source/SDK contracts. EE local database scripting is
+Phase 5; ML, native UI rewrites and remote OS provisioning remain deferred.
+All implementation tasks remain open.
+
 **Driver scope expansion (2026-04-30).** Phase 4 now ships **four new drivers** (in addition to Rockwell from Phase 1): OPC UA, Modbus TCP/RTU, MQTT (incl. Sparkplug B), and Beckhoff ADS. Each lands as a real driver crate + simulator harness + simulator-driven CI integration tests + wiki entry + designer manual smoke step. Real-hardware validation remains the pre-1.0 gate. Drivers are independent — they can run in parallel.
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
+| CODEX-EA | Reconcile project engineering scripting and deployment direction | codex | submitted | 2026-09-29 codex [GPT-6] | [`CODEX-EA-project-engineering-direction.md`](tasks/CODEX-EA-project-engineering-direction.md) |
+| CODEX-EB | Implement bounded Python jobs and PDF CSV report artifacts | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EB-script-jobs-report-artifacts.md`](tasks/CODEX-EB-script-jobs-report-artifacts.md) |
+| CODEX-EC | Prepare reproducible optional Python project environments | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EC-python-environment-preparation.md`](tasks/CODEX-EC-python-environment-preparation.md) |
+| CODEX-ED | Add target-aware project publishing and offline deployment | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-ED-project-target-deployment.md`](tasks/CODEX-ED-project-target-deployment.md) |
+| CODEX-EF | Prove paired custom component authoring and packaging | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EF-component-authoring-contract.md`](tasks/CODEX-EF-component-authoring-contract.md) |
 | CODEX-DW | Record open project and agent-assisted Designer architecture | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DW-agent-authoring-direction.md`](tasks/CODEX-DW-agent-authoring-direction.md) |
-| CODEX-DX | Define portable project source and offline schema contract | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DX-portable-project-contract.md`](tasks/CODEX-DX-portable-project-contract.md) |
-| CODEX-DY | Add headless project CLI and local browser preview service | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DY-project-cli-authoring.md`](tasks/CODEX-DY-project-cli-authoring.md) |
-| CODEX-DZ | Synchronize Designer drafts with external project edits | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DZ-designer-external-edits.md`](tasks/CODEX-DZ-designer-external-edits.md) |
+| CODEX-DX | Define portable project source and offline schema contract | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DX-portable-project-contract.md`](tasks/CODEX-DX-portable-project-contract.md) |
+| CODEX-DY | Add headless project CLI and local browser preview service | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DY-project-cli-authoring.md`](tasks/CODEX-DY-project-cli-authoring.md) |
+| CODEX-DZ | Synchronize Designer drafts with external project edits | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DZ-designer-external-edits.md`](tasks/CODEX-DZ-designer-external-edits.md) |
 | CODEX-DL | Accepted engine foundation, capacity research and restart program | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DL-accepted-engine-capacity-plan.md`](tasks/CODEX-DL-accepted-engine-capacity-plan.md) |
-| CODEX-DM | Extract pure domain and storage-independent wire schema | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DM-domain-schema-boundaries.md`](tasks/CODEX-DM-domain-schema-boundaries.md) |
-| CODEX-DN | Expose embeddable engine and prove independent public-API consumer | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DN-embeddable-engine-api.md`](tasks/CODEX-DN-embeddable-engine-api.md) |
-| CODEX-DO | Implement minimal engine and Edge Standard Medium feature profiles | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DO-minimal-runtime-profiles.md`](tasks/CODEX-DO-minimal-runtime-profiles.md) |
+| CODEX-DM | Extract pure domain and storage-independent wire schema | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DM-domain-schema-boundaries.md`](tasks/CODEX-DM-domain-schema-boundaries.md) |
+| CODEX-DN | Expose embeddable engine and prove independent public-API consumer | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DN-embeddable-engine-api.md`](tasks/CODEX-DN-embeddable-engine-api.md) |
+| CODEX-DO | Implement minimal engine and Edge Standard Medium feature profiles | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DO-minimal-runtime-profiles.md`](tasks/CODEX-DO-minimal-runtime-profiles.md) |
 | CODEX-DP | Replace custom HTTP transport with Axum Hyper adapters | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DP-axum-transport.md`](tasks/CODEX-DP-axum-transport.md) |
 | CODEX-DQ | Deliver offline browser designer and configured gateway routing | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DQ-browser-designer-delivery.md`](tasks/CODEX-DQ-browser-designer-delivery.md) |
-| CODEX-DR | Add revision-checked drafts and atomic project publishing | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DR-draft-publish-integrity.md`](tasks/CODEX-DR-draft-publish-integrity.md) |
+| CODEX-DR | Add revision-checked drafts and atomic project publishing | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DR-draft-publish-integrity.md`](tasks/CODEX-DR-draft-publish-integrity.md) |
 | CODEX-DS | Implement bounded durable historian ingestion and thirty-day retention | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DS-historian-ingest-retention.md`](tasks/CODEX-DS-historian-ingest-retention.md) |
 | CODEX-DT | Establish Edge Standard Medium capacity and resource evidence | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DT-capacity-resource-harness.md`](tasks/CODEX-DT-capacity-resource-harness.md) |
 | CODEX-DU | Upgrade frontend tool families with compatibility and footprint checks | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DU-frontend-toolchain-modernization.md`](tasks/CODEX-DU-frontend-toolchain-modernization.md) |
@@ -60,10 +74,10 @@
 | CODEX-CF | Alarm ack state-machine fix — ack re-evaluates, no stuck-active on a stalled tag, no spurious transitions | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CF-alarm-ack-state-machine.md`](tasks/CODEX-CF-alarm-ack-state-machine.md) |
 | CODEX-CG | Historian read-path SQL downsampling — bucket server-side instead of loading all raw rows | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CG-historian-sql-downsampling.md`](tasks/CODEX-CG-historian-sql-downsampling.md) |
 | CODEX-CH | Audit query SQL pushdown — filter/paginate in SQL using the existing indexes | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CH-audit-query-sql-pushdown.md`](tasks/CODEX-CH-audit-query-sql-pushdown.md) |
-| CODEX-CI | Docs-vs-code reconciliation — make architecture.md / README / feature-matrix match the shipped surface | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CI-docs-code-reconciliation.md`](tasks/CODEX-CI-docs-code-reconciliation.md) |
+| CODEX-CI | Docs-vs-code reconciliation — make architecture.md / README / feature-matrix match the shipped surface | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-CI-docs-code-reconciliation.md`](tasks/CODEX-CI-docs-code-reconciliation.md) |
 | CODEX-CJ | Gateway observability — /health + /metrics endpoints and optional structured logging | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CJ-gateway-observability.md`](tasks/CODEX-CJ-gateway-observability.md) |
 | CODEX-CK | CI hardening — multi-platform matrix, --all-features alignment, supply-chain gate, release workflow | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CK-ci-hardening.md`](tasks/CODEX-CK-ci-hardening.md) |
-| CODEX-CL | Scripting system.* library gap — implement or formally defer the documented RPC surface + triggers | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-CL-scripting-system-library-gap.md`](tasks/CODEX-CL-scripting-system-library-gap.md) |
+| CODEX-CL | Scripting system.* library gap — implement or formally defer the documented RPC surface + triggers | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-CL-scripting-system-library-gap.md`](tasks/CODEX-CL-scripting-system-library-gap.md) |
 
 ### Phase 4 dependency graph
 
@@ -165,7 +179,7 @@ Feature-parity sweep tasks are **independent** of each other (except for AN→AP
 
 CI hygiene tasks AU + AV merged at `4e9bc9b`. Each unblocked the job's setup gate but exposed a downstream failure (AW = gateway WS test timeout; AX = component-library module resolution). Neither downstream failure is an AU/AV regression — both were masked by the earlier setup-step breakage. AW + AX are the actual "CI fully green" gate.
 
-**🎉 Phase 4 v1.0 feature ladder complete.** AE (audit log), AF (backup/restore), AI (historian import closeout) all merged. Driver slice was AG (toolchain) → AD (ADS validation) → AH (ADS native notifications). Component slice closed at AC (25 components). Remaining v1.0 closeout items live outside the agent-task ladder: plugin SDK, performance baseline, pre-1.0 hardware-validation 24h soak gate, plus the v1.1 polish list flagged across AE/AF/AI verdicts (SessionExpired hook, wiki/protocol/* pages, SQL-side audit-log filter pushdown, alarm-journal merge dedupe, designer session disconnect on replace).
+**🎉 Phase 4 v1.0 feature ladder complete.** AE (audit log), AF (backup/restore), AI (historian import closeout) all merged. Driver slice was AG (toolchain) → AD (ADS validation) → AH (ADS native notifications). Component slice closed at AC (25 components). Remaining v1.0 closeout includes the component SDK (EF), driver SDK, capacity program (DT), pre-1.0 hardware-validation 24h soak gate, plus the v1.1 polish list flagged across AE/AF/AI verdicts (SessionExpired hook, wiki/protocol/* pages, SQL-side audit-log filter pushdown, alarm-journal merge dedupe, designer session disconnect on replace).
 
 **Quality sweep (review pass 2 — Rust 1.95 + edition 2024 idioms vs tokio/axum/ripgrep).** CODEX-AG was the mechanical edition migration; this is the deferred idiom modernization, sliced four ways. CODEX-AJ (Tier 1, runtime-health gaps) leads; AK/AL/AM open after AJ merges to avoid blurring correctness fixes with surface cleanup.
 
@@ -178,8 +192,9 @@ does not pull post-1.0 implementation into the current release.
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-DV | Package optional shared-UI desktop designer with responsiveness proof | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DV-desktop-host-performance.md`](tasks/CODEX-DV-desktop-host-performance.md) |
-| CODEX-CM | Evidence-based manufacturing platform roadmap and task program | codex | submitted | 2026-09-01 codex [gpt-5] | [`CODEX-CM-manufacturing-platform-plan.md`](tasks/CODEX-CM-manufacturing-platform-plan.md) |
+| CODEX-EE | Add named project database access for Python scripts | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EE-named-database-scripting.md`](tasks/CODEX-EE-named-database-scripting.md) |
+| CODEX-DV | Package optional shared-UI desktop designer with responsiveness proof | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DV-desktop-host-performance.md`](tasks/CODEX-DV-desktop-host-performance.md) |
+| CODEX-CM | Evidence-based manufacturing platform roadmap and task program | codex | submitted | 2026-09-29 codex [GPT-6] | [`CODEX-CM-manufacturing-platform-plan.md`](tasks/CODEX-CM-manufacturing-platform-plan.md) |
 | CODEX-CN | Linux Designer v1 parity and three-platform release proof | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CN-linux-designer-v1-parity.md`](tasks/CODEX-CN-linux-designer-v1-parity.md) |
 | CODEX-CO | Module SDK and module-owned storage contract | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CO-module-sdk-storage-contract.md`](tasks/CODEX-CO-module-sdk-storage-contract.md) |
 | CODEX-CP | Versioned project templates and deterministic scenario engine | codex | open | 2026-09-01 codex [gpt-5] | [`CODEX-CP-project-templates-scenario-engine.md`](tasks/CODEX-CP-project-templates-scenario-engine.md) |

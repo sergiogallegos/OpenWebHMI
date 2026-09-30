@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DZ — Synchronize Designer drafts with external project edits
@@ -49,6 +49,13 @@ SQLite editing API, license change or broad dependency updates. Do not claim
 planned features are implemented. Keep optional authoring tools out of Edge runtime.
 
 ## Codex log
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Acceptance includes keeping the Designer open during agent-equivalent file edits and preserving supported source through manual saves. Cover invalid intermediate multi-file writes, Python formatting, Git merge conflicts and last-valid preview. Surface shared EB test/job diagnostics without executing code on open or passive preview.
 
 ## Claude review
 

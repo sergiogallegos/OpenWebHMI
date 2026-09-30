@@ -160,3 +160,16 @@ Python source paths, maintains version metadata in `_index.sqlite`, and broadcas
 changes through `save_artifact`. This is a useful starting point, not a supported
 external-edit/CLI synchronization contract. Schemas, offline scaffolding, safe
 reconciliation and draft publication above remain implementation tasks.
+
+## Project engineering clarification
+
+The [project engineering plan](project-engineering.md) specifies Git-ready scaffolding,
+optional AGENTS.md and CI examples, text-authored interface actions, paired component
+extensions, Python jobs/environments and target-aware deployment. The intended
+workflow keeps the Designer open while an external terminal agent edits the same
+checkout. GitHub is optional; no remote creation or push occurs implicitly. DX/DY/DZ
+must expose validation, script-test results and preview diagnostics to both clients.
+EB/EC provide script testing and environments; ED wraps DR publication for deployment.
+All supported project configuration has a text representation; assets may be binary.
+TOML/JSON/Python remain the base formats, with TS/TSX/CSS only inside explicit custom
+component packages. XML and arbitrary executable view properties are not added.

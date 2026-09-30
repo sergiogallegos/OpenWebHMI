@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DM — Extract pure domain and storage-independent wire schema
@@ -59,6 +59,13 @@ schemas, DY the CLI/local service, DZ reconciliation and conflicts. Coordinate
 shared format/validation with DM and browser delivery with DQ; DR remains the only
 publication authority for both CLI and Designer. Original brief/status preserved;
 no external-edit feature is implemented by this addendum.
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Pure domain code targets zero third-party dependencies; serialization/transport/storage/Python remain adapters. Internal modularity is the primary purpose; AGPL-compliant reuse remains accepted. Coordinate text project action/script/dependency metadata with DX/EB/EC without adding them to pure-domain dependencies.
 
 ## Claude review
 

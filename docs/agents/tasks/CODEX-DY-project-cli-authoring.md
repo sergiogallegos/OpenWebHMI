@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DY — Add headless project CLI and local browser preview service
@@ -49,6 +49,13 @@ SQLite editing API, license change or broad dependency updates. Do not claim
 planned features are implemented. Keep optional authoring tools out of Edge runtime.
 
 ## Codex log
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Scaffold README, provider-neutral AGENTS.md, .gitignore, sample test/simulation data and optional CI validation instructions. Do not create/push remotes or run hooks implicitly. Expose shared EB script-test/log results and ED target/export/preflight operations with structured CLI output; core offline commands still need no Python/Git/agent.
 
 ## Claude review
 

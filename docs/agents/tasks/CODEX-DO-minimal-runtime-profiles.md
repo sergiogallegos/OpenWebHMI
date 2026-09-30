@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DO — Implement minimal engine and Edge Standard Medium feature profiles
@@ -51,6 +51,13 @@ Cargo dependency update. Preserve existing project/wire compatibility or ship an
 explicit paired migration. Do not claim a performance gain without measurement.
 
 ## Codex log
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Python workers, package preparation and authoring services remain optional. Add EC coordination to minimal-build evidence: a scripting-disabled Edge build requires neither interpreter nor package installer. Report domain versus orchestration versus adapter dependencies separately.
 
 ## Claude review
 

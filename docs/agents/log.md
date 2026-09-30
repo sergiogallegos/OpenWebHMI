@@ -347,3 +347,22 @@ Use `--` for task-id when the event is project-wide (protocol bootstrap, etc).
 2026-09-27 15:32  codex [GPT-6]  CODEX-DQ  Appended external-authoring scope coordination; original brief and status preserved.
 2026-09-27 15:32  codex [GPT-6]  CODEX-DM  Appended external-authoring scope coordination; original brief and status preserved.
 2026-09-27 15:34  codex [GPT-6]  CODEX-DW  Added planned agent-authoring positioning to README/website. Agent/license/link/diff checks and frontend typecheck/build plus three 128-test runs passed; interactive browser/agent workflow and deployment remain unperformed.
+2026-09-29 22:37  codex [GPT-6]  CODEX-EA  Submitted planning reconciliation as working-tree diff; implementation remains pending.
+2026-09-29 22:37  codex [GPT-6]  CODEX-EB  Opened Phase 4 implementation brief: Implement bounded Python jobs and PDF CSV report artifacts.
+2026-09-29 22:37  codex [GPT-6]  CODEX-EC  Opened Phase 4 implementation brief: Prepare reproducible optional Python project environments.
+2026-09-29 22:37  codex [GPT-6]  CODEX-ED  Opened Phase 4 implementation brief: Add target-aware project publishing and offline deployment.
+2026-09-29 22:37  codex [GPT-6]  CODEX-EE  Opened Phase 5 implementation brief: Add named project database access for Python scripts.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DM  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DN  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DO  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DV  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DX  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DY  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DZ  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-DR  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-CL  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-CI  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:37  codex [GPT-6]  CODEX-CM  Appended project engineering scope coordination; original brief and status preserved.
+2026-09-29 22:38  codex [GPT-6]  CODEX-CM  Corrected SDK ownership in a new addendum: CM remains Phase 5 planning; EF owns v1 component authoring.
+2026-09-29 22:38  codex [GPT-6]  CODEX-EF  Opened paired custom component authoring and packaging implementation brief; no component SDK implementation claimed.
+2026-09-29 22:39  codex [GPT-6]  CODEX-EA  Planning validation passed: 135-task validator, license policy, diff checks and 171 local links across 28 Markdown files; existing briefs preserved. Runtime suites and manual implementation gates not run for documentation-only changes; no push.

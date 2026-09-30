@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-07-12
-last-update: 2026-07-12 claude [Fable 5]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-CI — Docs-vs-code reconciliation
@@ -113,6 +113,13 @@ Docs only. For each item below, verify the cited code first, then edit the doc s
 ### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
 
 Use the accepted engine/capacity plan as the target source of truth. Report 50K/30-day/Edge as targets until measured; do not infer five integrated drivers from five crates or native GUI speed from Tauri. Preserve shipped-versus-planned distinctions.
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Reconcile capabilities against EB/EC/ED pending work and CL supported-trigger decisions. The stack rationale no longer claims automatic virtualenvs, built-in AI or an implemented ML platform. Named DB scripting is EE Phase 5; unsafe unrestricted internal DB access is not a target. Preserve shipped-versus-planned distinctions.
 
 ## Claude review
 

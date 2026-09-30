@@ -5,7 +5,7 @@ owner: codex
 phase: 5
 status: submitted
 created: 2026-09-01
-last-update: 2026-09-01 codex [gpt-5]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-CM — Manufacturing platform plan
@@ -111,6 +111,21 @@ not a core dependency or exclusive supported distribution.
 ### 2026-09-27 14:22 codex [GPT-6] — accepted scope reconciliation
 
 The accepted engine/capacity plan is the prerequisite foundation for this post-v1 manufacturing plan. Browser-first CN proof replaces mandatory desktop installers; DV owns optional native packaging. Manufacturing scope stays post-v1.
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+V1 paired component SDK must cover declared properties/events/bindings, scoped CSS, version compatibility and the same preview/runtime renderer. Prove a custom TS component through source authoring, manual property edit, export/import and runtime render. No executable HTML/JS embedded in view JSON, new XML format or automatic install on open; use the existing component SDK ownership rather than a duplicate task.
+
+### 2026-09-29 22:38 codex [GPT-6] — SDK ownership correction
+
+The preceding scope addendum assigned v1 component SDK implementation to CM in
+error. CM remains the submitted Phase 5 manufacturing planning task; its scope and
+status do not change. The previously untracked v1 component extension work is now
+owned by CODEX-EF. CO remains the later general module/storage contract. The shared
+project/preview/runtime requirements apply to future manufacturing components.
 
 ## Claude review
 

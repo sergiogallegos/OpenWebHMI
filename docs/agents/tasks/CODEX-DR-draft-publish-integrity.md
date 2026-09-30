@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DR — Add revision-checked drafts and atomic project publishing
@@ -60,6 +60,13 @@ schemas, DY the CLI/local service, DZ reconciliation and conflicts. Coordinate
 shared format/validation with DM and browser delivery with DQ; DR remains the only
 publication authority for both CLI and Designer. Original brief/status preserved;
 no external-edit feature is implemented by this addendum.
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Remain the sole publication authority for ED Designer/CLI workflows. Activation binds project revision to compatible prepared EC environment identity. Preparation failure preserves the prior revision; rollback/drain policy retains required environments and does not claim to reverse external side effects. No parallel publisher in ED.
 
 ## Claude review
 

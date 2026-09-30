@@ -215,3 +215,13 @@ The patterns above are grounded in the standards canonical to industrial-HMI des
 - **ANSI/ISA-18.2 / EEMUA 191** — Alarm-management standards (anchor for items #2, #10)
 - **ISA-88** — Batch control models (informs future recipe / batch components)
 - **WCAG 2.2 AA** — Web accessibility (anchor for items #4, #5)
+
+## Engineering contracts for all interface work
+
+The [project engineering plan](planning/project-engineering.md) supplies v1 contracts
+that this post-v1 visual roadmap must preserve: all supported properties, bindings,
+actions and themes are text-authorable; Designer saves round-trip external edits;
+custom TS components with scoped styles share preview/runtime behavior. Agents and
+manual editors use the same catalogs and validation. No XML or arbitrary executable
+HTML/JS view format is introduced. Optional Tauri hosts share the editor; native UI
+is a later performance-based decision, not a prerequisite for these visual features.

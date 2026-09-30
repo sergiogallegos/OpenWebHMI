@@ -5,7 +5,7 @@ owner: codex
 phase: 5
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-09-29 codex [GPT-6]
 ---
 
 # CODEX-DV — Package optional shared-UI desktop designer with responsiveness proof
@@ -51,6 +51,13 @@ Cargo dependency update. Preserve existing project/wire compatibility or ship an
 explicit paired migration. Do not claim a performance gain without measurement.
 
 ## Codex log
+
+### 2026-09-29 22:37 codex [GPT-6] — project engineering scope coordination
+
+The [project engineering plan](../../planning/project-engineering.md) records
+maintainer-directed scope clarification. Original brief and status are preserved.
+
+Measure Tauri/shared UI independently on macOS, Windows and Linux against recorded client budgets. Diagnose and optimize missed targets first; persistent failures may justify a separate scoped OS-native UI decision. Native rewrites remain optional and must preserve browser support and engine/project contracts.
 
 ## Claude review
 

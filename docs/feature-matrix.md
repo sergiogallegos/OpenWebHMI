@@ -121,17 +121,17 @@
 |---|:-:|:-:|---|
 | Embedded scripting language | ✅ Jython 2.7.4 | ✅ C#/.NET NetLogic | 🟢 v1 — **CPython 3.11+** worker subprocesses |
 | Gateway-scope scripts | ✅ | ✅ | 🟢 v1 |
-| Client / view-scope scripts | ✅ | ✅ | 🟢 v1 |
+| Client / view-scope scripts | ✅ | ✅ | 🟡 post-1.0 Python view hooks; v1 bindings/actions and gateway jobs |
 | Tag-change event handlers | ✅ | ✅ | 🟢 v1 |
 | Timer-based scripts | ✅ | ✅ | 🟢 v1 |
 | Alarm-event scripts | ✅ | ✅ | 🟢 v1 |
 | Component-event scripts (button click etc.) | ✅ | ✅ | 🟢 v1 |
 | Project-shared library / functions | ✅ | ✅ | 🟢 v1 |
-| `system.*` standard library | ✅ extensive | ✅ extensive | 🟢 v1 — `system.tag`, `system.alarm`, `system.db`, `system.http`, `system.util` |
+| `system.*` standard library | ✅ extensive | ✅ extensive | 🟢 v1 target — supported tag/alarm/util surface (CL); DB/HTTP deferred |
 | Script editor with syntax + autocomplete | ✅ | ✅ | 🟢 v1 (Monaco) |
 | Script debugger | ✅ | ✅ | 🟡 post-1.0 |
 | Scripts in worker subprocesses (crash-isolated) | ❌ in-process Jython | ❔ | 🟢 v1 — **explicit design choice** |
-| Script package manager | ❌ | ❔ | 🔵 maybe |
+| Script package manager | ❌ | ❔ | 🟢 v1 target — explicit managed environment preparation (EC), implementation pending |
 
 ## 7. Database / data
 
@@ -140,7 +140,7 @@
 | Connection pool to external DB (Postgres, MySQL, MSSQL) | ✅ | ✅ | 🟡 post-1.0 |
 | Named queries (parameterized SQL bindings) | ✅ | ❔ | 🟡 post-1.0 |
 | Transaction groups (DB ↔ tag bidirectional sync) | ✅ | ❔ | 🔵 maybe |
-| `system.db.query` from scripts | ✅ | ✅ | 🟢 v1 (against gateway DB; external in post-1.0) |
+| `system.db.query` from scripts | ✅ | ✅ | 🟡 post-1.0 — named project-owned local DB (EE); no unrestricted internal gateway DB |
 
 ## 8. Security
 
@@ -273,3 +273,8 @@ We are not trying to be a 1:1 Ignition clone. Some explicit divergences:
 ## 16. How this matrix evolves
 
 When a feature row's status changes (🟡 → 🟢, 🔵 → 🟡, etc.), update this file in the same PR that ships the change, and add a one-line entry to `wiki/log.md`. New feature rows are added when planning a new phase or accepting a community proposal — never silently.
+
+Engineering workflow details and implementation owners are tracked in the
+[project engineering plan](planning/project-engineering.md). Python jobs, environment
+preparation and target-aware deployment are commitments pending EB/EC/ED validation;
+ML and automatic remote machine provisioning are not v1 capabilities.

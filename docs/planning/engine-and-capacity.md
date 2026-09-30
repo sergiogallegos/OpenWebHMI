@@ -7,8 +7,9 @@ this document owns the workload definitions and engine delivery sequence.
 
 ## Product goals
 
-1. Ship an embeddable Rust SCADA/HMI engine that other projects can consume without
-   the OpenWebHMI gateway executable, network server, designer or renderer.
+1. Extract an embeddable Rust SCADA/HMI engine for internal modularity and replaceable
+   composition without the gateway executable, network server, designer or renderer.
+   AGPL-compliant reuse is accepted; a third-party product SDK is not a v1 goal.
 2. Make the OpenWebHMI gateway itself a consumer of that same engine. A second,
    minimal example application must prove reuse without copying internal code.
 3. Deliver browser authoring and operation first. Future installable designers use
@@ -250,3 +251,14 @@ safe publishing, history ingestion redesign, any 50K capacity certification or
 desktop responsiveness proof. Existing security/driver gaps remain open. This
 accepted plan and its task briefs authorize the implementation program; committing
 the plan must not be described as shipping those capabilities.
+
+## Project engineering clarification
+
+The [project engineering plan](project-engineering.md) refines the engine's internal
+purpose, optional application scripting, reproducible Python environments and
+Designer/CLI deployment. EB/EC/ED augment v1 delivery; EE database adapters and DV
+desktop remain Phase 5. A native UI on an affected OS is an optional decision only
+after measured Tauri/shared-UI optimization fails agreed interaction budgets.
+The zero-third-party-dependency target applies to pure domain code; async services
+and adapters retain reviewed dependencies. The independent host remains a required
+architectural test, not a separate product-platform promise.
