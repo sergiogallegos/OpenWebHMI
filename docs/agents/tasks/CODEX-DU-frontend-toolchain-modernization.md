@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-10-11 codex [GPT-6]
 ---
 
 # CODEX-DU — Upgrade frontend tool families with compatibility and footprint checks
@@ -51,6 +51,10 @@ Cargo dependency update. Preserve existing project/wire compatibility or ship an
 explicit paired migration. Do not claim a performance gain without measurement.
 
 ## Codex log
+
+### 2026-10-11 13:06 codex [GPT-6] — maintainer-directed modernization coordination
+
+EI owns Google TypeScript policy, lint/formatter adoption and conformance; EK owns Bun execution trials and any explicitly gated package-manager migration. Coordinate compatible versions and avoid concurrent unrelated lockfile changes. Existing pnpm authority remains until EK validates and updates the complete policy.
 
 ## Claude review
 

@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-29 codex [GPT-6]
+last-update: 2026-10-11 codex [GPT-6]
 ---
 
 # CODEX-DO — Implement minimal engine and Edge Standard Medium feature profiles
@@ -58,6 +58,10 @@ The [project engineering plan](../../planning/project-engineering.md) records
 maintainer-directed scope clarification. Original brief and status are preserved.
 
 Python workers, package preparation and authoring services remain optional. Add EC coordination to minimal-build evidence: a scripting-disabled Edge build requires neither interpreter nor package installer. Report domain versus orchestration versus adapter dependencies separately.
+
+### 2026-10-11 13:06 codex [GPT-6] — maintainer-directed modernization coordination
+
+EH owns dated crate currency/security/license inventory, focused version upgrades and unused-dependency cleanup. DO retains Tokio/driver feature isolation and Edge/Standard/Medium profile implementation; share feature/closure evidence instead of duplicating extraction. Whole-workspace lockfile counts must not be presented as minimal-runtime dependency counts.
 
 ## Claude review
 

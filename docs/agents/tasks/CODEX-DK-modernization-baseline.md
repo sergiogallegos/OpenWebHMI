@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: submitted
 created: 2026-09-27
-last-update: 2026-09-27 codex [GPT-6]
+last-update: 2026-10-11 codex [GPT-6]
 ---
 
 # CODEX-DK — Modernization baseline and restart review
@@ -85,6 +85,10 @@ Committed at `5f03604` and successfully pushed to `origin/main` under explicit
 maintainer instruction (remote advanced from `373be6e` to `5f03604`). This supersedes
 the earlier uncommitted/no-push record. Status remains submitted: publishing progress
 is not an independent review verdict or proof of the open implementation targets.
+
+### 2026-10-11 13:06 codex [GPT-6] — maintainer-directed modernization coordination
+
+EG records the next stable Rust/Cargo upgrade; the submitted 1.98.1 validation remains historical evidence. EH/EI/EJ/EK record dependency, TypeScript policy, local HTML and Bun follow-ups. None changes the submitted baseline review status or claims future validation has run.
 
 ## Claude review
 

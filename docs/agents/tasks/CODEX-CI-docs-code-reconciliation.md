@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-07-12
-last-update: 2026-09-29 codex [GPT-6]
+last-update: 2026-10-11 codex [GPT-6]
 ---
 
 # CODEX-CI — Docs-vs-code reconciliation
@@ -120,6 +120,10 @@ The [project engineering plan](../../planning/project-engineering.md) records
 maintainer-directed scope clarification. Original brief and status are preserved.
 
 Reconcile capabilities against EB/EC/ED pending work and CL supported-trigger decisions. The stack rationale no longer claims automatic virtualenvs, built-in AI or an implemented ML platform. Named DB scripting is EE Phase 5; unsafe unrestricted internal DB access is not a target. Preserve shipped-versus-planned distinctions.
+
+### 2026-10-11 13:06 codex [GPT-6] — maintainer-directed modernization coordination
+
+EJ owns offline HTML generation and private-output exclusion; CI retains shipped-versus-documented reconciliation. Feed verified canonical architecture into EJ without duplicating policy or converting pending plans into implemented diagrams. EH checks the unused PyO3 declaration identified in this brief.
 
 ## Claude review
 

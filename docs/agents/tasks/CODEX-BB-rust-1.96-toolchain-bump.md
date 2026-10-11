@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-05-29
-last-update: 2026-05-29 claude [Opus 4.7]
+last-update: 2026-10-11 codex [GPT-6]
 ---
 
 # CODEX-BB — Rust 1.96 toolchain bump (Tier 5 mechanical cleanup)
@@ -112,6 +112,10 @@ Maintainer's direct 2026-09-27 request for Rust 1.98.1 supersedes this brief's 1
 version direction. CODEX-DK contains the updated baseline and validation. Do not
 apply this brief as a downgrade. Its example assert_matches conversion was not
 performed; this task remains open pending explicit disposition, not falsely closed.
+
+### 2026-10-11 13:06 codex [GPT-6] — maintainer-directed modernization coordination
+
+EG now owns the verified stable Rust/Cargo upgrade from current 1.98.1 to 1.99.0 or a verified newer patch. Do not downgrade to the original 1.96 target. The original assert_matches example acceptance is not completed by this planning update; coordinate its disposition separately. Original brief/status remain preserved.
 
 ## Claude review
 

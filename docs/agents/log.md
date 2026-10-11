@@ -366,3 +366,14 @@ Use `--` for task-id when the event is project-wide (protocol bootstrap, etc).
 2026-09-29 22:38  codex [GPT-6]  CODEX-CM  Corrected SDK ownership in a new addendum: CM remains Phase 5 planning; EF owns v1 component authoring.
 2026-09-29 22:38  codex [GPT-6]  CODEX-EF  Opened paired custom component authoring and packaging implementation brief; no component SDK implementation claimed.
 2026-09-29 22:39  codex [GPT-6]  CODEX-EA  Planning validation passed: 135-task validator, license policy, diff checks and 171 local links across 28 Markdown files; existing briefs preserved. Runtime suites and manual implementation gates not run for documentation-only changes; no push.
+2026-10-11 13:06  codex [GPT-6]  CODEX-EG  Opened maintainer-directed planning task: Upgrade Rust and Cargo to verified stable 1.99; implementation remains pending.
+2026-10-11 13:06  codex [GPT-6]  CODEX-EH  Opened maintainer-directed planning task: Audit and upgrade Rust dependencies with measured feature budgets; implementation remains pending.
+2026-10-11 13:06  codex [GPT-6]  CODEX-EI  Opened maintainer-directed planning task: Adopt Google TypeScript guidance and staged conformance checks; implementation remains pending.
+2026-10-11 13:06  codex [GPT-6]  CODEX-EJ  Opened maintainer-directed planning task: Build local architecture HTML handbook excluded from website publishing; implementation remains pending.
+2026-10-11 13:06  codex [GPT-6]  CODEX-EK  Opened maintainer-directed planning task: Evaluate and standardize compatible frontend tooling on Bun; implementation remains pending.
+2026-10-11 13:06  codex [GPT-6]  CODEX-DU  Appended modernization coordination; original brief and lifecycle status preserved.
+2026-10-11 13:06  codex [GPT-6]  CODEX-DO  Appended modernization coordination; original brief and lifecycle status preserved.
+2026-10-11 13:06  codex [GPT-6]  CODEX-BB  Appended modernization coordination; original brief and lifecycle status preserved.
+2026-10-11 13:06  codex [GPT-6]  CODEX-DK  Appended modernization coordination; original brief and lifecycle status preserved.
+2026-10-11 13:06  codex [GPT-6]  CODEX-CI  Appended modernization coordination; original brief and lifecycle status preserved.
+2026-10-11 13:07  codex [GPT-6]  CODEX-EG  Planning checks passed: 140-task validator, license validator with self-test, 96 local links across 11 Markdown files and git diff checks; current Rust cargo fmt check passed. Runtime/build suites, upgrades, HTML generation and Bun trials were not run for these planning-only changes; no push.
