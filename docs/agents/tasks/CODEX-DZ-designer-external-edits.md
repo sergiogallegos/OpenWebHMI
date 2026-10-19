@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-29 codex [GPT-6]
+last-update: 2026-10-18 codex [GPT-6]
 ---
 
 # CODEX-DZ — Synchronize Designer drafts with external project edits
@@ -56,6 +56,20 @@ The [project engineering plan](../../planning/project-engineering.md) records
 maintainer-directed scope clarification. Original brief and status are preserved.
 
 Acceptance includes keeping the Designer open during agent-equivalent file edits and preserving supported source through manual saves. Cover invalid intermediate multi-file writes, Python formatting, Git merge conflicts and last-valid preview. Surface shared EB test/job diagnostics without executing code on open or passive preview.
+
+### 2026-10-18 23:13 codex [GPT-6] — agent-assisted interface workflow clarification
+
+The maintainer approved the [pump-screen acceptance scenario](../../planning/agent-authoring.md#pump-screen-acceptance-scenario)
+as a concrete instance of the existing terminal-to-Designer release fixture.
+Original brief and open status are preserved; implementation has not started.
+
+DZ demonstrates rendered status, controls, alarm and trend using synthetic or
+recorded data, correction of a deliberate layout defect and preview evidence tied
+to the accepted candidate revision. Keep the Designer open during external edits;
+cover last-valid preview and overlapping-edit conflicts, then present a reviewable
+diff, validation and visual evidence before explicit authorized publication under
+DR. Keep deterministic CI evidence separate from actual manual agent/OS sessions.
+MCP implementation remains deferred and is not required for this scenario.
 
 ## Claude review
 

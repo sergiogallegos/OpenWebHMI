@@ -172,6 +172,7 @@ agent editing. These are planned capabilities, not shipped support.
 | Project resources tree | ✅ | ✅ | 🟢 v1 |
 | Tag browser (live PLC browse) | ✅ | ✅ | 🟢 v1 (Phase 1) |
 | Built-in script editor | ✅ | ✅ | 🟢 v1 |
+| External agent-assisted HMI/SCADA authoring | ❔ | ❔ | 🟢 v1 planned — layouts, bindings, controls, alarms, trends and scripts through shared catalogs, validation and rendered preview; [acceptance scenario](planning/agent-authoring.md#pump-screen-acceptance-scenario). Optional MCP adapter deferred. |
 | Multi-developer concurrent editing | ✅ (locking) | ❔ | 🟢 v1 conflict detection for visual/external edits; live collaborative co-editing post-1.0 |
 | Undo/redo | ✅ | ✅ | 🟢 v1 |
 | Project diff / version control friendly | partial | partial | 🟢 v1 — JSON-on-disk, diff-friendly |

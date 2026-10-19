@@ -10,6 +10,13 @@
 
 **Open authoring (2026-09-27):** [DW–DZ](../planning/agent-authoring.md) add portable project source, offline schemas/CLI and conflict-aware external-agent editing. DR remains the shared publish authority; no source edit implicitly changes production. Implementation is pending.
 
+**Agent-assisted HMI/SCADA engineering (2026-10-18):** DY/DZ prove the
+[pump-screen workflow](../planning/agent-authoring.md#pump-screen-acceptance-scenario):
+create status/controls, bindings, alarm and trend; correct validation and rendered
+layout findings; preserve concurrent edits; present revision-specific preview evidence
+for engineer review before authorized publication under DR. Optional MCP integration
+remains deferred. Existing task statuses are unchanged; implementation is pending.
+
 **Project engineering (2026-09-29):** [EA plan](../planning/project-engineering.md)
 clarifies internal engine modularity with AGPL-compliant reuse, Git-ready external
 agent/Designer editing and measured Tauri hosts. EB adds bounded application jobs
@@ -35,8 +42,8 @@ All implementation tasks remain open.
 | CODEX-EF | Prove paired custom component authoring and packaging | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EF-component-authoring-contract.md`](tasks/CODEX-EF-component-authoring-contract.md) |
 | CODEX-DW | Record open project and agent-assisted Designer architecture | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DW-agent-authoring-direction.md`](tasks/CODEX-DW-agent-authoring-direction.md) |
 | CODEX-DX | Define portable project source and offline schema contract | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DX-portable-project-contract.md`](tasks/CODEX-DX-portable-project-contract.md) |
-| CODEX-DY | Add headless project CLI and local browser preview service | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DY-project-cli-authoring.md`](tasks/CODEX-DY-project-cli-authoring.md) |
-| CODEX-DZ | Synchronize Designer drafts with external project edits | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DZ-designer-external-edits.md`](tasks/CODEX-DZ-designer-external-edits.md) |
+| CODEX-DY | Add headless project CLI and local browser preview service | codex | open | 2026-10-18 codex [GPT-6] | [`CODEX-DY-project-cli-authoring.md`](tasks/CODEX-DY-project-cli-authoring.md) |
+| CODEX-DZ | Synchronize Designer drafts with external project edits | codex | open | 2026-10-18 codex [GPT-6] | [`CODEX-DZ-designer-external-edits.md`](tasks/CODEX-DZ-designer-external-edits.md) |
 | CODEX-DL | Accepted engine foundation, capacity research and restart program | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DL-accepted-engine-capacity-plan.md`](tasks/CODEX-DL-accepted-engine-capacity-plan.md) |
 | CODEX-DM | Extract pure domain and storage-independent wire schema | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DM-domain-schema-boundaries.md`](tasks/CODEX-DM-domain-schema-boundaries.md) |
 | CODEX-DN | Expose embeddable engine and prove independent public-API consumer | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DN-embeddable-engine-api.md`](tasks/CODEX-DN-embeddable-engine-api.md) |

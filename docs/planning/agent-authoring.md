@@ -15,6 +15,39 @@ Public copy must label this workflow planned until DX/DY/DZ/DR pass. Do not clai
 market-first status, universal agent compatibility or quantified time savings
 without comparative research, interoperability evidence or measured user workflows.
 
+## Agent-assisted HMI/SCADA engineering
+
+Accepted clarification, 2026-10-18; implementation pending. Engineers will be able
+to use external coding agents to create and modify HMI/SCADA interfaces through
+documented project formats, component catalogs, validation and preview tools.
+The supported workflow covers layouts, tag bindings, controls, alarms, trends,
+themes and application scripts, with the Designer open for inspection and manual
+correction. Agent use remains optional and provider-neutral.
+
+The authoring loop is: inspect project and component/tag catalogs, prepare source
+changes, validate, inspect the rendered preview, correct findings, and present a
+reviewable diff for engineer review and explicit authorized publication. Schema
+validity alone does not prove a usable screen. DY/DZ must provide structured
+validation and preview diagnostics plus a documented way for an engineer or agent
+to inspect or capture the rendered browser preview using trusted browser tooling.
+Record the preview revision and synthetic fixture so visual evidence corresponds
+to the candidate under review. This does not require a bundled vision model.
+
+### Optional MCP integration
+
+The initial v1 workflow uses project files and the CLI. A future optional Model
+Context Protocol (MCP) adapter may expose project context, component/tag catalogs,
+validation, revision-checked draft changes and preview feedback to compatible
+agent clients. It must reuse the shared application services, diagnostics,
+authorization and revision contracts; it must not introduce another project model
+or put an AI dependency in the engine or production gateway.
+
+MCP implementation remains deferred. Evaluate it against the pump-screen scenario
+below and document which client capability it adds beyond file/CLI access before
+promoting it into delivery scope. Any future publication tool requires the same
+explicit authorization and expected revision as DR; authoring access never grants
+live tag-write, credential-management or publication access.
+
 ## Shared project contract
 
 Project source is a documented, versioned directory: `project.toml`, JSON view/tag/
@@ -147,6 +180,29 @@ and opens the same source in the browser Designer. An external change updates it
 preview; a concurrent dirty edit conflicts without data loss. An invalid source
 fails with file-level diagnostics. Runtime stays on the prior published revision
 until explicit authorized publish; denied/stale publish and rollback are tested.
+
+### Pump-screen acceptance scenario
+
+DX/DY/DZ/DR must demonstrate this concrete instance of the release fixture:
+
+1. From a clean source checkout, inspect the component and tag catalogs and create
+   a pump screen with running/fault status, start/stop controls, a speed setpoint,
+   a high-pressure alarm and a pressure trend. Include its tag/alarm configuration,
+   theme and an ordinary Python source file without executing it on open.
+2. Validate the project offline. Include an intentionally invalid tag binding,
+   check its stable file-level diagnostic and correct it using the shared tools.
+3. Open the same source in the browser Designer using synthetic or recorded data.
+   Exercise status, controls, alarm and trend against the test fixture. Inspect
+   the rendered screen and correct a deliberate layout defect, such as a clipped
+   label. Record visual evidence separately from schema-validation results.
+4. Keep the Designer open while a terminal edit updates the draft. Confirm that
+   preview feedback identifies the accepted revision, invalid intermediate edits
+   preserve the last valid preview and overlapping visual/external edits preserve
+   both versions for conflict resolution.
+5. Present the candidate diff, validation results and preview evidence for engineer
+   review. Production remains on its prior revision until explicit authorized
+   publish; denied/stale publication and rollback retain the existing release gates.
+
 Use deterministic fixtures in CI without an LLM/API dependency. Record manual
 agent-assisted usability and Linux/macOS/Windows browser runs separately from tests.
 Before advertising time savings, compare a fixed authoring scenario with and without

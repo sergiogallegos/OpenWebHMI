@@ -66,6 +66,10 @@ Visual saves preserve supported externally authored content and Python formattin
 Offline catalogs, schemas, API stubs, structured validation/test results and logs
 make creation, updates and debugging accessible without GUI automation or an LLM
 in CI. Agent use is optional; built-in chat and MCP remain deferred.
+The [agent authoring plan](agent-authoring.md#agent-assisted-hmiscada-engineering)
+defines the creation/validation/visual-correction loop and pump-screen acceptance
+scenario, including preview evidence tied to the candidate revision. A future
+optional MCP adapter consumes the same services and permissions.
 
 ## Interface authoring and extensions
 

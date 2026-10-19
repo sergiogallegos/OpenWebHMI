@@ -33,7 +33,11 @@ DW records the decision; DX defines portable project source and offline schemas;
 DY adds terminal scaffolding/validation and the local browser preview service; DZ
 adds external-edit reconciliation and conflicts. DR owns shared publication for
 both CLI and Designer. An end-to-end terminal-to-Designer fixture is a release
-gate. Built-in AI chat and optional MCP integration are deferred.
+gate. The [pump-screen scenario](planning/agent-authoring.md#pump-screen-acceptance-scenario)
+proves layout/control creation, bindings, alarms, trends, validation correction,
+rendered preview inspection and engineer review before authorized publication.
+Optional MCP may expose the same authoring services to compatible clients; its
+implementation and built-in AI chat remain deferred.
 
 The [project engineering plan](planning/project-engineering.md) (2026-09-29) adds
 Git-ready manual/terminal-agent workflows, optional bounded Python jobs and basic

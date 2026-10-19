@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-29 codex [GPT-6]
+last-update: 2026-10-18 codex [GPT-6]
 ---
 
 # CODEX-DY — Add headless project CLI and local browser preview service
@@ -56,6 +56,20 @@ The [project engineering plan](../../planning/project-engineering.md) records
 maintainer-directed scope clarification. Original brief and status are preserved.
 
 Scaffold README, provider-neutral AGENTS.md, .gitignore, sample test/simulation data and optional CI validation instructions. Do not create/push remotes or run hooks implicitly. Expose shared EB script-test/log results and ED target/export/preflight operations with structured CLI output; core offline commands still need no Python/Git/agent.
+
+### 2026-10-18 23:13 codex [GPT-6] — agent-assisted interface workflow clarification
+
+The maintainer approved the explicit [agent-assisted HMI/SCADA workflow](../../planning/agent-authoring.md#agent-assisted-hmiscada-engineering)
+and [pump-screen acceptance scenario](../../planning/agent-authoring.md#pump-screen-acceptance-scenario).
+Original brief and open status are preserved; implementation has not started.
+
+DY supplies catalog inspection, offline diagnostic/correction results and a documented
+way to inspect or capture the rendered browser preview with trusted browser tooling.
+Preview diagnostics/evidence identify the candidate revision and synthetic fixture.
+The pump screen includes status, start/stop controls, speed setpoint, high-pressure
+alarm and pressure trend. Validation must expose an intentionally invalid binding
+and support its correction. No LLM is required in CI. MCP remains a deferred optional
+adapter over these same services and permissions, not a DY implementation dependency.
 
 ## Claude review
 

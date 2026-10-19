@@ -1,6 +1,6 @@
 ---
 status: active
-last-validated: 2026-09-27
+last-validated: 2026-10-18
 ---
 
 # External editors and the Designer share a project contract
@@ -31,6 +31,31 @@ not implemented; the [contract](../../docs/planning/agent-authoring.md) defines 
    or a required MCP service. This follows the [dependency and privacy policy](../../VISION.md).
    Provider-specific integrations may be adapters later, not a second project model.
 
+## Agent workflow and MCP assessment
+
+The [roadmap](../../docs/roadmap.md) already requires agent-assisted authoring for
+v1; the [authoring plan](../../docs/planning/agent-authoring.md#delivery-and-proof)
+defines a terminal-to-Designer release fixture. Deferring MCP does not defer the
+ability to help an engineer create an HMI. Portable source, component/binding
+catalogs, structured diagnostics and preview supply the initial workflow; these
+remain planned capabilities.
+
+[MCP exposes resources, tools and prompts](https://modelcontextprotocol.io/specification/draft/server/index).
+An optional authoring adapter could expose project/catalog context and shared
+validation, draft changes and preview operations to MCP clients. It would reuse
+the same application services, revision checks and authorization as the CLI and
+Designer. Protocol integration alone does not establish that generated screens
+render correctly or shorten engineering time; the existing plan requires separate
+workflow evidence. MCP remains deferred under the accepted plan.
+
+The [2026-10-18 plan clarification](../../docs/planning/agent-authoring.md#agent-assisted-hmiscada-engineering)
+makes the engineer/agent creation and visual-correction loop explicit. Its
+[pump-screen acceptance scenario](../../docs/planning/agent-authoring.md#pump-screen-acceptance-scenario)
+requires catalogs, binding-error correction, rendered preview evidence tied to a
+candidate revision, concurrent-edit handling and engineer review before authorized
+publication. This strengthens the existing v1 authoring requirement without
+committing MCP implementation or claiming shipped behavior.
+
 ## Evidence
 
 - [Current project storage](../../crates/project-store/src/store.rs): `load`,
@@ -46,6 +71,10 @@ not implemented; the [contract](../../docs/planning/agent-authoring.md) defines 
   event recovery and cross-platform behavior before choosing dependencies.
 - Measured authoring time saved and agent interoperability: end-to-end fixtures
   plus recorded engineer/agent usability sessions resolve; no market-first claim.
+- Whether to promote optional MCP support: the accepted plan calls for evaluation
+  against the pump-screen scenario. Document which client capability the adapter
+  adds beyond file/CLI access before changing release scope; MCP implementation
+  remains deferred.
 
 ## Related pages
 

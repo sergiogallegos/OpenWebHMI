@@ -167,7 +167,7 @@ These come up in any "improve the UI" conversation. They are not on this roadmap
 - **Hand-crafted illustrations per OEM.** A studio's actual visual judgment comes from years of project portfolio. We don't compete with that taste; we ship the rails so a designer can deliver against us. The "one default theme that is opinionated and credible" emerges from the v1.1 work.
 - **VR/AR runtime.** Spatial-computing HMI demonstrations exist on the marketing edge of the industry but are out of scope for the platform.
 - **Industrial-design (physical hardware) integration.** Studios also design panels, enclosures, and consoles. We're software.
-- **AI-assisted design tooling.** Design-system "AI readiness" (context-aware patterns, intelligent analytics, Figma plugins) is independently valuable but not part of this roadmap — it lives under `roadmap.md`'s "Phase 5+ — AI assistance" horizon.
+- **Built-in AI design tooling.** Intelligent design suggestions, analytics and Figma integrations remain outside this visual roadmap. External agent-assisted HMI/SCADA authoring is a separate v1 requirement under the [agent authoring plan](planning/agent-authoring.md); optional MCP implementation and built-in AI chat remain deferred.
 
 ---
 
@@ -199,7 +199,7 @@ Items below are not blockers; they are decisions to settle as the roadmap reache
 
 The phase-based plan in [`roadmap.md`](roadmap.md) is the v1.0 ladder; this document is the post-1.0 design layer. The two compose cleanly:
 
-- **`roadmap.md` Phase 5+** sketches "Mobile / responsive runtime" and "AI assistance" as horizons. v1.2 #9 (distance view) and v2.0 #11 (MachineSchematic) are the concrete work that fleshes out the responsive horizon. The AI-assistance horizon is intentionally separate.
+- **Responsive and agent workflows:** v1.2 #9 (distance view) and v2.0 #11 (MachineSchematic) develop the responsive horizon. The [roadmap](roadmap.md) separately requires external agent-assisted authoring for v1; these visual features preserve its shared source, catalog, validation and preview contracts. Built-in AI chat and optional MCP implementation remain deferred.
 - **CODEX-AJ / -AK / -AL / -AM** (currently in flight or queued) are Rust-side modernization tasks that don't touch this layer at all. The two tracks run in parallel.
 - **The pre-1.0 hardware-validation gate** in `roadmap.md` is unaffected by anything in this roadmap. None of these items become 1.0-blockers if scope tightens.
 

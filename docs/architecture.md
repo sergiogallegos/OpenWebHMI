@@ -437,6 +437,12 @@ The Designer and external terminal agents are peer authoring clients of a docume
 project contract. DX/DY/DZ add portable source, offline validation, a thin Rust CLI
 and conflict-aware draft synchronization; DR remains the publication authority.
 No mandatory AI provider, model SDK or MCP server belongs in the engine or gateway.
+Agent-assisted HMI/SCADA engineering includes creating layouts, bindings, controls,
+alarms, trends and scripts, then validating and inspecting the rendered preview
+before engineer review and explicit authorized publication. Preview feedback must
+identify the candidate revision. A deferred optional MCP adapter may expose these
+same authoring services while preserving their authorization and revision checks;
+see the [authoring workflow and acceptance scenario](planning/agent-authoring.md).
 
 ## 12. Project engineering revision (2026-09-29)
 
