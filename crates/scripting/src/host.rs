@@ -8,7 +8,7 @@ use std::time::Duration;
 use openwebhmi_project_store::ScriptConfig;
 use openwebhmi_protocol::TagPath;
 use openwebhmi_tag_engine::{TagSnapshot, TagStore};
-use rand::Rng;
+use rand::RngExt;
 use tokio::sync::{broadcast, mpsc, oneshot};
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
@@ -432,7 +432,7 @@ fn jittered(duration: Duration) -> Duration {
     }
     let min = millis.saturating_mul(75) / 100;
     let max = millis.saturating_mul(125) / 100;
-    Duration::from_millis(rand::thread_rng().gen_range(min..=max))
+    Duration::from_millis(rand::rng().random_range(min..=max))
 }
 
 #[cfg(test)]

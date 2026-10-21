@@ -626,5 +626,5 @@ function alarmEvent(overrides: Partial<AlarmEvent>): AlarmEvent {
 }
 
 function expectBadQuality(element: HTMLElement) {
-  expect(element.style.border).toContain("214, 69, 69");
+  expect(element.style.borderColor).toBe("rgb(214, 69, 69)");
 }

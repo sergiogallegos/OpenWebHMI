@@ -373,7 +373,7 @@ where
                         }
                     };
 
-                    if let Err(err) = sink.send(Message::Text(json)).await {
+                    if let Err(err) = sink.send(Message::Text(json.into())).await {
                         debug!(error = %err, "failed to send websocket message");
                         break;
                     }

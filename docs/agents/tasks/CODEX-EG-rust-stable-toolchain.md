@@ -3,9 +3,9 @@ id: CODEX-EG
 title: Upgrade Rust and Cargo to verified stable 1.99
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-10-11
-last-update: 2026-10-11 codex [GPT-6]
+last-update: 2026-10-21 codex [GPT-6]
 ---
 
 # CODEX-EG — Upgrade Rust and Cargo to verified stable 1.99
@@ -39,6 +39,20 @@ The [official Rust announcement](https://blog.rust-lang.org/2026/10/01/Rust-1.99
 General crate upgrades, protocol changes, architecture extraction and pushing without explicit direction.
 
 ## Codex log
+
+### 2026-10-21  codex [GPT-6] — execution started
+
+Maintainer-directed latest-stable upgrades are being executed together across EG/EH/DU; exact upstream versions and compatibility constraints are rechecked at execution. Edition 2024 and protocol contracts remain in scope for preservation. No validation result is claimed yet.
+
+### 2026-10-21 22:54 codex [GPT-6] — submitted
+
+Rust/Cargo 1.99.1 is pinned in rust-toolchain.toml, the workspace minimum and active guidance; edition 2024 is retained. CI already installs the repository pin and needs no floating-version change. Compiler, Cargo, rustfmt and Clippy versions are recorded in the [upgrade evidence](../notes/2026-10-dependency-upgrade.md). EH and DU execute the separately owned dependency/frontend changes in this same maintainer-authorized working diff; no compiler-only claim is made for the combined lockfile.
+
+Verification passed: locked all-features workspace build; all-targets/all-features Clippy with -D warnings; locked workspace docs; cargo fmt --check; three consecutive locked all-features workspace test runs (165 tests each); frontend frozen install/typecheck/build and three consecutive suites (152 tests each). Rustfmt changes are limited to the migrated WebSocket test expressions; no repository-wide formatting rewrite occurred. Cargo retains debug profiles; no profile behavior change or speedup is claimed. macOS arm64 debug app bundling passed unsigned. Linux/Windows execution, signing/notarization and real hardware checks were not run. BB's unrelated example-test work and DK's historical review remain untouched. Submitted as an uncommitted diff; no push.
+
+### 2026-10-21 23:01 codex [GPT-6] — maintainer-directed publication
+
+The maintainer approved staging, committing and pushing the validated combined upgrade to main. Submission status is retained for independent review; this instruction does not constitute an independently executed merge review.
 
 ## Claude review
 

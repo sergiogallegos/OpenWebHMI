@@ -244,7 +244,13 @@ harnesses use explicitly measured time and are not flaky unit-test replacements.
 
 Implemented in the accompanying baseline: Rust 1.98.1, product TypeScript 7.0.2,
 Node 24.21.0, browser-default designer build and removal of its unused Tauri JS API.
-The website remains on TypeScript 5.9.3 pending its compatible framework upgrade.
+The website remained on TypeScript 5.9.3 in that baseline.
+
+The 2026-10-21 dependency follow-up pins Rust/Cargo 1.99.1, Node 24.22.1 LTS
+and pnpm 12.14.0. Product TypeScript remains 7.0.2; the website advances to
+6.0.2 with Astro 7.4.2, within the checker's supported compiler-API range.
+Dependency inventory, validation and outstanding upstream limits are recorded
+in the [upgrade evidence](../agents/notes/2026-10-dependency-upgrade.md).
 
 Not yet implemented: extracted engine, minimal feature profiles, Axum migration,
 safe publishing, history ingestion redesign, any 50K capacity certification or

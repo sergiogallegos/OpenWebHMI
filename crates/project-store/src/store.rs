@@ -205,7 +205,7 @@ impl ProjectStore {
         let text = fs::read_to_string(&path)?;
         match kind {
             ArtifactKind::ProjectMeta => {
-                let value = text.parse::<toml::Value>()?;
+                let value: toml::Value = toml::from_str(&text)?;
                 Ok(Some(serde_json::to_value(value)?))
             }
             ArtifactKind::ScriptSource { .. } => Ok(Some(serde_json::json!({ "source": text }))),

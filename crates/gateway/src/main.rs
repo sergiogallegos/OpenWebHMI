@@ -738,7 +738,9 @@ mod tests {
             .await
             .expect("websocket should connect to already-bound test listener");
         ws.send(Message::Text(
-            serde_json::to_string(&openwebhmi_protocol::ClientMessage::Ping).unwrap(),
+            serde_json::to_string(&openwebhmi_protocol::ClientMessage::Ping)
+                .unwrap()
+                .into(),
         ))
         .await
         .unwrap();
@@ -759,7 +761,7 @@ mod tests {
             close,
             Some(Ok(Message::Close(Some(frame))))
                 if frame.code == CloseCode::Away
-                    && frame.reason.as_ref() == "gateway shutting down"
+                    && frame.reason.as_str() == "gateway shutting down"
         ));
 
         gateway.abort();

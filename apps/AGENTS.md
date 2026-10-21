@@ -18,7 +18,7 @@ TypeScript application rules for `apps/{designer,runtime-web,website}`. Loaded a
 
 ## React conventions
 
-- React 18 (function components + hooks). No class components in new code.
+- React 19 (function components + hooks). No class components in new code.
 - No `useEffect` for fetching data that the WebSocket connection already provides — subscribe to the connection's tag stream instead.
 - Component files use `.tsx`. Pure logic in `.ts`. Tests colocated as `*.test.ts(x)`.
 - Component props are explicit TypeScript interfaces, not inferred from `defaultProps`.

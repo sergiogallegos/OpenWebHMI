@@ -3,9 +3,9 @@ id: CODEX-EH
 title: Audit and upgrade Rust dependencies with measured feature budgets
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-10-11
-last-update: 2026-10-11 codex [GPT-6]
+last-update: 2026-10-21 codex [GPT-6]
 ---
 
 # CODEX-EH — Audit and upgrade Rust dependencies with measured feature budgets
@@ -43,6 +43,22 @@ Read root AGENTS.md, VISION.md, [engine/capacity plan](../../planning/engine-and
 Blanket dependency updates, new transports/backends, claiming DO profile extraction complete or replacing real protocols with stubs.
 
 ## Codex log
+
+### 2026-10-21  codex [GPT-6] — execution started
+
+Maintainer-directed latest-stable upgrades are being executed together across EG/EH/DU; exact upstream versions and compatibility constraints are rechecked at execution. Edition 2024 and protocol contracts remain in scope for preservation. No validation result is claimed yet.
+
+### 2026-10-21 22:54 codex [GPT-6] — submitted
+
+All 36 used direct external Cargo dependencies were inventoried and moved to verified latest stable releases where newer versions exist. Existing exact driver pins remain exact. Unused PyO3 was removed after confirming it had no consumer or lockfile entry. The [upgrade evidence](../notes/2026-10-dependency-upgrade.md) records versions, licenses, features, consumer/dependency kinds, graph closures, duplicates, migrations and residual risks. Explicit manifest upgrades were resolved with a targeted Tokio update; precise rustls/rustls-webpki and JWT updates followed. No unrestricted cargo update ran. The wide lockfile diff reflects the explicitly upgraded families and their transitives, including OPC UA and Tauri; it is not presented as a one-crate patch.
+
+Real-protocol simulator suites pass with OPC UA 0.19, Modbus 0.17 and WebSocket 0.30. Existing backup tests exposed the TOML document-parser migration before its correction (7 failures); all three final workspace suites pass afterward. The AWS-LC JWT backend is explicit. Exact TLS patches are rustls 0.23.46 and rustls-webpki 0.103.16.
+
+The final inventory has 671 external package/version entries versus 662 before, with 62 versus 56 duplicate names. This is not a footprint reduction. The OSV scan retains findings in eight upstream-bound/unmaintained package versions, including production MQTT certificate validation and OPC UA RSA; the report identifies paths and advisory IDs. Axum 0.7.9 remains broker-owned because latest rumqttd 0.20 requires that major; latest Axum 0.8.9 is not falsely forced into it. DO feature/profile extraction and clean before/after Rust build-time measurement were not performed. Full locked build/clippy/test/doc/fmt matrix passed with three final test runs. Hardware and Linux/Windows validation remain unperformed. Submitted as an uncommitted diff for review, with the named measurement/upstream limitations; no push.
+
+### 2026-10-21 23:01 codex [GPT-6] — maintainer-directed publication
+
+The maintainer approved staging, committing and pushing the validated combined upgrade to main. Submission status is retained for independent review; this instruction does not constitute an independently executed merge review.
 
 ## Claude review
 

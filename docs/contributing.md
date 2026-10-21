@@ -145,10 +145,14 @@ A PR is ready when:
 
 ### 4.1 Prerequisites
 
-- **Rust** stable (pinned in `rust-toolchain.toml`)
-- **Node** from `.node-version` and **pnpm** from `package.json`
+- **Rust** 1.99.1 (pinned in `rust-toolchain.toml`; edition 2024)
+- **Node** 24.22.1 LTS from `.node-version` and **pnpm** 12.14.0 from `package.json`
 - **Python** 3.11+ (for scripting host work; not needed for gateway core)
 - **Tauri prerequisites** (see https://tauri.app/start/prerequisites/) for optional desktop-shell work
+
+The product apps and libraries use TypeScript 7.0.2. The Astro website uses
+TypeScript 6.0.2, the latest version supported by its compiler-API checker.
+Use the pinned pnpm version for reproducible frozen-lockfile installs.
 
 ### 4.2 First-time setup
 

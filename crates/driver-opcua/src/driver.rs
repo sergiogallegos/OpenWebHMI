@@ -123,7 +123,7 @@ impl Driver for OpcUaDriver {
                 0.0,
             )
             .await
-            .map_err(map_status)?;
+            .map_err(map_opcua_error)?;
         let data_value = values
             .into_iter()
             .next()
@@ -153,7 +153,7 @@ impl Driver for OpcUaDriver {
                 },
             }])
             .await
-            .map_err(map_status)?
+            .map_err(map_opcua_error)?
             .into_iter()
             .next()
             .unwrap_or(StatusCode::BadNoData);
@@ -186,7 +186,7 @@ impl Driver for OpcUaDriver {
                 SubscriptionForwarder { tx: tx.clone() },
             )
             .await
-            .map_err(map_status)?;
+            .map_err(map_opcua_error)?;
         let items = addresses
             .into_iter()
             .map(|address| {
@@ -206,7 +206,7 @@ impl Driver for OpcUaDriver {
         let results = session
             .create_monitored_items(sub_id, TimestampsToReturn::Both, items)
             .await
-            .map_err(map_status)?;
+            .map_err(map_opcua_error)?;
         for result in results {
             if !result.result.status_code.is_good() {
                 return Err(map_status(result.result.status_code));
@@ -327,7 +327,7 @@ async fn browse_level(
             None,
         )
         .await
-        .map_err(map_status)?;
+        .map_err(map_opcua_error)?;
     let Some(result) = results.into_iter().next() else {
         return Ok(Vec::new());
     };

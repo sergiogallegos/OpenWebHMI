@@ -4,7 +4,7 @@
 
 ## Phase 4 — 1.0 release (in progress)
 
-**Toolchains and engineering handbook (2026-10-11):** EG targets verified stable Rust/Cargo 1.99.0; current installed/project baseline remains 1.98.1 until execution. EG supersedes BB's older version direction without closing its example work or DK review. EH inventories and selectively upgrades Cargo crates; DO retains feature/profile extraction ownership. EI adopts Google TypeScript guidance through scoped exceptions and staged checks. EJ creates ignored offline HTML under `docs/private/`, excluded from website publishing; tracked public-repository sources are not confidential. EK evaluates Bun execution before any package-manager migration; pnpm remains authoritative pending evidence. DU coordinates frontend versions. All five tasks are open; no upgrades, guideline rollout, HTML generation or Bun migration are claimed complete.
+**Toolchains and engineering handbook (2026-10-21):** EG/EH/DU submit the verified stable upgrade: Rust/Cargo 1.99.1, product TypeScript 7.0.2, website TypeScript 6.0.2 (latest Astro-check-supported compiler), Node 24.22.1 LTS and pnpm 12.14.0. Full Rust/frontend validation and macOS unsigned debug bundling passed; upstream-bound dependency/advisory limits and unperformed hardware/cross-platform checks are recorded in the [upgrade evidence](notes/2026-10-dependency-upgrade.md). The maintainer approved committing and pushing this implementation to main; independent review and task verdicts remain pending. DO retains feature/profile extraction ownership; EI guidance, EJ local handbook and EK Bun trials remain open. pnpm remains authoritative.
 
 **Restart baseline (2026-09-27):** CODEX-DK adopts Rust 1.98.1 and supersedes CODEX-BB’s old 1.96 version direction. Do not downgrade to execute BB; its historical brief awaits disposition. DL records the accepted [engine and capacity plan](../planning/engine-and-capacity.md): 50K-tag Medium target, 30-day selected history, low-resource Edge and reusable engine. DM–DU implement the foundation; DV is optional desktop work. DT baselining starts before optimization; security fixes do not wait for extraction. All capacity budgets are unproven.
 
@@ -30,8 +30,8 @@ All implementation tasks remain open.
 
 | Id | Title | Owner | Status | Last update | File |
 |---|---|---|---|---|---|
-| CODEX-EG | Upgrade Rust and Cargo to verified stable 1.99 | codex | open | 2026-10-11 codex [GPT-6] | [`CODEX-EG-rust-stable-toolchain.md`](tasks/CODEX-EG-rust-stable-toolchain.md) |
-| CODEX-EH | Audit and upgrade Rust dependencies with measured feature budgets | codex | open | 2026-10-11 codex [GPT-6] | [`CODEX-EH-cargo-dependency-audit.md`](tasks/CODEX-EH-cargo-dependency-audit.md) |
+| CODEX-EG | Upgrade Rust and Cargo to verified stable 1.99 | codex | submitted | 2026-10-21 codex [GPT-6] | [`CODEX-EG-rust-stable-toolchain.md`](tasks/CODEX-EG-rust-stable-toolchain.md) |
+| CODEX-EH | Audit and upgrade Rust dependencies with measured feature budgets | codex | submitted | 2026-10-21 codex [GPT-6] | [`CODEX-EH-cargo-dependency-audit.md`](tasks/CODEX-EH-cargo-dependency-audit.md) |
 | CODEX-EI | Adopt Google TypeScript guidance and staged conformance checks | codex | open | 2026-10-11 codex [GPT-6] | [`CODEX-EI-google-typescript-guidelines.md`](tasks/CODEX-EI-google-typescript-guidelines.md) |
 | CODEX-EJ | Build local architecture HTML handbook excluded from website publishing | codex | open | 2026-10-11 codex [GPT-6] | [`CODEX-EJ-local-architecture-html.md`](tasks/CODEX-EJ-local-architecture-html.md) |
 | CODEX-EK | Evaluate and standardize compatible frontend tooling on Bun | codex | open | 2026-10-11 codex [GPT-6] | [`CODEX-EK-bun-tooling-compatibility.md`](tasks/CODEX-EK-bun-tooling-compatibility.md) |
@@ -53,7 +53,7 @@ All implementation tasks remain open.
 | CODEX-DR | Add revision-checked drafts and atomic project publishing | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DR-draft-publish-integrity.md`](tasks/CODEX-DR-draft-publish-integrity.md) |
 | CODEX-DS | Implement bounded durable historian ingestion and thirty-day retention | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DS-historian-ingest-retention.md`](tasks/CODEX-DS-historian-ingest-retention.md) |
 | CODEX-DT | Establish Edge Standard Medium capacity and resource evidence | codex | open | 2026-09-27 codex [GPT-6] | [`CODEX-DT-capacity-resource-harness.md`](tasks/CODEX-DT-capacity-resource-harness.md) |
-| CODEX-DU | Upgrade frontend tool families with compatibility and footprint checks | codex | open | 2026-10-11 codex [GPT-6] | [`CODEX-DU-frontend-toolchain-modernization.md`](tasks/CODEX-DU-frontend-toolchain-modernization.md) |
+| CODEX-DU | Upgrade frontend tool families with compatibility and footprint checks | codex | submitted | 2026-10-21 codex [GPT-6] | [`CODEX-DU-frontend-toolchain-modernization.md`](tasks/CODEX-DU-frontend-toolchain-modernization.md) |
 | CODEX-DK | Rust 1.98.1 / TypeScript baseline and web-first architecture restart review | codex | submitted | 2026-10-11 codex [GPT-6] | [`CODEX-DK-modernization-baseline.md`](tasks/CODEX-DK-modernization-baseline.md) |
 | CODEX-BB | Rust 1.96 toolchain bump — 1.95.0 → 1.96.0 + one assert_matches! example conversion | codex | open | 2026-10-11 codex [GPT-6] | [`CODEX-BB-rust-1.96-toolchain-bump.md`](tasks/CODEX-BB-rust-1.96-toolchain-bump.md) |
 | CODEX-BC | Identifier sanitization at the ProjectStore boundary — close path-traversal / arbitrary file R/W | codex | open | 2026-07-12 claude [Fable 5] | [`CODEX-BC-identifier-sanitization.md`](tasks/CODEX-BC-identifier-sanitization.md) |

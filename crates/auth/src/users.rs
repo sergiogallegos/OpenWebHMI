@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use base64::Engine;
 use bcrypt::{DEFAULT_COST, hash, verify};
-use rand::RngCore;
+use rand::Rng;
 use rusqlite::{Connection, OptionalExtension, params};
 use uuid::Uuid;
 
@@ -293,7 +293,7 @@ fn validate_roles(roles: &[Role]) -> Result<(), UserError> {
 
 fn generate_password() -> String {
     let mut bytes = [0_u8; 18];
-    rand::thread_rng().fill_bytes(&mut bytes);
+    rand::rng().fill_bytes(&mut bytes);
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 

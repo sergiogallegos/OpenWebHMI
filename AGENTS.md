@@ -45,7 +45,7 @@ scripts/            local dev + maintenance scripts
 
 ## Commands
 
-Rust toolchain is pinned by `rust-toolchain.toml` (currently 1.98.1, edition 2024). Node version is pinned in `.node-version` and consumed by CI. Package manager is **pnpm** — never `npm` or `yarn` in this repo.
+Rust toolchain is pinned by `rust-toolchain.toml` (currently 1.99.1, edition 2024). Node version is pinned in `.node-version` and consumed by CI. Package manager is **pnpm** — never `npm` or `yarn` in this repo.
 
 Full validation matrix (debug builds; `--release` only when reproducing a perf issue):
 

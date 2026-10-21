@@ -3,9 +3,9 @@ id: CODEX-DU
 title: Upgrade frontend tool families with compatibility and footprint checks
 owner: codex
 phase: 4
-status: open
+status: submitted
 created: 2026-09-27
-last-update: 2026-10-11 codex [GPT-6]
+last-update: 2026-10-21 codex [GPT-6]
 ---
 
 # CODEX-DU — Upgrade frontend tool families with compatibility and footprint checks
@@ -55,6 +55,22 @@ explicit paired migration. Do not claim a performance gain without measurement.
 ### 2026-10-11 13:06 codex [GPT-6] — maintainer-directed modernization coordination
 
 EI owns Google TypeScript policy, lint/formatter adoption and conformance; EK owns Bun execution trials and any explicitly gated package-manager migration. Coordinate compatible versions and avoid concurrent unrelated lockfile changes. Existing pnpm authority remains until EK validates and updates the complete policy.
+
+### 2026-10-21  codex [GPT-6] — execution started
+
+Maintainer-directed latest-stable upgrades are being executed together across EG/EH/DU; exact upstream versions and compatibility constraints are rechecked at execution. Edition 2024 and protocol contracts remain in scope for preservation. No validation result is claimed yet.
+
+### 2026-10-21 22:54 codex [GPT-6] — submitted
+
+The [upgrade evidence](../notes/2026-10-dependency-upgrade.md) inventories all frontend declarations. React 19.3.1, Vite 8.3.5/plugin-react 6.1.2, Vitest 5.0.5, jsdom 30.1.3, Monaco 0.57.0, Astro 7.4.2 and pnpm 12.14.0 are selected from current stable registry metadata. Product TypeScript 7.0.2 was already current. Website TypeScript moves to 6.0.2 because latest Astro check supports only major 5/6; no peer-range suppression is used. Node stays on its existing LTS family at latest patch 24.22.1. The machine-wide Node/pnpm commands were not replaced; validation used checksum-verified temporary executables matching project pins.
+
+pnpm 12 uses strict peers, explicit esbuild lifecycle permission, narrow patched transitive overrides, exact verified release-age exclusions, and a Monaco-plugin package extension for its undeclared esbuild import. The clean build failed before the extension and passed afterward. The website's unused optional Sharp/libvips chain is excluded and Astro's documented passthrough service preserves its static SVG assets. Three final website builds passed.
+
+Fresh frozen force installation, strict typechecking, recursive builds and three final recursive test runs passed (152 tests each). Frontend audit reports zero known vulnerabilities. Runtime/designer entry chunks grew from 447.73/523.28 kB to 527.67/586.03 kB (gzip 124.48/139.19 to 153.80/166.96 kB); no speed/footprint improvement is claimed. The unsigned debug macOS arm64 app bundle passed. Chrome smoke verified disposable local login/project loading, designer component tree/theme navigation, runtime connected view and modal Cancel. The existing fixed embedded-preview URL, Monaco worker/editing interactions, full manual checklist, Linux/Windows and signing/notarization were not validated. Paired Cargo changes are intentionally owned by EG/EH under the maintainer's combined upgrade request. Submitted as an uncommitted diff; no push.
+
+### 2026-10-21 23:01 codex [GPT-6] — maintainer-directed publication
+
+The maintainer approved staging, committing and pushing the validated combined upgrade to main. Submission status is retained for independent review; this instruction does not constitute an independently executed merge review.
 
 ## Claude review
 

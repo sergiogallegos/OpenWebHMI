@@ -29,43 +29,42 @@ members = [
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.98.1"
+rust-version = "1.99.1"
 license = "AGPL-3.0-only"
 repository = "https://github.com/sergiogallegos/OpenWebHMI"
 authors = ["Sergio Gallegos <sergiogallegos.net>"]
 
 [workspace.dependencies]
-tokio = { version = "1", features = ["full"] }
-tokio-stream = { version = "0.1", features = ["sync"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-thiserror = "2"
-anyhow = "1"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-async-trait = "0.1"
-uuid = { version = "1", features = ["v4", "serde"] }
-base64 = "0.22"
-bcrypt = "0.15"
-jsonwebtoken = "9"
-futures-util = "0.3"
-flate2 = "1"
-tokio-tungstenite = "0.24"
-clap = { version = "4", features = ["derive", "env"] }
-rand = "0.8"
-toml = "0.8"
-rusqlite = { version = "0.32", features = ["bundled", "backup"] }
-tempfile = "3"
-rustls-pemfile = "2"
-tokio-rustls = "0.26"
-pyo3 = "0.22"
-tokio-modbus = "=0.16.1"
-tokio-serial = "5"
-opcua = { package = "async-opcua", version = "=0.18.0", features = ["client", "server"] }
+tokio = { version = "1.54.1", features = ["full"] }
+tokio-stream = { version = "0.1.19", features = ["sync"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+anyhow = "1.0.104"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+async-trait = "0.1.92"
+uuid = { version = "1.28.0", features = ["v4", "serde"] }
+base64 = "0.23.1"
+bcrypt = "0.19.3"
+jsonwebtoken = { version = "11.1.0", features = ["aws_lc_rs"] }
+futures-util = "0.3.34"
+flate2 = "1.1.10"
+tokio-tungstenite = "0.30.0"
+clap = { version = "4.6.7", features = ["derive", "env"] }
+rand = "0.10.3"
+toml = "1.1.8"
+rusqlite = { version = "0.40.2", features = ["bundled", "backup"] }
+tempfile = "3.27.0"
+rustls-pemfile = "2.2.0"
+tokio-rustls = "0.26.6"
+tokio-modbus = "=0.17.0"
+tokio-serial = "5.5.0"
+opcua = { package = "async-opcua", version = "=0.19.0", features = ["client", "server"] }
 rumqttc = { version = "=0.25.1", features = ["websocket"] }
 rumqttd = "=0.20.0"
-prost = "=0.13.5"
-jsonpath-rust = "=1.0.4"
+prost = "=0.14.4"
+jsonpath-rust = "=1.0.12"
 ads = "=0.4.4"
 # Driver dep — upgraded by version bump (see wiki/drivers/rust-ethernet-ip-integration.md)
 rust-ethernet-ip = "1.2.1"

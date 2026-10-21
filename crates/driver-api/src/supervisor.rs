@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use futures_util::FutureExt;
 use openwebhmi_protocol::TagValue;
-use rand::Rng;
+use rand::RngExt;
 use serde_json::Value;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::AbortHandle;
@@ -279,7 +279,7 @@ fn jittered(duration: Duration) -> Duration {
     let jitter = if spread == 0 {
         0_i64
     } else {
-        rand::thread_rng().gen_range(-(spread as i64)..=(spread as i64))
+        rand::rng().random_range(-(spread as i64)..=(spread as i64))
     };
     Duration::from_millis(base_ms.saturating_add_signed(jitter))
 }

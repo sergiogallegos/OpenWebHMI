@@ -181,9 +181,11 @@ async fn send(
     >,
     message: ClientMessage,
 ) {
-    ws.send(Message::Text(serde_json::to_string(&message).unwrap()))
-        .await
-        .unwrap();
+    ws.send(Message::Text(
+        serde_json::to_string(&message).unwrap().into(),
+    ))
+    .await
+    .unwrap();
 }
 
 async fn next(

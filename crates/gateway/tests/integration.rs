@@ -51,9 +51,7 @@ async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscrib
         ServerMessage::Pong
     );
 
-    ws.send(Message::Text("not json".to_string()))
-        .await
-        .unwrap();
+    ws.send(Message::Text("not json".into())).await.unwrap();
     assert!(matches!(
         next_message(&mut ws, Duration::from_millis(100)).await,
         ServerMessage::Error { code, .. } if code == "protocol.parse"
@@ -65,7 +63,9 @@ async fn websocket_gateway_handles_subscription_ping_parse_errors_and_unsubscrib
         ServerMessage::Pong
     );
 
-    ws.send(Message::Binary(vec![1, 2, 3])).await.unwrap();
+    ws.send(Message::Binary(vec![1, 2, 3].into()))
+        .await
+        .unwrap();
     assert!(matches!(
         next_message(&mut ws, Duration::from_millis(100)).await,
         ServerMessage::Error { code, .. } if code == "protocol.binary_unsupported"
@@ -321,7 +321,7 @@ def pressure_changed(tag):
 
 async fn send_client(ws: &mut TestWs, message: ClientMessage) {
     let json = serde_json::to_string(&message).unwrap();
-    ws.send(Message::Text(json)).await.unwrap();
+    ws.send(Message::Text(json.into())).await.unwrap();
 }
 
 async fn next_message(ws: &mut TestWs, wait: Duration) -> ServerMessage {

@@ -3,7 +3,7 @@
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use rusqlite::{Connection, DatabaseName, params};
+use rusqlite::{Connection, MAIN_DB, params};
 
 use crate::types::{AlarmState, AlarmTransition};
 
@@ -73,7 +73,7 @@ impl AlarmJournal {
 
     /// Snapshot the live SQLite database to `path` using SQLite's online backup API.
     pub fn backup_to_path(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
-        self.lock()?.backup(DatabaseName::Main, path, None)?;
+        self.lock()?.backup(MAIN_DB, path, None)?;
         Ok(())
     }
 
@@ -81,7 +81,7 @@ impl AlarmJournal {
     pub fn restore_from_path(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
         let mut conn = self.lock()?;
         conn.restore(
-            DatabaseName::Main,
+            MAIN_DB,
             path,
             Option::<fn(rusqlite::backup::Progress)>::None,
         )?;

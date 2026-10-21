@@ -7,6 +7,10 @@ export default defineConfig({
   // Static output is fine for v1; switch to "server" only if a feature
   // genuinely requires SSR (we deliberately avoid that for now).
   output: "static",
+  // Static SVG assets do not need Sharp's native image processor.
+  image: {
+    service: { entrypoint: "astro/assets/services/noop" },
+  },
   build: {
     format: "directory",
   },

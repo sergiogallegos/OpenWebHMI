@@ -87,9 +87,11 @@ async fn write_tag(
         path: TagPath::new(path),
         value,
     };
-    ws.send(Message::Text(serde_json::to_string(&message).unwrap()))
-        .await
-        .unwrap();
+    ws.send(Message::Text(
+        serde_json::to_string(&message).unwrap().into(),
+    ))
+    .await
+    .unwrap();
 }
 
 async fn subscribe(
@@ -101,9 +103,11 @@ async fn subscribe(
     let message = ClientMessage::TagSubscribe {
         paths: paths.iter().map(|path| TagPath::new(*path)).collect(),
     };
-    ws.send(Message::Text(serde_json::to_string(&message).unwrap()))
-        .await
-        .unwrap();
+    ws.send(Message::Text(
+        serde_json::to_string(&message).unwrap().into(),
+    ))
+    .await
+    .unwrap();
 }
 
 async fn assert_status(
