@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-10-18 codex [GPT-6]
+last-update: 2026-10-24 codex [GPT-6]
 ---
 
 # CODEX-DZ — Synchronize Designer drafts with external project edits
@@ -70,6 +70,17 @@ cover last-valid preview and overlapping-edit conflicts, then present a reviewab
 diff, validation and visual evidence before explicit authorized publication under
 DR. Keep deterministic CI evidence separate from actual manual agent/OS sessions.
 MCP implementation remains deferred and is not required for this scenario.
+
+### 2026-10-24 07:16 codex [GPT-6] — team repository coordination
+
+The [team workflow](../../planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+makes two-developer proof explicit: separate local clones/branches and a temporary
+local bare remote, independent edits, overlapping Git edits while Designer buffers
+are dirty, conflict diagnostics and last-valid preview, explicit resolution and
+clean-checkout reproduction. Preserve candidate-specific validation/preview evidence.
+Git operations never implicitly publish. Record actual GitHub/agent/browser smoke
+separately from deterministic fixtures. Original brief and open status are preserved;
+implementation remains pending.
 
 ## Claude review
 

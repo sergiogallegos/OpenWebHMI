@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-10-18 codex [GPT-6]
+last-update: 2026-10-24 codex [GPT-6]
 ---
 
 # CODEX-DY — Add headless project CLI and local browser preview service
@@ -70,6 +70,16 @@ The pump screen includes status, start/stop controls, speed setpoint, high-press
 alarm and pressure trend. Validation must expose an intentionally invalid binding
 and support its correction. No LLM is required in CI. MCP remains a deferred optional
 adapter over these same services and permissions, not a DY implementation dependency.
+
+### 2026-10-24 07:16 codex [GPT-6] — team repository coordination
+
+The [team workflow](../../planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+clarifies scaffolding for an independent HMI application repository, provider-neutral
+README/AGENTS.md, ignore rules, offline schemas/catalogs, simulation and optional CI.
+Document explicit developer Git initialization/remote/push actions and structured
+agent validation/preview results. Prove clean-checkout reproduction with DX/DZ;
+no implicit hooks, network access, production credentials or LLM are required.
+Original brief and open status are preserved; implementation remains pending.
 
 ## Claude review
 

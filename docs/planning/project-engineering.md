@@ -71,6 +71,49 @@ defines the creation/validation/visual-correction loop and pump-screen acceptanc
 scenario, including preview evidence tied to the candidate revision. A future
 optional MCP adapter consumes the same services and permissions.
 
+## Team repositories and agent-friendly collaboration
+
+Accepted clarification, 2026-10-24; implementation pending under DX/DY/DZ and
+ED/DR. An integrator's HMI application lives in its own local project directory
+and optional Git repository; it does not require forking the OpenWebHMI platform.
+The Designer and external coding agents work on that same source. GitHub is an
+optional collaboration host; ordinary Git tooling and other hosts remain usable.
+A built-in Git client or live multi-user co-editing is not a v1 requirement.
+
+The supported team workflow must demonstrate:
+
+1. Create a project locally with README, provider-neutral AGENTS.md, .gitignore,
+   offline schema/catalog access, simulator fixtures and documented commands.
+   A browser Designer reaches this explicitly selected checkout through the local
+   authoring service; it does not require unrestricted browser filesystem access.
+2. Initialize Git and create/push a remote only on explicit developer action.
+   Share source, assets, declared dependency versions and secret references;
+   exclude credentials, gateway databases, history and generated runtime state.
+3. Have two engineers use separate clones and branches, with visual editing or
+   an external coding agent. Review diffs and validation/preview evidence through
+   pull requests on GitHub, or equivalent review on another host. Agents consume
+   documented files, catalogs and structured CLI diagnostics; GUI automation and
+   a particular AI provider are not required.
+4. Validate pull requests with deterministic offline checks and synthetic fixtures
+   in optional CI, without an LLM, production secrets or plant access. Preserve
+   stable identifiers and avoid unrelated reformatting. Resolve overlapping Git
+   edits explicitly; conflict markers must not become accepted draft content.
+5. Reopen the reviewed source in a clean checkout and reproduce its preview.
+   Associate candidate source content identity and, when available, Git commit
+   with preview/export evidence. A branch switch, pull, commit, push or merge
+   never publishes by itself. A deliberately authorized deployment process may
+   publish the reviewed candidate through DR with the expected gateway revision;
+   Git commits do not replace gateway revision or audit authority.
+
+DX/DY/DZ must prove a two-developer fixture using separate local clones and a
+temporary local bare remote, so CI requires no GitHub account or network. Cover
+independent edits, an overlapping edit conflict while the Designer has dirty
+buffers, last-valid preview, explicit resolution and clean-checkout reproduction.
+ED/DR must verify that publication identifies the validated candidate, rejects a
+stale gateway revision and preserves the previous published revision on failure.
+Record actual GitHub review and interactive agent/browser smoke separately;
+deterministic fixtures do not prove every external agent or hosting integration.
+
 ## Interface authoring and extensions
 
 Use TOML for the manifest, JSON for structured artifacts, Python for application

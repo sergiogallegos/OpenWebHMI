@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-29
-last-update: 2026-09-29 codex [GPT-6]
+last-update: 2026-10-24 codex [GPT-6]
 ---
 
 # CODEX-ED — Add target-aware project publishing and offline deployment
@@ -60,6 +60,16 @@ Preserve existing formats and wire behavior or provide a paired migration. Never
 claim a preview, sandbox, offline package or rollback guarantee without its evidence.
 
 ## Codex log
+
+### 2026-10-24 07:16 codex [GPT-6] — team repository coordination
+
+The [team workflow](../../planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+clarifies publication of a reviewed application candidate. Associate source-content
+identity and optional Git commit with validation/preview/export evidence; verify
+the activated candidate through DR using the expected gateway revision. Git
+push/merge is not publication authority. Explicitly granted deployment automation
+uses the shared authorization path; stale/denied requests preserve production.
+Original brief and open status are preserved; implementation remains pending.
 
 ## Claude review
 

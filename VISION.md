@@ -14,7 +14,7 @@ For implementation rules, see `AGENTS.md`. For the agent collaboration model, se
 - **Five drivers**: Rockwell EtherNet/IP (CompactLogix, ControlLogix), OPC UA (vendor-neutral), Modbus TCP/RTU (serial + TCP), MQTT (generic + Sparkplug B), Beckhoff TwinCAT (ADS).
 - **Web-only runtime** (browser). Tauri desktop runtime is post-1.0.
 - **Linux + macOS + Windows** for the gateway; browser-based HMI runtime and designer on all three platforms.
-- **Open, agent-ready authoring for v1.** Engineers, external editors and terminal agents author the same versioned text project. Offline schemas/CLI validation, visual preview and conflict-aware draft synchronization are required. Publishing is an explicit authorized action; editing source never implicitly deploys or writes to PLCs. See the [agent authoring plan](docs/planning/agent-authoring.md); these capabilities remain implementation work.
+- **Open, agent-ready authoring for v1.** Engineers, external editors and terminal agents author the same versioned text project. Offline schemas/CLI validation, visual preview and conflict-aware draft synchronization are required. Standalone local application repositories support optional Git/GitHub team review without forking the platform; clean-checkout and two-developer proof remain required. Publishing is an explicit authorized action; editing source or merging Git changes never implicitly deploys or writes to PLCs. See the [agent authoring plan](docs/planning/agent-authoring.md); these capabilities remain implementation work.
 - **Web-first designer for v1.** The existing Tauri shell is optional. Desktop packaging and future platform-native clients must consume the same versioned gateway/project contracts; they must not become prerequisites for browser authoring. Measure Tauri host performance on macOS, Windows and Linux before deciding whether an optional OS-native UI is justified.
 - **Project engineering and deployment.** Git-ready text source supports manual and optional terminal-agent editing of the same project. Optional CPython application scripts provide bounded jobs and basic PDF/CSV exports; managed environments, target-aware publishing and offline project packages are planned v1 gates. Database connectors and ML remain deferred. See the [project engineering plan](docs/planning/project-engineering.md).
 - **Pre-1.0 hardware-validation gate**: 24-hour continuous run of `driver-rockwell` against real CompactLogix/ControlLogix hardware before the 1.0 tag.
@@ -28,7 +28,20 @@ The [engine and capacity plan](docs/planning/engine-and-capacity.md) defines sep
 - A **replacement for vendor PLC engineering tooling** (Studio 5000, TwinCAT, TIA Portal). OpenWebHMI consumes PLCs; it doesn't program them.
 - An **MES platform**. Recipes, OEE, batch (ISA-88), and traceability are explicit post-v1 (year-2+) scope and out of scope for the v1.0 headline.
 - A system above the defined **50K-tag / 50-client Medium workload**, or a multi-gateway system. The envelope is set above.
-- A **cloud SaaS**. OpenWebHMI is self-hosted by design. Hosted offerings, if they happen, are post-1.0 and additive.
+- A **cloud SaaS in v1.0**. OpenWebHMI remains self-hosted by design. Optional central services for multiple sites, self-hosted or managed in the cloud, are an accepted post-1.0 direction; implementation and scheduling remain deferred.
+
+## Post-1.0 direction — independent edge gateways and optional central services
+
+Each site retains an independently operating gateway. Optional central services
+can receive selected data from multiple sites for remote dashboards, history,
+analytics, reporting and business logic across locations. Cloud availability must
+not become a prerequisite for local startup, authentication, HMI operation or
+operational logic; PLCs retain machine control. Connectivity and data export are
+explicitly enabled by the operator, with no default phone-home behavior.
+
+The [roadmap](docs/roadmap.md#edge--cloud-direction--accepted-2026-10-24)
+records preparation boundaries and the staged implementation gates. This direction
+does not add federation, cloud services or redundancy to v1.0.
 
 ## What we won't merge
 

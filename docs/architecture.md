@@ -34,6 +34,15 @@ OpenWebHMI follows the **Ignition gateway-centric** model:
 - Many **HMI Runtime** clients (browser) connect to the same gateway to render projects with live tag data.
 - **Local mode** = one gateway + one client co-located on a single machine. Same code path as multi-client; just one process per role.
 
+**Future edge + cloud direction:** independent gateways may later connect to
+optional central services for authorized dashboards, selected history, analytics,
+reporting and business logic across sites. Local operation remains independent of
+internet availability; PLCs retain machine control. Central services may be
+self-hosted or managed. Durable forwarding, gateway identity, customer/site
+isolation and fleet management require separate post-1.0 implementation; neither
+browser access nor the MQTT driver alone supplies these capabilities. See the
+[accepted direction and staged gates](roadmap.md#edge--cloud-direction--accepted-2026-10-24).
+
 ```
        ┌──────────────────────┐
        │ Designer (Browser)   │── WebSocket ──┐
@@ -457,6 +466,14 @@ relative path. DX/DY scaffold a Git-ready directory; DZ preserves valid external
 edits and detects concurrent conflicts. Ordinary interface behavior uses bindings
 and built-in actions. Custom TS components and scoped CSS follow one paired
 Designer/runtime contract; arbitrary HTML/JS view execution and XML are not added.
+
+Each HMI application may use its own local Git repository, independent of the
+platform repository. Team members work in separate clones/branches and review
+source with validation and preview evidence on GitHub or another Git host.
+Provider-neutral instructions and offline CLI/CI support external coding agents;
+Git operations never implicitly publish. The
+[team workflow and two-developer fixture](planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+remain implementation work under DX/DY/DZ and ED/DR.
 
 Optional CPython services run bounded event handlers and longer UI-invoked jobs.
 PDF/CSV artifacts have authenticated download/expiry; EC prepares pinned environments

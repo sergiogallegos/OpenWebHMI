@@ -30,7 +30,7 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
       },
       {
         title: "Roadmap",
-        description: "Phase 0 → 1.0 plan with concrete exit criteria per phase.",
+        description: "Beta planning horizon, release gates, and the path from local SCADA/HMI to optional edge + cloud services.",
         href: `${BLOB}/docs/roadmap.md`,
         audience: "everyone",
       },
@@ -62,8 +62,26 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
   },
   {
     name: "Product direction & reference demo",
-    description: "Planning documents distinguish the v1.0 SCADA/HMI product from optional post-1.0 manufacturing work.",
+    description: "Planning documents distinguish the local v1.0 product from optional post-1.0 manufacturing and edge + cloud services.",
     docs: [
+      {
+        title: "Team projects and coding-agent workflows",
+        description: "Planned local Git-ready HMI projects, optional GitHub review, shared Designer/agent source, offline validation, and explicit deployment.",
+        href: `${BLOB}/docs/planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration`,
+        audience: "everyone",
+      },
+      {
+        title: "Agent-assisted authoring",
+        description: "Planned provider-neutral files, catalogs, CLI diagnostics, rendered preview, and engineer review before publication.",
+        href: `${BLOB}/docs/planning/agent-authoring.md`,
+        audience: "everyone",
+      },
+      {
+        title: "Edge + cloud direction",
+        description: "Independent local gateways with future optional central dashboards, analytics, business logic, and fleet management across sites.",
+        href: `${BLOB}/docs/roadmap.md#edge--cloud-direction--accepted-2026-10-24`,
+        audience: "everyone",
+      },
       {
         title: "Manufacturing platform direction",
         description: "Post-1.0 module boundaries for production, downtime, OEE, reporting, and equipment capabilities.",
@@ -145,7 +163,7 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
       {
         title: "Engineering wiki",
         description: "Synthesized engineering knowledge — vendor quirks, validation results, decision rationale.",
-        href: `${BLOB}/tree/main/wiki`,
+        href: `${REPO}/tree/main/wiki`,
         audience: "contributors",
       },
     ],
@@ -163,7 +181,7 @@ const sections: { name: string; description: string; docs: DocLink[] }[] = [
       {
         title: "docs/agents/",
         description: "Cross-LLM collaboration protocol: per-task lifecycle files, board, append-only log.",
-        href: `${BLOB}/tree/main/docs/agents`,
+        href: `${REPO}/tree/main/docs/agents`,
         audience: "agents",
       },
     ],

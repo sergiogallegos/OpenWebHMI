@@ -143,6 +143,21 @@ writer's changes without revision checking. Batch renames, deletions and binding
 updates use the same transaction/reconciliation path. Reject traversal, symlink
 escapes and case-colliding project paths consistently across supported platforms.
 
+## Team source-control workflow
+
+The [team repository contract](project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+requires a standalone application checkout, optional Git/GitHub branch and review
+workflow, provider-neutral agent instructions, offline CI validation and a
+two-developer reconciliation fixture. Engineers can combine visual editing and
+external coding agents while reviewing the same text source. Built-in Git UI and
+live collaborative co-editing remain separate optional work.
+
+Source review includes validation and rendered-preview evidence identifying the
+candidate revision. Pulling or merging source never implicitly publishes it;
+deployment permissions and expected gateway revision remain separate. Scaffolding,
+conflict handling and clean-checkout reproduction are v1 implementation gates,
+not existing supported capabilities.
+
 ## Draft, preview and production
 
 Opening/editing files affects source/drafts only. Preview uses mock or recorded data

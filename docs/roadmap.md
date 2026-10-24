@@ -6,6 +6,24 @@
 
 This is a **plan**, not a contract. Sequencing reflects what unlocks the next phase, not what would feel completion-shaped to ship in isolation. See [`docs/architecture.md`](architecture.md) for the system being built.
 
+## Beta planning horizon — updated 2026-10-24
+
+The planning assumption is **at least another year before a public beta**:
+October 2027 or later, subject to scope, contributor capacity and validation.
+This is a planning horizon, not an announced release date. The original per-phase
+month estimates below are historical sequencing estimates, not a current calendar
+forecast or evidence of release readiness.
+
+A beta is a deliberately bounded evaluation release, separate from production
+1.0. Before announcing it, publish the supported drivers, platforms and measured
+workloads; resolve security and command-correctness blockers for that scope; and
+prove the browser authoring/runtime flow, reconnect behavior, restart recovery,
+and backup/restore with a repeatable demo. Record hardware evidence and known
+limitations explicitly. Private simulator demos and feedback can precede beta.
+The full v1.0 capacity, platform and 24-hour Rockwell hardware gates remain in
+force before 1.0. Edge + cloud and manufacturing expansion do not block the
+initial local SCADA/HMI beta.
+
 ## Accepted restart program (2026-09-27)
 
 The [engine and capacity plan](planning/engine-and-capacity.md) replaces the old
@@ -38,6 +56,13 @@ proves layout/control creation, bindings, alarms, trends, validation correction,
 rendered preview inspection and engineer review before authorized publication.
 Optional MCP may expose the same authoring services to compatible clients; its
 implementation and built-in AI chat remain deferred.
+
+The [team repository workflow](planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+clarification (2026-10-24) requires standalone local HMI project repositories,
+optional GitHub branches/pull requests, provider-neutral coding-agent instructions,
+offline CI validation and two-developer conflict/clean-checkout proof under
+DX/DY/DZ. ED/DR publish only an explicitly authorized validated candidate; Git
+push/merge is never implicit deployment. A built-in Git client is not required.
 
 The [project engineering plan](planning/project-engineering.md) (2026-09-29) adds
 Git-ready manual/terminal-agent workflows, optional bounded Python jobs and basic
@@ -217,6 +242,56 @@ built-in starter project is specified in
 - EE: named project-owned SQLite scripting, then separately scoped external connectors.
 - ML and model-serving infrastructure remain deferred; ordinary application scripts and reports do not depend on them.
 
+### Edge + cloud direction — accepted 2026-10-24
+
+Preserve an evolution from one PC running gateway and browser, to a local server
+with LAN clients, to independent gateways at sites around the world connected to
+optional central services. Those services may be self-hosted or offered as a
+managed cloud service. This is post-1.0 direction, not a shipped capability or a
+dated delivery commitment, and remains independent of the manufacturing track.
+
+| At each site / edge | Optional central services |
+|---|---|
+| PLC connectivity, local HMI, alarms and operational scripts | Authorized remote dashboards and visibility across sites |
+| Local selected history and bounded outbound buffering | Central selected history, analytics, reporting and business logic across sites |
+| Startup, authentication and operation without internet | Gateway health, backups and controlled project deployment management |
+
+PLCs retain machine control. Logic needed for local operation stays local;
+cross-site calculations and scheduled reporting may execute centrally. Each
+gateway remains authoritative for local actions and deployed project state.
+Central services show connectivity and data freshness explicitly, including
+source quality and gaps. A network outage must not stop local operation.
+
+**Preparation during v1:** retain storage/transport adapter boundaries, versioned
+project and wire contracts, source timestamps and quality, and explicit
+publication. Document future gateway/site/tag identity boundaries without adding
+tenancy or distributed infrastructure to the v1 engine. The low-resource Edge
+profile is a local workload target; it does not imply cloud connectivity.
+
+**Implementation sequence after v1.0:**
+
+1. Pilot selected telemetry from one gateway over an explicitly enabled, secure
+   outbound connection. Define versioned event identities, acknowledgements,
+   duplicate handling and ordering; use a durable outbound queue with bounded
+   disk use, retention and visible overflow/gap policy. Prove recovery after
+   internet loss and process restart. MQTT/Sparkplug is a candidate transport;
+   the existing MQTT driver is not a complete export or synchronization service.
+2. Add multiple gateways and sites with enrollment, certificate rotation and
+   revocation, customer/site access isolation, consistent units and source
+   timestamps, site time zones, freshness indicators and configurable data export.
+   Size central ingestion, retention and queries independently of per-gateway
+   capacity. Regional hosting and data-residency requirements need an explicit
+   deployment decision before a worldwide hosted offering.
+3. Add fleet health, recoverable backups and revision-checked project deployment.
+   Keep telemetry upload, project publication and operator commands as separate
+   contracts. Remote commands require a later explicit scope decision, local
+   authorization, deadlines, audit and outcomes; reconnect never replays stale
+   setpoints. Shared multi-customer hosting needs its own isolation validation.
+
+Cloud/provider accounts are never required for standalone use. Do not select a
+mandatory cloud provider, central database or cluster architecture before the
+pilot workload and operating requirements justify it.
+
 ### Later — exploratory or deferred
 
 - recipes/changeover and maintenance/PM are strong candidates after the command
@@ -226,8 +301,9 @@ built-in starter project is specified in
   domain models and remain exploratory;
 - traceability, Andon, MES integration/execution, and advanced ML are deferred
   until their identity, event, and evidence prerequisites exist;
-- responsive/PWA runtime, redundancy, more drivers, historian backends, optional
-  hosted management, and Designer assistance remain independent post-1.0 tracks.
+- responsive/PWA runtime, redundancy, more drivers, historian backends, and
+  Designer assistance remain independent post-1.0 tracks. Optional hosted
+  management follows the edge + cloud direction above.
 
 All modules preserve Linux, macOS, and Windows support for both Gateway and
 Designer. Platform-specific integrations remain optional adapters.

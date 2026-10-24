@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import FeedbackLinks from "../components/FeedbackLinks.astro";
 ---
 
 <BaseLayout
@@ -129,9 +130,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section>
       <h2>Maintainer</h2>
       <p>
-        <strong>Sergio Gallegos</strong> · repo owner ·
-        <a href="https://sergiogallegos.net" target="_blank" rel="noopener noreferrer">sergiogallegos.net</a>
+        <strong>Sergio Gallegos</strong> · project maintainer.
+        Review the roadmap and progress, share what you like or would change
+        through GitHub issues, or connect on X and through the personal website
+        for updates and follow-up conversations.
       </p>
+      <FeedbackLinks />
       <p>
         Sponsorship is open via GitHub Sponsors. Project sponsors get
         acknowledgement on this page once the program launches.
@@ -142,10 +146,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <h2>Status</h2>
       <p>
         <strong>Pre-alpha.</strong> The architecture, roadmap, and feature
-        scope are committed, and the implementation is progressing quickly.
+        scope are documented; foundation hardening and validation remain in progress.
         Don't deploy this anywhere that matters yet. A 24-hour validation run
         against a physical Rockwell PLC is the binding real-hardware gate before
         1.0; other protocol claims remain limited to their recorded test evidence.
+      </p>
+      <p>
+        As of October 2026, allow at least another year before a public beta:
+        October 2027 or later, subject to scope and validation. This is a planning
+        horizon, not an announced release date. Optional edge + cloud services
+        for multiple locations remain a post-1.0 direction.
+        <a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/roadmap.md">Follow the roadmap ↗</a>
       </p>
     </section>
   </div>

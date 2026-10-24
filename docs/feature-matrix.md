@@ -175,8 +175,9 @@ agent editing. These are planned capabilities, not shipped support.
 | External agent-assisted HMI/SCADA authoring | ❔ | ❔ | 🟢 v1 planned — layouts, bindings, controls, alarms, trends and scripts through shared catalogs, validation and rendered preview; [acceptance scenario](planning/agent-authoring.md#pump-screen-acceptance-scenario). Optional MCP adapter deferred. |
 | Multi-developer concurrent editing | ✅ (locking) | ❔ | 🟢 v1 conflict detection for visual/external edits; live collaborative co-editing post-1.0 |
 | Undo/redo | ✅ | ✅ | 🟢 v1 |
-| Project diff / version control friendly | partial | partial | 🟢 v1 — JSON-on-disk, diff-friendly |
-| Built-in git integration | ❌ | ❔ | 🔵 maybe |
+| Project diff / version control friendly | partial | partial | 🟢 v1 planned — portable text source, stable IDs and deterministic formatting; clean-checkout proof pending |
+| Team project repositories / external Git workflow | ❔ | ❔ | 🟢 v1 planned — local application repos, optional GitHub branches/review, offline validation and two-developer conflict fixture; [team contract](planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration) |
+| Built-in git integration | ❌ | ❔ | 🔵 maybe — external Git tooling supports the planned team workflow without a built-in client |
 | Live preview (test in designer) | ✅ | ✅ | 🟢 v1 (Phase 2) |
 | Hot reload to running clients | ✅ | ✅ | 🟢 v1 on explicit published revision; source edits refresh draft preview only |
 | Property bindings UI | ✅ | ✅ | 🟢 v1 |

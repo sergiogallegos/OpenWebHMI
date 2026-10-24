@@ -1,4 +1,6 @@
 ---
+import FeedbackLinks from "./FeedbackLinks.astro";
+
 const year = new Date().getUTCFullYear();
 ---
 
@@ -18,6 +20,8 @@ const year = new Date().getUTCFullYear();
           <li><a href="/docs">Documentation</a></li>
           <li><a href="/download">Download</a></li>
           <li><a href="/about">About</a></li>
+          <li><a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/roadmap.md" target="_blank" rel="noopener noreferrer">Roadmap ↗</a></li>
+          <li><a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/agents/board.md" target="_blank" rel="noopener noreferrer">Development progress ↗</a></li>
         </ul>
       </div>
       <div>
@@ -36,6 +40,10 @@ const year = new Date().getUTCFullYear();
             <a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/license-transition.md" target="_blank" rel="noopener noreferrer">License transition ↗</a>
           </li>
         </ul>
+      </div>
+      <div>
+        <h4>Feedback &amp; follow-up</h4>
+        <FeedbackLinks compact />
       </div>
       <div>
         <h4>Standing on</h4>

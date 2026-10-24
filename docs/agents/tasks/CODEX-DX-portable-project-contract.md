@@ -5,7 +5,7 @@ owner: codex
 phase: 4
 status: open
 created: 2026-09-27
-last-update: 2026-09-29 codex [GPT-6]
+last-update: 2026-10-24 codex [GPT-6]
 ---
 
 # CODEX-DX — Define portable project source and offline schema contract
@@ -55,6 +55,16 @@ The [project engineering plan](../../planning/project-engineering.md) records
 maintainer-directed scope clarification. Original brief and status are preserved.
 
 Specify Git-ready source for all supported layouts, actions, tags, drivers, alarms, themes, scripts and deployment requirements. Keep binary assets ordinary files; exclude secrets/history/caches/venvs/build output. TOML/JSON/Python remain base formats; custom TS/TSX/CSS packages use EF, not arbitrary executable view properties or XML. Coordinate script/dependency metadata with EB/EC and target manifests with ED.
+
+### 2026-10-24 07:16 codex [GPT-6] — team repository coordination
+
+The [team workflow](../../planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+clarifies the existing Git-ready source requirement. Original brief and open status
+are preserved; implementation remains pending. Specify standalone application
+checkouts, stable IDs, deterministic formatting, source/dependency/asset inclusion
+and secret/runtime-state exclusion. Clean clones must reconstruct authoring content
+without private databases. Coordinate the two-developer fixture with DY/DZ and
+source-content identity with ED/DR; Git commits never replace gateway revisions.
 
 ## Claude review
 

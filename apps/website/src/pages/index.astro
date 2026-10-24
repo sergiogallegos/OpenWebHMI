@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Logo from "../components/Logo.astro";
+import FeedbackLinks from "../components/FeedbackLinks.astro";
 
 const REPO = "https://github.com/sergiogallegos/OpenWebHMI";
 const BLOB = `${REPO}/blob/main`;
@@ -10,7 +11,7 @@ const BLOB = `${REPO}/blob/main`;
   <section class="hero">
     <div class="container hero-inner">
       <Logo size={88} />
-      <span class="badge warn">Pre-alpha · Phase 4 in progress</span>
+      <span class="badge warn">Pre-alpha · foundation hardening</span>
       <h1>Open-source SCADA/HMI for real machines.</h1>
       <p class="lede">
         Design operator views, run them in a browser, and connect plant-floor
@@ -37,11 +38,11 @@ const BLOB = `${REPO}/blob/main`;
     <p class="muted">
       A working SCADA/HMI foundation comes first. The reference demo and
       manufacturing features build on that foundation without expanding the
-      v1.0 promise.
+      v1.0 promise. Optional services connecting multiple sites are a later direction.
     </p>
     <div class="status-grid">
       <article>
-        <span class="badge success">Available</span>
+        <span class="badge">Source available · pre-alpha</span>
         <h3>SCADA/HMI foundation</h3>
         <p>
           Source builds include the Rust gateway, browser runtime, form-based
@@ -71,6 +72,26 @@ const BLOB = `${REPO}/blob/main`;
   </section>
 
   <section class="container section">
+    <span class="badge">Post-1.0 direction</span>
+    <h2>Local operation. A future view across locations.</h2>
+    <p>
+      Start with a gateway and browser on one PC, or a local server serving
+      clients across the plant. The future direction is independent gateways
+      at multiple locations, with optional central services for authorized
+      remote dashboards, selected history, analytics, reporting, and business
+      logic across sites. Central services could be self-hosted or managed in
+      the cloud.
+    </p>
+    <p class="muted">
+      Local HMI operation, alarms, and operational logic must continue without
+      internet; PLCs retain machine control. Cloud connectivity will be opt-in.
+      Data forwarding, multi-site dashboards, and fleet management are not
+      available today and are outside the initial beta and v1.0 scope.
+      <a href={`${BLOB}/docs/roadmap.md#edge--cloud-direction--accepted-2026-10-24`}>Read the future deployment direction →</a>
+    </p>
+  </section>
+
+  <section class="container section">
     <span class="badge">Planned for v1</span>
     <h2>Build visually. Bring your favorite coding agent.</h2>
     <p>
@@ -79,11 +100,21 @@ const BLOB = `${REPO}/blob/main`;
       is one open project you can edit from either workflow, then preview and
       review in the browser Designer before publishing.
     </p>
+    <p>
+      Your HMI application will have its own local project folder, ready for
+      an optional Git repository. Use GitHub or another Git host to share branches,
+      review changes as a team, and validate in CI. Coding agents and the visual
+      Designer will work with the same documented source, validation tools, and
+      preview. Pushing or merging source will not publish to a running gateway;
+      deployment remains a separate authorized step.
+    </p>
     <p class="muted">
       No required AI provider or AI subscription to use the Designer. Portable
-      project files, terminal tools, and conflict-aware editing are planned;
-      the supported agent workflow is not available yet.
+      project files, terminal tools, team repository workflows, and conflict-aware
+      editing are planned; the supported team and agent workflows are not
+      available yet.
       <a href={`${BLOB}/docs/planning/agent-authoring.md`}>Read the authoring plan →</a>
+      <a href={`${BLOB}/docs/planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration`}>See the team workflow →</a>
     </p>
   </section>
 
@@ -273,32 +304,33 @@ const BLOB = `${REPO}/blob/main`;
 
   <section class="container section">
     <h2>Where we are</h2>
+    <p class="muted">
+      Earlier phase milestones established the source foundation. The current
+      hardening and architecture work still needs validation before a public beta.
+    </p>
     <ol class="phase-list">
       <li>
-        <span class="badge success">✓ Phase 0</span>
-        Foundations — gateway boots, simulated tags flow to a browser.
+        <span class="badge">Source foundation</span>
+        Gateway and browser runtime, form-based Designer, history, alarms,
+        authentication, scripting, and a simulator-backed Rockwell vertical slice.
       </li>
       <li>
-        <span class="badge success">✓ Phase 1</span>
-        Vertical slice — Rockwell driver wired end-to-end, validated against
-        a simulator. Released as v0.1.0.
+        <span class="badge">Current work</span>
+        Security and command correctness, driver integration, reusable engine
+        boundaries, browser delivery, safe project publishing, and durable
+        history. Capacity, recovery, platform, and hardware evidence remain pending.
       </li>
       <li>
-        <span class="badge success">✓ Phase 2</span>
-        Designer MVP — form-based authoring, an initial component set, hot reload.
+        <span class="badge">Beta planning horizon</span>
+        As of October 2026, allow at least another year before a public beta:
+        October 2027 or later, subject to scope and validation. This is a planning
+        horizon, not an announced release date. Private demos and feedback can
+        happen earlier; production 1.0 has separate validation gates.
       </li>
       <li>
-        <span class="badge success">✓ Phase 3</span>
-        Core SCADA — historian, alarms, auth, trends, Python scripting host, Monaco script editor.
-      </li>
-      <li>
-        <span class="badge">In progress</span>
-        Phase 4 — five driver implementations are being hardened and integrated
-        for the v1.0 envelope. Current closeout work includes CI hygiene,
-        release packaging, website/docs refresh, and the physical Rockwell PLC
-        validation gate before 1.0. Recent v1.x
-        additions include audit-log Part 11 framing, themes, widget transfer,
-        historian retention planning, and Raspberry Pi deployment notes.
+        <span class="badge">After v1.0</span>
+        Optional manufacturing modules and edge + cloud services for multiple
+        locations are separate future tracks with no committed delivery dates.
       </li>
     </ol>
     <p>
@@ -322,21 +354,23 @@ const BLOB = `${REPO}/blob/main`;
   </section>
 
   <section class="container section cta">
-    <h2>Want to follow along?</h2>
+    <h2>Help shape OpenWebHMI</h2>
     <p>
-      The repo is the source of truth — every architectural decision, task
-      brief, code review, and validation run is in markdown alongside the
-      code.
+      Review the plan and progress, then share what you like, what is missing,
+      and what you would expect from an HMI/SCADA platform. Describe your use
+      case or suggest a feature through GitHub issues. Feedback is welcome
+      while the product is still taking shape.
     </p>
-    <div class="hero-actions">
-      <a class="button primary" href="/docs">Browse docs →</a>
-      <a
-        class="button secondary"
-        href="https://github.com/sergiogallegos/OpenWebHMI"
-        target="_blank"
-        rel="noopener noreferrer"
-      >Star on GitHub ↗</a>
-    </div>
+    <p>
+      <a href={`${BLOB}/docs/roadmap.md`} target="_blank" rel="noopener noreferrer">Review the roadmap ↗</a>
+      ·
+      <a href={`${BLOB}/docs/agents/board.md`} target="_blank" rel="noopener noreferrer">See development progress ↗</a>
+    </p>
+    <p>
+      Follow Sergio Gallegos on X or visit his personal website for updates
+      and follow-up conversations.
+    </p>
+    <FeedbackLinks />
   </section>
 </BaseLayout>
 
@@ -449,6 +483,10 @@ const BLOB = `${REPO}/blob/main`;
     border-radius: var(--radius);
   }
 
+  .phase-list .badge {
+    flex-shrink: 0;
+  }
+
   .stack-table-wrap {
     overflow-x: auto;
   }
@@ -459,10 +497,6 @@ const BLOB = `${REPO}/blob/main`;
     margin-top: 32px;
     padding: 56px 0;
     border-radius: var(--radius-lg);
-  }
-
-  .cta .hero-actions {
-    margin-top: 16px;
   }
 
   @media (max-width: 640px) {

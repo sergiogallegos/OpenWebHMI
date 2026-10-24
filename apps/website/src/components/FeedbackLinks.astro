@@ -1,0 +1,44 @@
+---
+interface Props {
+  compact?: boolean;
+}
+
+const { compact = false } = Astro.props;
+const links = [
+  { label: "GitHub feedback ↗", href: "https://github.com/sergiogallegos/OpenWebHMI/issues" },
+  { label: "Sergio on X ↗", href: "https://x.com/SergioGallegosH" },
+  { label: "sergiogallegos.net ↗", href: "https://sergiogallegos.net" },
+];
+---
+
+<ul class:list={["feedback-links", { compact }]}>
+  {links.map((link, index) => (
+    <li>
+      <a
+        class={compact ? undefined : `button ${index === 0 ? "primary" : "secondary"}`}
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+      >{link.label}</a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .feedback-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0;
+  }
+
+  .compact {
+    display: grid;
+    justify-content: start;
+    gap: 8px;
+    margin: 0;
+  }
+</style>

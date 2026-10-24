@@ -4,6 +4,24 @@
 
 ## Phase 4 — 1.0 release (in progress)
 
+**Team application repositories and external agents (2026-10-24):** the
+[team workflow](../planning/project-engineering.md#team-repositories-and-agent-friendly-collaboration)
+clarifies standalone local HMI project repositories, optional GitHub branches and
+pull-request review, shared visual/agent source, offline CI and two-developer
+conflict/clean-checkout proof under DX/DY/DZ. ED/DR preserve candidate identity and
+explicit authorized deployment; Git push/merge never publishes implicitly.
+Implementation remains pending; the existing open tasks retain their statuses.
+
+**Beta horizon and future edge + cloud direction (2026-10-24):** the
+[roadmap](../roadmap.md#beta-planning-horizon--updated-2026-10-24) records at least
+another year before public beta (October 2027 or later), subject to scope and
+validation, with no announced date. The
+[post-1.0 direction](../roadmap.md#edge--cloud-direction--accepted-2026-10-24)
+preserves independent local gateways and optional self-hosted/managed central
+dashboards, selected history, analytics, business logic and fleet management across
+sites. Preparation retains existing boundaries; cloud implementation is deferred
+and does not expand v1.0 or the initial beta. Existing task statuses are unchanged.
+
 **Toolchains and engineering handbook (2026-10-21):** EG/EH/DU submit the verified stable upgrade: Rust/Cargo 1.99.1, product TypeScript 7.0.2, website TypeScript 6.0.2 (latest Astro-check-supported compiler), Node 24.22.1 LTS and pnpm 12.14.0. Full Rust/frontend validation and macOS unsigned debug bundling passed; upstream-bound dependency/advisory limits and unperformed hardware/cross-platform checks are recorded in the [upgrade evidence](notes/2026-10-dependency-upgrade.md). The maintainer approved committing and pushing this implementation to main; independent review and task verdicts remain pending. DO retains feature/profile extraction ownership; EI guidance, EJ local handbook and EK Bun trials remain open. pnpm remains authoritative.
 
 **Restart baseline (2026-09-27):** CODEX-DK adopts Rust 1.98.1 and supersedes CODEX-BB’s old 1.96 version direction. Do not downgrade to execute BB; its historical brief awaits disposition. DL records the accepted [engine and capacity plan](../planning/engine-and-capacity.md): 50K-tag Medium target, 30-day selected history, low-resource Edge and reusable engine. DM–DU implement the foundation; DV is optional desktop work. DT baselining starts before optimization; security fixes do not wait for extraction. All capacity budgets are unproven.
@@ -38,12 +56,12 @@ All implementation tasks remain open.
 | CODEX-EA | Reconcile project engineering scripting and deployment direction | codex | submitted | 2026-09-29 codex [GPT-6] | [`CODEX-EA-project-engineering-direction.md`](tasks/CODEX-EA-project-engineering-direction.md) |
 | CODEX-EB | Implement bounded Python jobs and PDF CSV report artifacts | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EB-script-jobs-report-artifacts.md`](tasks/CODEX-EB-script-jobs-report-artifacts.md) |
 | CODEX-EC | Prepare reproducible optional Python project environments | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EC-python-environment-preparation.md`](tasks/CODEX-EC-python-environment-preparation.md) |
-| CODEX-ED | Add target-aware project publishing and offline deployment | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-ED-project-target-deployment.md`](tasks/CODEX-ED-project-target-deployment.md) |
+| CODEX-ED | Add target-aware project publishing and offline deployment | codex | open | 2026-10-24 codex [GPT-6] | [`CODEX-ED-project-target-deployment.md`](tasks/CODEX-ED-project-target-deployment.md) |
 | CODEX-EF | Prove paired custom component authoring and packaging | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-EF-component-authoring-contract.md`](tasks/CODEX-EF-component-authoring-contract.md) |
 | CODEX-DW | Record open project and agent-assisted Designer architecture | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DW-agent-authoring-direction.md`](tasks/CODEX-DW-agent-authoring-direction.md) |
-| CODEX-DX | Define portable project source and offline schema contract | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DX-portable-project-contract.md`](tasks/CODEX-DX-portable-project-contract.md) |
-| CODEX-DY | Add headless project CLI and local browser preview service | codex | open | 2026-10-18 codex [GPT-6] | [`CODEX-DY-project-cli-authoring.md`](tasks/CODEX-DY-project-cli-authoring.md) |
-| CODEX-DZ | Synchronize Designer drafts with external project edits | codex | open | 2026-10-18 codex [GPT-6] | [`CODEX-DZ-designer-external-edits.md`](tasks/CODEX-DZ-designer-external-edits.md) |
+| CODEX-DX | Define portable project source and offline schema contract | codex | open | 2026-10-24 codex [GPT-6] | [`CODEX-DX-portable-project-contract.md`](tasks/CODEX-DX-portable-project-contract.md) |
+| CODEX-DY | Add headless project CLI and local browser preview service | codex | open | 2026-10-24 codex [GPT-6] | [`CODEX-DY-project-cli-authoring.md`](tasks/CODEX-DY-project-cli-authoring.md) |
+| CODEX-DZ | Synchronize Designer drafts with external project edits | codex | open | 2026-10-24 codex [GPT-6] | [`CODEX-DZ-designer-external-edits.md`](tasks/CODEX-DZ-designer-external-edits.md) |
 | CODEX-DL | Accepted engine foundation, capacity research and restart program | codex | submitted | 2026-09-27 codex [GPT-6] | [`CODEX-DL-accepted-engine-capacity-plan.md`](tasks/CODEX-DL-accepted-engine-capacity-plan.md) |
 | CODEX-DM | Extract pure domain and storage-independent wire schema | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DM-domain-schema-boundaries.md`](tasks/CODEX-DM-domain-schema-boundaries.md) |
 | CODEX-DN | Expose embeddable engine and prove independent public-API consumer | codex | open | 2026-09-29 codex [GPT-6] | [`CODEX-DN-embeddable-engine-api.md`](tasks/CODEX-DN-embeddable-engine-api.md) |
