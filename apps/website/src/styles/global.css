@@ -6,6 +6,8 @@
   --brand-soft: #e6efff;
 
   --bg: #ffffff;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --sponsor: #a52d70;
   --surface: #f5f7fa;
   --surface-alt: #eef2f7;
   --border: #e2e8f0;
@@ -39,6 +41,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0a0e1a;
+    --header-bg: rgba(10, 14, 26, 0.92);
+    --sponsor: #ef98c7;
     --surface: #131826;
     --surface-alt: #1c2233;
     --border: #2d3748;
@@ -90,6 +94,11 @@ a {
 a:hover {
   color: var(--brand-dark);
   text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 4px;
 }
 
 h1,

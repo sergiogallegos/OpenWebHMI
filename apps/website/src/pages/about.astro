@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import FeedbackLinks from "../components/FeedbackLinks.astro";
+import Icon from "../components/Icon.astro";
 ---
 
 <BaseLayout
@@ -137,8 +138,8 @@ import FeedbackLinks from "../components/FeedbackLinks.astro";
       </p>
       <FeedbackLinks />
       <p>
-        Sponsorship is open via GitHub Sponsors. Project sponsors get
-        acknowledgement on this page once the program launches.
+        Sponsorship supports development, hardware validation, testing, and documentation.
+        <a class="sponsor-link" href="https://github.com/sponsors/sergiogallegos" target="_blank" rel="noopener noreferrer"><Icon name="heart" /> Sponsor the project on GitHub ↗</a>
       </p>
     </section>
 
@@ -163,6 +164,8 @@ import FeedbackLinks from "../components/FeedbackLinks.astro";
 </BaseLayout>
 
 <style>
+  .sponsor-link { display: inline-flex; align-items: center; gap: 8px; }
+  .sponsor-link :global(.icon) { color: var(--sponsor); }
   .about {
     padding: 56px 0;
   }

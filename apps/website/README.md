@@ -22,6 +22,22 @@ pnpm --filter @openwebhmi/website dev
 
 `astro check` runs as part of `build` so type errors block deploy.
 
+## Navigation, community and sponsorship checks
+
+Before publishing changes to the shared header/footer or community components:
+
+1. Check every route at desktop, tablet and narrow mobile widths in light and
+   dark themes. Desktop navigation must be visible independently of the mobile
+   disclosure; the mobile menu opens and closes with pointer and keyboard input.
+2. Confirm the active route has `aria-current="page"`, focus is visible and the
+   page has no horizontal overflow. Menu links remain usable without JavaScript.
+3. Verify GitHub is the main feedback action, with smaller X/personal-site links.
+   Check official logo images load in both themes and keep their aspect ratios.
+4. Check Sponsor links in the header, homepage support card, About page and footer
+   point to the configured GitHub Sponsors profile. No sponsor iframe is embedded.
+5. Validate bundled social-mark provenance with `scripts/validate-licenses --self-test`
+   from the repository root. Assets in `public/brands/` retain their brand-owner terms.
+
 ## Build
 
 ```bash

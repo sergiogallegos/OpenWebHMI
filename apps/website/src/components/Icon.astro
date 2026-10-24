@@ -1,0 +1,46 @@
+---
+interface Props {
+  name: "github" | "x" | "heart" | "globe";
+  inverse?: boolean;
+}
+const { name, inverse = false } = Astro.props;
+---
+
+{name === "github" ? (
+  <picture class="icon" aria-hidden="true">
+    {!inverse && <source media="(prefers-color-scheme: dark)" srcset="/brands/github-white.svg" />}
+    <img src={`/brands/github-${inverse ? "white" : "black"}.svg`} width="20" height="20" alt="" />
+  </picture>
+) : name === "x" ? (
+  <span class="icon x-mark" aria-hidden="true"><img src="/brands/x-white.svg" width="14" height="14" alt="" /></span>
+) : (
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    {name === "heart" ? (
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+    ) : (
+      <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c4 4.5 4 13.5 0 18-4-4.5-4-13.5 0-18Z" /></>
+    )}
+  </svg>
+)}
+
+<style>
+  .icon {
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+  }
+
+  img {
+    display: block;
+    object-fit: contain;
+  }
+
+  .x-mark {
+    background: #000;
+    border-radius: 3px;
+  }
+</style>

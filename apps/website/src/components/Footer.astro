@@ -1,63 +1,52 @@
 ---
 import FeedbackLinks from "./FeedbackLinks.astro";
+import Icon from "./Icon.astro";
+import Logo from "./Logo.astro";
 
 const year = new Date().getUTCFullYear();
+const REPO = "https://github.com/sergiogallegos/OpenWebHMI";
 ---
 
 <footer class="site-footer">
   <div class="container">
     <div class="footer-grid">
-      <div>
-        <strong>OpenWebHMI</strong>
-        <p class="muted">
-          Open-source, web-first SCADA / HMI platform for small and mid-size
-          industrial systems.
-        </p>
+      <div class="footer-brand">
+        <a class="brand" href="/"><Logo size={30} /><span>OpenWebHMI</span></a>
+        <p class="muted">Open industrial software.<br />Local operation, open project authoring,
+          and a browser interface for the plant floor.</p>
+        <span class="badge warn">Pre-alpha · built in public</span>
       </div>
       <div>
-        <h4>Project</h4>
+        <h2>Explore</h2>
         <ul>
           <li><a href="/docs">Documentation</a></li>
-          <li><a href="/download">Download</a></li>
-          <li><a href="/about">About</a></li>
-          <li><a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/roadmap.md" target="_blank" rel="noopener noreferrer">Roadmap ↗</a></li>
-          <li><a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/agents/board.md" target="_blank" rel="noopener noreferrer">Development progress ↗</a></li>
+          <li><a href="/download">Build from source</a></li>
+          <li><a href={`${REPO}/blob/main/docs/roadmap.md`} target="_blank" rel="noopener noreferrer">Roadmap ↗</a></li>
+          <li><a href={`${REPO}/blob/main/docs/agents/board.md`} target="_blank" rel="noopener noreferrer">Development progress ↗</a></li>
+          <li><a href="/about">About the project</a></li>
         </ul>
       </div>
       <div>
-        <h4>Source</h4>
+        <h2>Build with us</h2>
         <ul>
-          <li>
-            <a href="https://github.com/sergiogallegos/OpenWebHMI" target="_blank" rel="noopener noreferrer">GitHub repository ↗</a>
-          </li>
-          <li>
-            <a href="https://github.com/sergiogallegos/OpenWebHMI/issues" target="_blank" rel="noopener noreferrer">Issues ↗</a>
-          </li>
-          <li>
-            <a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/LICENSE-POLICY.md" target="_blank" rel="noopener noreferrer">AGPL/MPL license map ↗</a>
-          </li>
-          <li>
-            <a href="https://github.com/sergiogallegos/OpenWebHMI/blob/main/docs/license-transition.md" target="_blank" rel="noopener noreferrer">License transition ↗</a>
-          </li>
+          <li><a class="icon-link" href={REPO} target="_blank" rel="noopener noreferrer"><Icon name="github" /> GitHub repository</a></li>
+          <li><a href={`${REPO}/blob/main/docs/contributing.md`} target="_blank" rel="noopener noreferrer">Contribute to OpenWebHMI ↗</a></li>
+          <li><a class="icon-link sponsor-link" href="https://github.com/sponsors/sergiogallegos" target="_blank" rel="noopener noreferrer"><Icon name="heart" /> Sponsor the project</a></li>
+          <li><a href="https://rustethernetip.com/" target="_blank" rel="noopener noreferrer">Rust EtherNet/IP ↗</a></li>
         </ul>
       </div>
       <div>
-        <h4>Feedback &amp; follow-up</h4>
+        <h2>Feedback &amp; follow-up</h2>
         <FeedbackLinks compact />
-      </div>
-      <div>
-        <h4>Standing on</h4>
-        <ul>
-          <li><a href="https://www.rust-lang.org/" target="_blank" rel="noopener noreferrer">Rust</a></li>
-          <li><a href="https://www.typescriptlang.org/" target="_blank" rel="noopener noreferrer">TypeScript</a></li>
-          <li><a href="https://www.python.org/" target="_blank" rel="noopener noreferrer">Python</a></li>
-          <li><a href="https://tauri.app/" target="_blank" rel="noopener noreferrer">Tauri</a></li>
-        </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span class="subtle">© {year} OpenWebHMI contributors. AGPL core · MPL protocols.</span>
-      <span class="subtle">Pre-alpha · not for production deployment.</span>
+      <span>© {year} OpenWebHMI contributors.</span>
+      <div class="legal-links">
+        <a href={`${REPO}/blob/main/LICENSE-POLICY.md`} target="_blank" rel="noopener noreferrer">AGPL core · MPL protocols</a>
+        <a href={`${REPO}/blob/main/docs/license-transition.md`} target="_blank" rel="noopener noreferrer">License transition</a>
+      </div>
+      <span>Pre-alpha · not for production deployment.</span>
     </div>
   </div>
 </footer>
@@ -67,41 +56,113 @@ const year = new Date().getUTCFullYear();
     margin-top: 80px;
     border-top: 1px solid var(--border);
     background: var(--surface);
-    padding: 48px 0 24px;
-    font-size: 0.92rem;
+    padding: 52px 0 24px;
+    font-size: 0.88rem;
   }
 
   .footer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1.25fr 0.8fr 1fr 1.1fr;
     gap: 32px;
   }
 
-  h4 {
-    margin-top: 0;
-    font-size: 0.85rem;
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 750;
+  }
+
+  .brand:hover {
+    text-decoration: none;
+  }
+
+  .footer-brand p {
+    max-width: 30ch;
+    margin-top: 16px;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+  }
+
+  h2 {
+    margin: 4px 0 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
+    color: var(--text);
   }
 
   ul {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    gap: 12px;
+  }
+
+  a {
+    color: var(--text-muted);
+  }
+
+  a:hover {
+    color: var(--text);
+  }
+
+  .icon-link {
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
   }
 
+  .sponsor-link :global(.icon) {
+    color: var(--sponsor);
+  }
+
   .footer-bottom {
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
     display: flex;
+    align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 12px;
-    font-size: 0.85rem;
+    gap: 12px 24px;
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .legal-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+
+  @media (max-width: 960px) {
+    .footer-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 32px;
+    }
+
+  }
+
+  @media (max-width: 540px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    .footer-brand p {
+      max-width: 40ch;
+    }
+
+    h2 {
+      margin-bottom: 14px;
+    }
+
   }
 </style>

@@ -1,5 +1,8 @@
 {
   "assets": {
+    "apps/website/public/brands/github-black.svg": "GitHub official Invertocat, black; GitHub brand terms; THIRD_PARTY_NOTICES.md",
+    "apps/website/public/brands/github-white.svg": "GitHub official Invertocat, white; GitHub brand terms; THIRD_PARTY_NOTICES.md",
+    "apps/website/public/brands/x-white.svg": "X official logo, white; X brand terms; THIRD_PARTY_NOTICES.md",
     "apps/designer/src-tauri/icons/icon.ico": "First-party OpenWebHMI mark; TRADEMARKS.md",
     "apps/designer/src-tauri/icons/icon.png": "First-party OpenWebHMI mark; TRADEMARKS.md",
     "apps/website/public/favicon.svg": "First-party OpenWebHMI mark; TRADEMARKS.md",

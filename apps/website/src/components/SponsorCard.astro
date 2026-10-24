@@ -1,0 +1,71 @@
+---
+import Icon from "./Icon.astro";
+---
+
+<section class="container sponsor-section" aria-labelledby="sponsor-title">
+  <div class="sponsor-card">
+    <div>
+      <p class="eyebrow"><Icon name="heart" /> Support open industrial software</p>
+      <h2 id="sponsor-title">Help build a dependable SCADA/HMI.</h2>
+      <p class="muted">Sponsorship supports development time, real-hardware validation,
+        cross-platform testing, and documentation. Feedback, contributions, and
+        access to test hardware also help move the project forward.</p>
+    </div>
+    <a class="button secondary" href="https://github.com/sponsors/sergiogallegos" target="_blank" rel="noopener noreferrer"><Icon name="heart" /> Sponsor on GitHub <span aria-hidden="true">↗</span></a>
+  </div>
+</section>
+
+<style>
+  .sponsor-section {
+    padding-top: 32px;
+    padding-bottom: 16px;
+  }
+
+  .sponsor-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 40px;
+    padding: 36px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sponsor);
+  }
+
+  h2 {
+    margin-top: 0;
+    font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+  }
+
+  .muted {
+    margin-bottom: 0;
+    max-width: 64ch;
+    font-size: 0.95rem;
+  }
+
+  .button :global(.icon) {
+    color: var(--sponsor);
+  }
+
+  @media (max-width: 760px) {
+    .sponsor-card {
+      grid-template-columns: 1fr;
+      padding: 24px;
+      gap: 24px;
+    }
+
+    .button {
+      justify-self: start;
+    }
+
+  }
+</style>

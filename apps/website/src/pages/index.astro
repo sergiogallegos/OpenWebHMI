@@ -2,6 +2,8 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Logo from "../components/Logo.astro";
 import FeedbackLinks from "../components/FeedbackLinks.astro";
+import Icon from "../components/Icon.astro";
+import SponsorCard from "../components/SponsorCard.astro";
 
 const REPO = "https://github.com/sergiogallegos/OpenWebHMI";
 const BLOB = `${REPO}/blob/main`;
@@ -25,7 +27,7 @@ const BLOB = `${REPO}/blob/main`;
           href="https://github.com/sergiogallegos/OpenWebHMI"
           target="_blank"
           rel="noopener noreferrer"
-        >GitHub ↗</a>
+        ><Icon name="github" /> Explore on GitHub <span aria-hidden="true">↗</span></a>
       </div>
       <p class="hero-meta subtle">
         AGPL core · MPL protocol packages · no JVM · no per-server fees
@@ -353,6 +355,8 @@ const BLOB = `${REPO}/blob/main`;
     </ul>
   </section>
 
+  <SponsorCard />
+
   <section class="container section cta">
     <h2>Help shape OpenWebHMI</h2>
     <p>
@@ -365,10 +369,6 @@ const BLOB = `${REPO}/blob/main`;
       <a href={`${BLOB}/docs/roadmap.md`} target="_blank" rel="noopener noreferrer">Review the roadmap ↗</a>
       ·
       <a href={`${BLOB}/docs/agents/board.md`} target="_blank" rel="noopener noreferrer">See development progress ↗</a>
-    </p>
-    <p>
-      Follow Sergio Gallegos on X or visit his personal website for updates
-      and follow-up conversations.
     </p>
     <FeedbackLinks />
   </section>
@@ -495,8 +495,18 @@ const BLOB = `${REPO}/blob/main`;
     text-align: center;
     background: var(--surface);
     margin-top: 32px;
-    padding: 56px 0;
+    padding: 48px 32px;
     border-radius: var(--radius-lg);
+  }
+
+  .cta h2 {
+    margin-top: 0;
+  }
+
+  .cta > p {
+    max-width: 70ch;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   @media (max-width: 640px) {

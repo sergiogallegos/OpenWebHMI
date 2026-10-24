@@ -1,154 +1,82 @@
 ---
 import Logo from "./Logo.astro";
-const { pathname } = Astro.url;
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/docs", label: "Docs" },
-  { href: "/download", label: "Download" },
-  { href: "/about", label: "About" },
-];
-function isActive(href: string): boolean {
-  if (href === "/") return pathname === "/" || pathname === "";
-  return pathname.startsWith(href);
-}
+import NavigationLinks from "./NavigationLinks.astro";
 ---
 
 <header class="site-header">
   <div class="container nav">
-    <a class="brand" href="/">
-      <Logo size={28} />
-      <span>OpenWebHMI</span>
-    </a>
-    <details class="nav-menu">
-      <summary aria-label="Open navigation">
-        <span class="sr-only">Menu</span>
-        <span class="menu-icon" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-      </summary>
-      <nav aria-label="Primary navigation">
-        {links.map((link) => (
-          <a class={isActive(link.href) ? "active" : ""} href={link.href}>
-            {link.label}
-          </a>
-        ))}
-        <a
-          class="github"
-          href="https://github.com/sergiogallegos/OpenWebHMI"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="OpenWebHMI on GitHub"
-        >
-          GitHub ↗
-        </a>
-      </nav>
+    <a class="brand" href="/" aria-label="OpenWebHMI home"><Logo size={30} /><span>OpenWebHMI</span></a>
+    <div class="desktop-navigation"><NavigationLinks /></div>
+    <details class="mobile-navigation">
+      <summary><span>Menu</span><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></summary>
+      <div class="mobile-panel"><NavigationLinks /></div>
     </details>
   </div>
 </header>
 
 <style>
   .site-header {
-    border-bottom: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: saturate(140%) blur(8px);
     position: sticky;
     top: 0;
     z-index: 10;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .site-header {
-      background: rgba(10, 14, 26, 0.85);
-    }
+    border-bottom: 1px solid var(--border);
+    background: var(--header-bg);
+    backdrop-filter: saturate(140%) blur(14px);
   }
 
   .nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 64px;
-    gap: 16px;
+    min-height: 76px;
+    gap: 24px;
   }
 
   .brand {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-weight: 700;
-    font-size: 1.05rem;
+    flex-shrink: 0;
     color: var(--text);
-    letter-spacing: -0.01em;
-    flex: 0 0 auto;
+    font-size: 1.08rem;
+    font-weight: 750;
   }
 
   .brand:hover {
     text-decoration: none;
   }
 
-  .nav-menu {
-    position: relative;
-  }
-
-  summary {
+  .mobile-navigation {
     display: none;
   }
 
-  nav {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  nav a {
-    padding: 8px 14px;
-    border-radius: 6px;
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    font-weight: 500;
-  }
-
-  nav a:hover {
-    color: var(--text);
-    background: var(--surface);
-    text-decoration: none;
-  }
-
-  nav a.active {
-    color: var(--brand);
-    background: var(--brand-soft);
-  }
-
-  nav a.github {
-    margin-left: 8px;
-    color: var(--text);
-    border: 1px solid var(--border-strong);
-  }
-
-  @media (max-width: 720px) {
+  @media (max-width: 960px) {
     .nav {
-      min-height: 60px;
-      height: auto;
-      padding-top: 10px;
-      padding-bottom: 10px;
+      min-height: 68px;
+      gap: 16px;
     }
 
-    .brand {
-      gap: 8px;
-      font-size: 1rem;
+    .desktop-navigation {
+      display: none;
+    }
+
+    .mobile-navigation {
+      display: block;
+      position: relative;
     }
 
     summary {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      width: 42px;
-      height: 42px;
+      gap: 12px;
+      min-height: 44px;
+      padding: 8px 12px;
       border: 1px solid var(--border-strong);
       border-radius: var(--radius);
-      background: var(--surface);
+      background: var(--bg);
       color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
       cursor: pointer;
       list-style: none;
     }
@@ -157,52 +85,29 @@ function isActive(href: string): boolean {
       display: none;
     }
 
-    summary:hover {
-      background: var(--surface-alt);
-    }
-
     .menu-icon {
       display: grid;
       gap: 4px;
-      width: 18px;
+      width: 16px;
     }
 
     .menu-icon span {
-      display: block;
       height: 2px;
-      border-radius: 999px;
+      border-radius: 1px;
       background: currentColor;
     }
 
-    nav {
+    .mobile-panel {
       position: absolute;
-      top: calc(100% + 10px);
+      top: calc(100% + 14px);
       right: 0;
-      width: min(280px, calc(100vw - 32px));
-      display: none;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 4px;
+      width: min(300px, calc(100vw - 32px));
       padding: 8px;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-lg);
       background: var(--bg);
       box-shadow: var(--shadow-lg);
     }
 
-    .nav-menu[open] nav {
-      display: flex;
-    }
-
-    nav a {
-      padding: 11px 12px;
-      font-size: 1rem;
-    }
-
-    nav a.github {
-      margin-left: 0;
-      margin-top: 4px;
-      text-align: center;
-    }
   }
 </style>

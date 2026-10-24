@@ -1,0 +1,82 @@
+---
+import Icon from "./Icon.astro";
+const { pathname } = Astro.url;
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/docs", label: "Docs" },
+  { href: "/download", label: "Download" },
+  { href: "/about", label: "About" },
+];
+---
+
+<nav aria-label="Primary navigation">
+  {links.map((link) => {
+    const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+    return <a class:list={[{ active }]} href={link.href} aria-current={active ? "page" : undefined}>{link.label}</a>;
+  })}
+  <a class="sponsor" href="https://github.com/sponsors/sergiogallegos" target="_blank" rel="noopener noreferrer"><Icon name="heart" /> Sponsor</a>
+  <a class="github" href="https://github.com/sergiogallegos/OpenWebHMI" target="_blank" rel="noopener noreferrer"><Icon name="github" /> GitHub <span aria-hidden="true">↗</span></a>
+</nav>
+
+<style>
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  a:hover {
+    color: var(--text);
+    background: var(--surface);
+    text-decoration: none;
+  }
+
+  .active {
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  .sponsor :global(.icon) {
+    color: var(--sponsor);
+  }
+
+  .github {
+    margin-left: 4px;
+    color: var(--text);
+    border-color: var(--border-strong);
+    background: var(--bg);
+  }
+
+  @media (max-width: 960px) {
+    nav {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+    }
+
+    a {
+      justify-content: flex-start;
+      padding: 10px 12px;
+    }
+
+    .github {
+      margin: 4px 0 0;
+      justify-content: center;
+    }
+
+  }
+</style>
